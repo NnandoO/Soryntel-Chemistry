@@ -1,0 +1,9 @@
+VISUAL MINTEQ Parameters For NICA-Donnan
+Concentration of proton-binding sites, type 1 (QmaxH1),.0023
+Concentration of proton-binding sites, type 2 (QmaxH2),.00432
+Donnan volume parameter (b),.334
+Width of distribution for type 1 sites (p1),.629
+Width of distribution for type 2 sites (p2),.423
+Nonideality parameter for reference component H+, type 1 sites (nH1),.869
+Nonideality parameter for reference component H+, type 2 sites (nH2),.594
+

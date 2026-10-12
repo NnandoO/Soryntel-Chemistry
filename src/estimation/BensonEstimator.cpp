@@ -1,0 +1,16 @@
+#include "BensonEstimator.hpp"
+
+namespace hsc_clone {
+
+PropiedadesEstimadas BensonEstimator::estimarBenson(const std::string& formula) {
+    auto motor_res = motor_.estimar_benson(formula);
+    PropiedadesEstimadas res;
+    res.h_formacion = motor_res.h_formacion;
+    res.s_formacion = motor_res.s_formacion;
+    res.masa_molar  = motor_res.masa_molar;
+    res.ok          = motor_res.ok;
+    res.mensaje     = motor_res.mensaje;
+    return res;
+}
+
+} // namespace hsc_clone

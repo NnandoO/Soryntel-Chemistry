@@ -1,0 +1,4 @@
+None,4.0.13b
+The above string is the Visual MINTEQ folder containing all user-editable files. Visual MINTEQ and associated .exe applications checks this string every time they are initiated
+If you change this string manually, Visual MINTEQ will paste in default versions of all user-editable files to the new folder
+Jon Petter Gustafsson 2011-02-07

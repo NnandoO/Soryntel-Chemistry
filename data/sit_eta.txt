@@ -1,0 +1,853 @@
+(NpO2)2(OH)2+2,ClO4-1,.57,NEA 2005
+(NpO2)3(OH)5+,ClO4-1,.45,NEA 2005
+(UO2)2(OH)2+2,Cl-1,.69,NEA 2005
+(UO2)2(OH)2+2,ClO4-1,.57,NEA 2005
+(UO2)2(OH)2+2,NO3-1,.24,NEA 2005
+(UO2)3(OH)2+2,Cl-1,.5,NEA 2005
+(UO2)3(OH)4+2,ClO4-1,.89,NEA 2005
+(UO2)3(OH)4+2,NO3-1,.72,NEA 2005
+(UO2)3(OH)5+,Cl-1,.81,NEA 2005
+(UO2)3(OH)5+,ClO4-1,.45,NEA 2005
+(UO2)3(OH)5+,NO3-1,.41,NEA 2005
+Ag+1,ClO4-1,0,NEA 2005
+Ag+1,NO3-1,-.12,NEA 2005
+Al+3,Cl-1,.33,NEA 2005
+Al2(OH)4+5,Cl-1,.66,IUPAC 2004
+Al2(OH)4+5,ClO4-1,1.3,IUPAC 2004
+Al2CO3(OH)2+2,Cl-1,.26,NEA 2005
+Al3CO3(OH)4+4,Cl-1,.41,IUPAC 2004
+AlCO3(OH)4+4,Cl-1,.41,NEA 2005
+AlF+2,NO3-1,-.23,IUPAC 2004
+AlF2+,NO3-1,-.04,IUPAC 2004
+AlF3 (aq),NO3-1,-.09,IUPAC 2004
+AlF4-,NO3-1,-.19,IUPAC 2004
+AlOH+2,Cl-1,.09,NEA 2005
+AlOH+2,ClO4-1,.31,NEA 2005
+Am(OH)2+,Cl-1,-.27,NEA 2005
+Am(OH)2+,ClO4-1,.17,NEA 2005
+Am+3,Cl-1,.23,NEA 2005
+Am+3,ClO4-1,.49,NEA 2005
+Am-Oxalate+,ClO4-1,.08,NEA 2005
+AmCO3+,Cl-1,.01,NEA 2005
+AmCO3+,ClO4-1,.17,NEA 2005
+AmCl+2,ClO4-1,.39,NEA 2005
+AmF+2,ClO4-1,.39,NEA 2005
+AmF2+,ClO4-1,.17,NEA 2005
+AmH2PO4+2,ClO4-1,.39,NEA 2005
+AmN3+2,ClO4-1,.39,NEA 2005
+AmNO2+2,ClO4-1,.39,NEA 2005
+AmNO3+2,ClO4-1,.39,NEA 2005
+AmOH+2,Cl-1,-.04,NEA 2005
+AmOH+2,ClO4-1,.39,NEA 2005
+AmSCN+2,ClO4-1,.39,NEA 2005
+AmSO4+,ClO4-1,.22,NEA 2005
+Ba+2,Cl-1,.07,NEA 2005
+Ba+2,ClO4-1,.15,NEA 2005
+Ba+2,NO3-1,-.28,NEA 2005
+Be2OH+3,ClO4-1,.5,NEA 2005
+Be3(OH)3+3,Cl-1,.3,NEA 2005
+Be3(OH)3+3,ClO4-1,.51,NEA 2005
+Be3(OH)3+3,NO3-1,.29,NEA 2005
+Ca+2,Cl-1,.14,PreGa01
+Ca+2,ClO4-1,.27,NEA 2005
+Ca+2,NO3-1,.02,NEA 2005
+Cd+2,NO3-1,.09,NEA 2005
+CdCl+,ClO4-1,.25,NEA 2005
+CdI+,ClO4-1,.27,NEA 2005
+CdSCN+,ClO4-1,.31,NEA 2005
+Ce+3,ClO4-1,.5,IUPAC 2004
+Co+2,Cl-1,.16,NEA 2005
+Co+2,ClO4-1,.34,NEA 2005
+Co+2,NO3-1,.14,NEA 2005
+Co2OH+3,ClO4-1,.71,IUPAC 2004
+CoOH+,ClO4-1,.3,IUPAC 2004
+Cr+3,Cl-1,.3,NEA 2005
+Cr+3,NO3-1,.27,NEA 2005
+Cu+1,ClO4-1,.11,NEA 2005
+Cu+2,Cl-1,.08,NEA 2005
+Cu+2,ClO4-1,.32,NEA 2005
+Cu+2,NO3-1,.11,NEA 2005
+Cu2OH+3,ClO4-1,.47,IUPAC 2004
+Cu2OH2+2,ClO4-1,.33,IUPAC 2004
+Cu4OH4+3,ClO4-1,.92,IUPAC 2004
+CuCl+,ClO4-1,.31,IUPAC 2004
+CuOH+,ClO4-1,-.13,IUPAC 2004
+Dy+3,ClO4-1,.5,IUPAC 2004
+Er+3,ClO4-1,.5,IUPAC 2004
+Eu+3,Cl-1,.22,IUPAC 2004
+Eu+3,ClO4-1,.5,IUPAC 2004
+Eu+3,F-1,.22,IUPAC 2004
+EuCl+2,ClO4-1,.37,IUPAC 2004
+EuF+2,ClO4-1,.39,IUPAC 2004
+EuF2+3,ClO4-1,.39,IUPAC 2004
+EuSO4+,ClO4-1,.27,IUPAC 2004
+Fe+3,ClO4-1,.56,NEA 2005
+Fe+3,NO3-1,.42,NEA 2005
+Fe2(OH)2+4,ClO4-1,.82,NEA 2005
+FeOH+2,ClO4-1,.38,NEA 2005
+FeSCN+2,ClO4-1,.45,NEA 2005
+Gd+3,ClO4-1,.5,IUPAC 2004
+H+1,Cl-1,.12,NEA 2005
+H+1,ClO4-1,.12,PreGa01
+H+1,CuCl2-,.18,IUPAC 2004
+H+1,CuCl3-2,.28,IUPAC 2004
+H+1,NO3-1,.07,NEA 2005
+H2-Glycine+,Cl-1,-.06,NEA 2005
+H5EDTA+,Cl-1,-.23,NEA 2005
+H5EDTA+,ClO4-1,-.23,NEA 2005
+H5EDTA+,NO3-1,-.23,NEA 2005
+H6EDTA+2,Cl-1,-.2,NEA 2005
+H6EDTA+2,ClO4-1,-.2,NEA 2005
+H6EDTA+2,NO3-1,-.2,NEA 2005
+Hg+2,ClO4-1,.34,NEA 2005
+Hg+2,NO3-1,-.1,NEA 2005
+Hg2+2,ClO4-1,.09,NEA 2005
+Hg2+2,NO3-1,-.2,NEA 2005
+HgCl+,ClO4-1,.19,NEA 2005
+HgOH+,ClO4-1,.06,IUPAC 2004
+Ho+3,ClO4-1,.5,IUPAC 2004
+K+1,Acetate-1,.09,NEA 2005
+K+1,AmEDTA-,.01,NEA 2005
+K+1,Br-1,.01,NEA 2005
+K+1,CO3-2,.02,NEA 2005
+K+1,Ca-(Oxalate)2-2,-.15,NEA 2005
+K+1,Citrate-3,.02,NEA 2005
+K+1,Cl-1,0,NEA 2005
+K+1,Co(OH)3-,-.01,IUPAC 2004
+K+1,Co(OH)4-2,.14,IUPAC 2004
+K+1,CrO4-2,-.08,NEA 2005
+K+1,Cu(OH)3-,.4,IUPAC 2004
+K+1,Cu(OH)4-2,.29,IUPAC 2004
+K+1,EDTA-4,1.07,NEA 2005
+K+1,F-1,.03,NEA 2005
+K+1,Fe(CN)6-4,-.17,NEA 2005
+K+1,H-Citrate-2,-.01,NEA 2005
+K+1,H-Maleate-,.01,IUPAC 2004
+K+1,H-Oxalate-,-.01,NEA 2005
+K+1,H2-Citrate-,-.03,IUPAC 2004
+K+1,H2EDTA-,-.17,NEA 2005
+K+1,H2PO4-,-.14,NEA 2005
+K+1,H3EDTA-,-.14,NEA 2005
+K+1,HCO3-,-.06,NEA 2005
+K+1,HEDTA(ii)-3,.31,NEA 2005
+K+1,HPO4-2,-.1,NEA 2005
+K+1,I-1,.02,NEA 2005
+K+1,Maleate-2,.02,IUPAC 2004
+K+1,NO2-1,0,NEA 2005
+K+1,NO3-1,-.11,NEA 2005
+K+1,Np(CO3)3-3,-.15,NEA 2005
+K+1,Np(CO3)3-3,-.15,IUPAC 2004
+K+1,Np(CO3)5-6,-.73,IUPAC 2004
+K+1,NpO2(CO3)3-4,-.62,NEA 2005
+K+1,NpO2(CO3)3-5,-.22,NEA 2005
+K+1,NpO2(CO3)5-6,-.73,NEA 2005
+K+1,OH-,.09,NEA 2005
+K+1,Oxalate-2,.07,NEA 2005
+K+1,P2O7-4,-.15,NEA 2005
+K+1,PO4-3,-.09,NEA 2005
+K+1,PuEDTA-,.01,NEA 2005
+K+1,SCN-1,-.01,NEA 2005
+K+1,SO4-2,-.06,NEA 2005
+K+1,U(CO3)5-6,-.7,NEA 2005
+K+1,Zn(OH)3-,-.05,IUPAC 2004
+K+1,Zn(OH)4-2,.2,IUPAC 2004
+K+1,Zn2(OH)6-2,.32,IUPAC 2004
+La+3,Cl-1,.22,NEA 2005
+La+3,ClO4-1,.47,NEA 2005
+La+3,NO3-1,.6,IUPAC 2004
+Li+1,Acetate-1,.05,NEA 2005
+Li+1,Br-1,.13,NEA 2005
+Li+1,Citrate-3,-.44,NEA 2005
+Li+1,Cl-1,.1,NEA 2005
+Li+1,ClO4-1,.15,NEA 2005
+Li+1,H-Citrate-2,-.17,NEA 2005
+Li+1,H-Oxalate-,-.28,NEA 2005
+Li+1,H2-Citrate-,-.11,NEA 2005
+Li+1,I-1,.16,NEA 2005
+Li+1,NO2-1,.06,NEA 2005
+Li+1,NO3-1,.08,NEA 2005
+Li+1,OH-,-.02,NEA 2005
+Li+1,Oxalate-2,-.51,NEA 2005
+Li+1,SO4-2,-.03,NEA 2005
+Lu+3,ClO4-1,.52,NEA 2005
+Mg+2,Cl-1,.19,NEA 2005
+Mg+2,ClO4-1,.33,NEA 2005
+Mg+2,NO3-1,.17,NEA 2005
+Mn+2,Cl-1,.13,NEA 2005
+NH4+1,Cl-1,-.01,NEA 2005
+NH4+1,ClO4-1,-.08,NEA 2005
+NH4+1,NO3-1,-.06,NEA 2005
+Na+1,(NpO2)2CO3(OH)3-,0,NEA 2005
+Na+1,(NpO2)3(CO3)6-6,-.46,NEA 2005
+Na+1,(UO2)2(OH)2(SO4)2-2,-.14,NEA 2005
+Na+1,(UO2)2CO3(OH)3-,0,NEA 2005
+Na+1,(UO2)2NpO2(CO3)6-6,.09,NEA 2005
+Na+1,(UO2)3(CO3)6-6,.37,NEA 2005
+Na+1,(UO2)3(OH)4(SO4)3-4,.6,NEA 2005
+Na+1,(UO2)4(OH)7(SO4)4-7,2.8,NEA 2005
+Na+1,(UO2)5(OH)8(SO4)4-6,1.1,NEA 2005
+Na+1,Acetate-1,.08,NEA 2005
+Na+1,Am(CO3)2-,-.14,NEA 2005
+Na+1,Am(CO3)3-3,-.23,NEA 2005
+Na+1,Am(SO4)2-,-.05,NEA 2005
+Na+1,Am-(Oxalate)3-3,-.23,NEA 2005
+Na+1,Am-Oxalate-,-.21,NEA 2005
+Na+1,AmEDTA-,.01,NEA 2005
+Na+1,Br-1,.05,NEA 2005
+Na+1,BrO3-1,-.06,NEA 2005
+Na+1,CO3-2,-.06,PreGa01
+Na+1,Ca-(Oxalate)2-2,-.15,NEA 2005
+Na+1,Citrate-3,-.07,NEA 2005
+Na+1,Cl-1,.03,NEA 2005
+Na+1,ClO3-1,.01,NEA 2005
+Na+1,ClO4-1,.01,NEA 2005
+Na+1,Co(OH)2 (aq),-.15,IUPAC 2004
+Na+1,Co(OH)3-,-.14,IUPAC 2004
+Na+1,Co(OH)4-2,-.06,IUPAC 2004
+Na+1,CrO4-2,-.06,NEA 2005
+Na+1,Cu(OH)4-2,.19,IUPAC 2004
+Na+1,CuCl2-,.07,IUPAC 2004
+Na+1,CuCl3-2,.14,IUPAC 2004
+Na+1,EDTA-4,.32,NEA 2005
+Na+1,Eu(SO4)2-,.22,IUPAC 2004
+Na+1,F-1,.02,NEA 2005
+Na+1,Glutarate-2,.13,IUPAC 2004
+Na+1,H-Citrate-2,-.04,NEA 2005
+Na+1,H-Glutarate-,.05,IUPAC 2004
+Na+1,H-Maleate-,-.01,IUPAC 2004
+Na+1,H-Malonate-,.03,IUPAC 2004
+Na+1,H-Oxalate-,-.07,NEA 2005
+Na+1,H-Succinate-,.02,IUPAC 2004
+Na+1,H-Tartrate-,-.03,IUPAC 2004
+Na+1,H2-Citrate-,-.04,IUPAC 2004
+Na+1,H2BO3-,-.07,NEA 2005
+Na+1,H2EDTA-2,-.37,NEA 2005
+Na+1,H2PO4-,-.08,NEA 2005
+Na+1,H2SiO4-2,-.1,NEA 2005
+Na+1,H3EDTA-,-.33,NEA 2005
+Na+1,H3SiO4-,-.08,NEA 2005
+Na+1,HCO3-,0,NEA 2005
+Na+1,HEDTA(ii)-3,-.1,NEA 2005
+Na+1,HF2-,-.11,NEA 2005
+Na+1,HPO4-2,-.15,NEA 2005
+Na+1,HS-,.08,IUPAC 2004
+Na+1,HSO4-,-.01,NEA 2005
+Na+1,HSeO4-,-.01,NEA 2005
+Na+1,I-1,.08,NEA 2005
+Na+1,IO3-1,-.06,NEA 2005
+Na+1,Maleate-2,.04,IUPAC 2004
+Na+1,Malonate-2,.04,IUPAC 2004
+Na+1,Mg-(Oxalate)2-2,-.15,NEA 2005
+Na+1,Mg-Citrate-,.03,NEA 2005
+Na+1,MgEDTA-2,-.01,NEA 2005
+Na+1,MgHEDTA-,.11,NEA 2005
+Na+1,N3-1,0,NEA 2005
+Na+1,NO2-1,0,NEA 2005
+Na+1,NO3-1,-.04,NEA 2005
+Na+1,Ni(OH)2 (aq),-.07,IUPAC 2004
+Na+1,Ni(OH)3-,.18,IUPAC 2004
+Na+1,Ni(OH)4-2,.27,IUPAC 2004
+Na+1,Ni-(Oxalate)2-2,-.26,NEA 2005
+Na+1,Ni-Citrate-,.22,NEA 2005
+Na+1,Np(CO3)5-6,0,IUPAC 2004
+Na+1,NpO2(CO3)2-2,-.02,NEA 2005
+Na+1,NpO2(CO3)2-3,-.33,NEA 2005
+Na+1,NpO2(CO3)2OH-4,-.4,NEA 2005
+Na+1,NpO2(CO3)3-4,-.4,NEA 2005
+Na+1,NpO2(CO3)3-5,-.53,NEA 2005
+Na+1,NpO2(HPO4)2-2,-.1,NEA 2005
+Na+1,NpO2(OH)2-,.01,NEA 2005
+Na+1,NpO2-(Oxalate)3-3,.03,NEA 2005
+Na+1,NpO2-Citrate-2,-.06,NEA 2005
+Na+1,NpO2-Oxalate-,-.4,NEA 2005
+Na+1,NpO2CO3-,-.18,NEA 2005
+Na+1,NpO2EDTA-3,.2,NEA 2005
+Na+1,NpO2H2EDTA-1,-.18,NEA 2005
+Na+1,NpO2HEDTA(ii)-2,.07,NEA 2005
+Na+1,OH-,.04,NEA 2005
+Na+1,Oxalate-2,-.08,NEA 2005
+Na+1,P2O7-4,-.26,NEA 2005
+Na+1,PO4-3,-.25,NEA 2005
+Na+1,Pb(OH)3-,.16,IUPAC 2004
+Na+1,Pu(CO3)5-6,0,IUPAC 2004
+Na+1,PuO2CO3-,-.18,NEA 2005
+Na+1,S2O3-2,-.08,NEA 2005
+Na+1,SCN-1,.05,NEA 2005
+Na+1,SO3-2,-.08,NEA 2005
+Na+1,SO4-2,-.12,NEA 2005
+Na+1,SeCN-1,.05,NEA 2005
+Na+1,SeO4-2,-.12,NEA 2005
+Na+1,Si2O2(OH)5-,-.08,NEA 2005
+Na+1,Si2O3(OH)4-2,-.15,NEA 2005
+Na+1,Si3O5(OH)5-3,-.25,NEA 2005
+Na+1,Si3O6(OH)3-3,-.25,NEA 2005
+Na+1,Si4O7(OH)5-3,-.25,NEA 2005
+Na+1,Sn(OH)3-,.33,IUPAC 2004
+Na+1,Sn3(OH)4+2,.45,IUPAC 2004
+Na+1,Succinate-2,.09,IUPAC 2004
+Na+1,Tartrate-2,0,IUPAC 2004
+Na+1,Th(CO3)5-6,-.3,IUPAC 2004
+Na+1,ThCO3(OH)3-,0,IUPAC 2004
+Na+1,ThSO4+2,.3,IUPAC 2004
+Na+1,U(CO3)3-4,-.01,NEA 2005
+Na+1,U(CO3)4-4,-.09,IUPAC 2004
+Na+1,U(CO3)5-6,-.3,NEA 2005
+Na+1,UO2(CO3)2-2,-.02,NEA 2005
+Na+1,UO2(CO3)3-4,-.01,IUPAC 2004
+Na+1,UO2(CO3)3-5,-.62,NEA 2005
+Na+1,UO2(N3)3-,0,NEA 2005
+Na+1,UO2(N3)4-2,-.1,NEA 2005
+Na+1,UO2(OH)3-,-.09,NEA 2005
+Na+1,UO2(SO4)2-2,-.12,NEA 2005
+Na+1,UO2-(Oxalate)2-2,-.18,NEA 2005
+Na+1,UO2-(Oxalate)3-4,-.01,NEA 2005
+Na+1,UO2-Citrate-,-.11,NEA 2005
+Na+1,UO2EDTA-2,-.22,NEA 2005
+Na+1,UO2F3-,-.14,NEA 2005
+Na+1,UO2F4-2,-.3,NEA 2005
+Na+1,UO2HEDTA-,-.18,NEA 2005
+Na+1,Zn(OH)2 (aq),-.02,IUPAC 2004
+Na+1,Zn(OH)3-,-.06,IUPAC 2004
+Na+1,Zn(OH)4-2,.05,IUPAC 2004
+Na+1,Zn2(OH)6-2,.1,IUPAC 2004
+Na+1,Zr(CO3)4-4,-.09,NEA 2005
+Na+1,Zr(OH)6-2,-.1,NEA 2005
+Na+1,ZrF5-,-.14,NEA 2005
+Na+1,ZrF6-2,-.15,NEA 2005
+Nd+3,ClO4-1,.5,IUPAC 2004
+Ni+2,Cl-1,.17,NEA 2005
+Ni+2,ClO4-1,.37,NEA 2005
+Ni+2,NO3-1,.18,NEA 2005
+Ni2OH+3,Cl-1,.41,IUPAC 2004
+Ni2OH+3,ClO4-1,.59,IUPAC 2004
+Ni4(OH)4+4,ClO4-1,1.08,NEA 2005
+Ni4OH+4,Cl-1,.68,IUPAC 2004
+Ni4OH+4,ClO4-1,.9,IUPAC 2004
+NiBr+,ClO4-1,.59,NEA 2005
+NiF+,ClO4-1,.34,NEA 2005
+NiH2-Citrate+,ClO4-1,.12,NEA 2005
+NiHS+,ClO4-1,-.85,NEA 2005
+NiNO3+,ClO4-1,.44,NEA 2005
+NiOH+,Cl-1,-.01,NEA 2005
+NiOH+,ClO4-1,.14,NEA 2005
+NiSCN+,ClO4-1,.31,NEA 2005
+Np(OH)2+2,Cl-1,.1,IUPAC 2004
+Np(OH)2+2,ClO4-1,.3,IUPAC 2004
+Np(OH)3+,Cl-1,.05,IUPAC 2004
+Np(OH)3+,ClO4-1,.15,IUPAC 2004
+Np(SCN)2+2,ClO4-1,.38,NEA 2005
+Np(SCN)3+,ClO4-1,.17,NEA 2005
+Np+3,ClO4-1,.49,NEA 2005
+Np+4,Cl-1,.4,IUPAC 2004
+Np+4,ClO4-1,.84,NEA 2005
+NpCl+3,ClO4-1,.81,NEA 2005
+NpF+3,ClO4-1,.58,NEA 2005
+NpF2+2,ClO4-1,.38,NEA 2005
+NpI+3,ClO4-1,.77,NEA 2005
+NpO2+1,Cl-1,.09,NEA 2005
+NpO2+1,ClO4-1,.25,NEA 2005
+NpO2+2,ClO4-1,.46,NEA 2005
+NpO2Cl+,ClO4-1,.5,NEA 2005
+NpO2F+,ClO4-1,.29,NEA 2005
+NpO2IO3+,ClO4-1,.33,NEA 2005
+NpO2OH+,ClO4-1,-.06,NEA 2005
+NpOH+3,Cl-1,.2,IUPAC 2004
+NpOH+3,ClO4-1,.5,NEA 2005
+NpSCN+3,ClO4-1,.76,NEA 2005
+NpSO4+2,ClO4-1,.48,NEA 2005
+Pb+2,ClO4-1,.15,NEA 2005
+Pb+2,NO3-1,-.2,NEA 2005
+Pb3(OH)4+2,ClO4-1,-.02,IUPAC 2004
+Pb4(OH)6+4,ClO4-1,.51,IUPAC 2004
+Pb6(OH)8+4,ClO4-1,.41,IUPAC 2004
+PbOH+1,ClO4-1,.11,IUPAC 2004
+Pd+2,ClO4-1,.8,IUPAC 2004
+Pr+3,ClO4-1,.5,IUPAC 2004
+Pu(OH)2+2,Cl-1,.1,IUPAC 2004
+Pu(OH)2+2,ClO4-1,.3,IUPAC 2004
+Pu(OH)3+,Cl-1,.05,IUPAC 2004
+Pu(OH)3+,ClO4-1,.15,IUPAC 2004
+Pu+3,ClO4-1,.49,NEA 2005
+Pu+4,Cl-1,.4,IUPAC 2004
+Pu+4,ClO4-1,.82,NEA 2005
+PuBr+3,ClO4-1,.58,NEA 2005
+PuCl+2,ClO4-1,.39,IUPAC 2004
+PuCl+3,ClO4-1,.85,NEA 2005
+PuF+3,ClO4-1,.56,NEA 2005
+PuF2+2,ClO4-1,.36,NEA 2005
+PuI+2,ClO4-1,.39,NEA 2005
+PuO2+1,ClO4-1,.24,NEA 2005
+PuO2+2,ClO4-1,.46,NEA 2005
+PuO2Cl+,Cl-1,-.13,IUPAC 2004
+PuO2Cl+,ClO4-1,.5,NEA 2005
+PuO2Cl2+,Cl-1,-.4,IUPAC 2004
+PuO2F+,ClO4-1,.29,NEA 2005
+PuOH+3,Cl-1,.2,IUPAC 2004
+PuOH+3,ClO4-1,.5,NEA 2005
+PuSCN+3,ClO4-1,.39,NEA 2005
+Sm+3,ClO4-1,.5,IUPAC 2004
+Sn+2,Cl-1,.2,IUPAC 2004
+Sn+2,ClO4-1,.22,IUPAC 2004
+Sn+2,NO3-1,.45,IUPAC 2004
+Sn+4,ClO4-1,.32,IUPAC 2004
+SnCl+,ClO4-1,.11,IUPAC 2004
+SnF+,ClO4-1,.22,IUPAC 2004
+SnOH+,NO3-1,.21,IUPAC 2004
+Tb+3,ClO4-1,.5,IUPAC 2004
+Th(OH)2+2,Cl-1,.1,IUPAC 2004
+Th(OH)2+2,ClO4-1,.3,IUPAC 2004
+Th(OH)3+,Cl-1,.05,IUPAC 2004
+Th(OH)3+,ClO4-1,.15,IUPAC 2004
+Th+4,Cl-1,.25,NEA 2005
+Th+4,ClO4-1,.67,IUPAC 2004
+Th+4,NO3-1,.11,NEA 2005
+Th2(OH)2+6,ClO4-1,1.3,IUPAC 2004
+Th2(OH)2+6,ClO4-1,1.2,IUPAC 2004
+Th4(OH)12+4,ClO4-1,.4,IUPAC 2004
+Th4(OH)8+8,ClO-1,1.7,IUPAC 2004
+Th6(OH)15+9,ClO4-1,5.6,IUPAC 2004
+ThOH+3,Cl-1,.2,IUPAC 2004
+ThOH+3,ClO4-1,.45,IUPAC 2004
+Tl+1,ClO4-1,-.21,NEA 2005
+Tm+3,ClO4-1,.5,IUPAC 2004
+U(NO3)2+2,ClO4-1,.49,NEA 2005
+U(OH)2+2,Cl-1,.1,IUPAC 2004
+U(OH)2+2,ClO4-1,.3,IUPAC 2004
+U(OH)3+,Cl-1,.05,IUPAC 2004
+U(OH)3+,ClO4-1,.15,IUPAC 2004
+U+3,ClO4-1,.49,NEA 2005
+U+4,Cl-1,.36,IUPAC 2004
+U+4,ClO4-1,.76,NEA 2005
+UBr+3,ClO4-1,.52,NEA 2005
+UCl+3,ClO4-1,.5,NEA 2005
+UF+2,ClO4-1,.3,NEA 2005
+UF+3,ClO4-1,.48,NEA 2005
+UF2+2,ClO4-1,.3,IUPAC 2004
+UF3+,Cl-1,.1,NEA 2005
+UF3+,ClO4-1,.1,NEA 2005
+UI+3,ClO4-1,.55,NEA 2005
+UNO3+3,ClO4-1,.62,NEA 2005
+UO2+1,ClO4-1,.26,NEA 2005
+UO2+2,Cl-1,.21,NEA 2005
+UO2+2,ClO4-1,.46,NEA 2005
+UO2+2,NO3-1,.24,NEA 2005
+UO2Br+,ClO4-1,.24,NEA 2005
+UO2Br1,ClO4-1,.24,IUPAC 2004
+UO2BrO3+,ClO4-1,.33,NEA 2005
+UO2Cl+,ClO4-1,.33,NEA 2005
+UO2ClO3+,ClO4-1,.33,NEA 2005
+UO2F+,Cl-1,.04,NEA 2005
+UO2F+,ClO4-1,.28,NEA 2005
+UO2IO3+,ClO4-1,.33,NEA 2005
+UO2N3+,ClO4-1,.3,NEA 2005
+UO2NO3+,ClO4-1,.33,NEA 2005
+UO2OH+,ClO4-1,-.06,NEA 2005
+UO2OH+,NO3-1,.51,NEA 2005
+UO2SCN+,ClO4-1,.22,NEA 2005
+UOH+3,Cl-1,.2,IUPAC 2004
+UOH+3,ClO4-1,.48,NEA 2005
+USO4+2,ClO4-1,.3,NEA 2005
+Y2CO3+4,ClO4-1,.8,NEA 2005
+YCO3+,ClO4-1,.17,NEA 2005
+YHCO3+2,ClO4-1,.39,NEA 2005
+Yb+3,ClO4-1,.5,IUPAC 2004
+Zn+2,Cl-1,.29,IUPAC 2004
+Zn+2,ClO4-1,.36,PreGa01
+Zn+2,NO3-1,.16,NEA 2005
+Zn2OH+3,ClO4-1,.6,IUPAC 2004
+Zn4OH4+4,ClO4-1,.9,IUPAC 2004
+ZnCO3 (aq),Cl-1,.35,NEA 2005
+ZnHCO3+,Cl-1,.2,NEA 2005
+ZnOH+,ClO4-1,.45,IUPAC 2004
+Zr(NO3)+3,ClO4-1,.88,NEA 2005
+Zr(NO3)2+2,ClO4-1,.84,NEA 2005
+Zr(OH)2+2,ClO4-1,.62,NEA 2005
+Zr(OH)3+,ClO4-1,.57,NEA 2005
+Zr+4,ClO4-1,.84,IUPAC 2004
+Zr3(OH)4+8,Cl-1,.33,NEA 2005
+Zr3(OH)4+8,ClO4-1,.89,NEA 2005
+Zr3(OH)4+8,NO3-1,2.28,NEA 2005
+Zr3(OH)9+3,ClO4-1,.93,NEA 2005
+Zr4(OH)15+,ClO4-1,.09,NEA 2005
+Zr4(OH)15+,NO3-1,-.02,NEA 2005
+Zr4(OH)8+8,ClO4-1,3.61,NEA 2005
+ZrCl+3,ClO4-1,.87,NEA 2005
+ZrCl2+2,ClO4-1,.84,NEA 2005
+ZrF+3,ClO4-1,.63,NEA 2005
+ZrF2+2,ClO4-1,.47,NEA 2005
+ZrF3+,ClO4-1,.2,NEA 2005
+ZrSO4+2,ClO4-1,.5,IUPAC 2004
+Ag+1,Cl-1,-.08,Estimated
+Al+3,ClO4-1,.54,Estimated
+Al2CO3(OH)2+2,ClO4-1,.4,Estimated
+Al2CO3(OH)2+2,NO3-1,.2,Estimated
+Al3CO3(OH)4+4,ClO4-1,.83,Estimated
+AlCO3(OH)4+4,ClO4-1,.83,Estimated
+AlF+2,Cl-1,.07,Estimated
+AlF+2,ClO4-1,.14,Estimated
+AlF2+,Cl-1,.03,Estimated
+AlF2+,ClO4-1,.01,Estimated
+AlOH+2,NO3-1,.08,Estimated
+Am(OH)2+,NO3-1,-.05,Estimated
+Am-Oxalate+,Cl-1,0,Estimated
+Am-Oxalate+,NO3-1,.02,Estimated
+AmCO3+,NO3-1,.03,Estimated
+AmCl+2,Cl-1,.22,Estimated
+AmCl+2,NO3-1,.17,Estimated
+AmF+2,Cl-1,.22,Estimated
+AmF+2,NO3-1,.17,Estimated
+AmF2+,Cl-1,.06,Estimated
+AmF2+,NO3-1,.11,Estimated
+AmH2PO4+2,Cl-1,.22,Estimated
+AmH2PO4+2,NO3-1,.17,Estimated
+AmN3+2,Cl-1,.22,Estimated
+AmN3+2,NO3-1,.17,Estimated
+AmNO2+2,Cl-1,.22,Estimated
+AmNO2+2,NO3-1,.17,Estimated
+AmNO3+2,Cl-1,.22,Estimated
+AmNO3+2,NO3-1,.17,Estimated
+AmOH+2,NO3-1,.1,Estimated
+AmSCN+2,Cl-1,.22,Estimated
+AmSCN+2,NO3-1,.17,Estimated
+AmSO4+,Cl-1,.09,Estimated
+AmSO4+,NO3-1,.15,Estimated
+Be2OH+3,Cl-1,.26,Estimated
+Cd+2,Cl-1,.21,Estimated
+Cd+2,ClO4-1,.33,PreGa01
+CdCl+,Cl-1,.11,Estimated
+CdCl+,NO3-1,.18,Estimated
+CdI+,Cl-1,.12,Estimated
+CdI+,NO3-1,.2,Estimated
+CdSCN+,Cl-1,.14,Estimated
+CdSCN+,NO3-1,.24,Estimated
+Ce+3,Cl-1,.26,Estimated
+Co2OH+3,Cl-1,.6,Estimated
+CoOH+,Cl-1,.14,Estimated
+CoOH+,NO3-1,.23,Estimated
+Cr+3,ClO4-1,.52,Estimated
+Cu+1,Cl-1,.02,Estimated
+Cu+1,NO3-1,.05,Estimated
+Cu2OH+3,Cl-1,.21,Estimated
+Cu2OH2+2,Cl-1,.18,Estimated
+Cu2OH2+2,NO3-1,.1,Estimated
+Cu4OH4+3,Cl-1,.94,Estimated
+CuCl+,Cl-1,.14,Estimated
+CuCl+,NO3-1,.24,Estimated
+CuOH+,Cl-1,-.13,Estimated
+CuOH+,NO3-1,-.17,Estimated
+Dy+3,Cl-1,.26,Estimated
+Er+3,Cl-1,.26,Estimated
+EuCl+2,Cl-1,.21,Estimated
+EuCl+2,NO3-1,.14,Estimated
+EuF+2,Cl-1,.22,Estimated
+EuF+2,NO3-1,.17,Estimated
+EuF2+3,Cl-1,.08,Estimated
+EuSO4+,Cl-1,.12,Estimated
+EuSO4+,NO3-1,.2,Estimated
+Fe+3,Cl-1,.35,Estimated
+Fe2(OH)2+4,Cl-1,.4,Estimated
+FeOH+2,Cl-1,.21,Estimated
+FeOH+2,NO3-1,.16,Estimated
+FeSCN+2,Cl-1,.26,Estimated
+FeSCN+2,NO3-1,.23,Estimated
+Gd+3,Cl-1,.26,Estimated
+H2-Glycine+,ClO4-1,.12,Estimated
+H2-Glycine+,NO3-1,-.09,Estimated
+Hg+2,Cl-1,.16,Estimated
+Hg2+2,Cl-1,.05,Estimated
+HgCl+,Cl-1,.07,Estimated
+HgCl+,NO3-1,.13,Estimated
+HgOH+,Cl-1,-.01,Estimated
+HgOH+,NO3-1,.01,Estimated
+Ho+3,Cl-1,.26,Estimated
+K+1,(NpO2)2CO3(OH)3-,-.02,Estimated
+K+1,(UO2)2(OH)2(SO4)2-2,-.06,Estimated
+K+1,(UO2)2CO3(OH)3-,-.02,Estimated
+K+1,Am(CO3)2-,-.16,Estimated
+K+1,Am(SO4)2-,-.07,Estimated
+K+1,Am-Oxalate-,-.23,Estimated
+K+1,BrO3-1,-.08,Estimated
+K+1,ClO3-1,-.01,Estimated
+K+1,ClO4-1,.02,Estimated
+K+1,CuCl2-,.05,Estimated
+K+1,CuCl3-2,.16,Estimated
+K+1,Eu(SO4)2-,.21,Estimated
+K+1,Glutarate-2,.15,Estimated
+K+1,H-Glutarate-,.03,Estimated
+K+1,H-Malonate-,.01,Estimated
+K+1,H-Succinate-,0,Estimated
+K+1,H-Tartrate-,-.05,Estimated
+K+1,H2BO3-,-.09,Estimated
+K+1,H2EDTA-2,-.23,Estimated
+K+1,H2SiO4-2,-.03,Estimated
+K+1,H3SiO4-,-.1,Estimated
+K+1,HF2-,-.13,Estimated
+K+1,HS-,.06,Estimated
+K+1,HSO4-,-.03,Estimated
+K+1,HSeO4-,-.03,Estimated
+K+1,IO3-1,-.08,Estimated
+K+1,Malonate-2,.08,Estimated
+K+1,Mg-(Oxalate)2-2,-.07,Estimated
+K+1,Mg-Citrate-,.01,Estimated
+K+1,MgEDTA-2,.04,Estimated
+K+1,MgHEDTA-,.1,Estimated
+K+1,N3-1,-.02,Estimated
+K+1,Ni(OH)3-,.17,Estimated
+K+1,Ni(OH)4-2,.25,Estimated
+K+1,Ni-(Oxalate)2-2,-.15,Estimated
+K+1,Ni-Citrate-,.21,Estimated
+K+1,NpO2(CO3)2-2,.03,Estimated
+K+1,NpO2(HPO4)2-2,-.03,Estimated
+K+1,NpO2(OH)2-,-.01,Estimated
+K+1,NpO2-Citrate-2,0,Estimated
+K+1,NpO2-Oxalate-,-.43,Estimated
+K+1,NpO2CO3-,-.2,Estimated
+K+1,NpO2H2EDTA-1,-.2,Estimated
+K+1,NpO2HEDTA(ii)-2,.1,Estimated
+K+1,Pb(OH)3-,.15,Estimated
+K+1,PuO2CO3-,-.2,Estimated
+K+1,S2O3-2,-.01,Estimated
+K+1,SO3-2,-.01,Estimated
+K+1,SeCN-1,.03,Estimated
+K+1,SeO4-2,-.04,Estimated
+K+1,Si2O2(OH)5-,-.1,Estimated
+K+1,Si2O3(OH)4-2,-.07,Estimated
+K+1,Sn(OH)3-,.32,Estimated
+K+1,Succinate-2,.12,Estimated
+K+1,Tartrate-2,.05,Estimated
+K+1,ThCO3(OH)3-,-.02,Estimated
+K+1,UO2(CO3)2-2,.03,Estimated
+K+1,UO2(N3)3-,-.02,Estimated
+K+1,UO2(N3)4-2,-.03,Estimated
+K+1,UO2(OH)3-,-.11,Estimated
+K+1,UO2(SO4)2-2,-.04,Estimated
+K+1,UO2-(Oxalate)2-2,-.09,Estimated
+K+1,UO2-Citrate-,-.13,Estimated
+K+1,UO2EDTA-2,-.12,Estimated
+K+1,UO2F3-,-.16,Estimated
+K+1,UO2F4-2,-.18,Estimated
+K+1,UO2HEDTA-,-.2,Estimated
+K+1,Zr(OH)6-2,-.03,Estimated
+K+1,ZrF5-,-.16,Estimated
+K+1,ZrF6-2,-.07,Estimated
+Li+1,(NpO2)2CO3(OH)3-,.01,Estimated
+Li+1,(UO2)2CO3(OH)3-,.01,Estimated
+Li+1,Am(CO3)2-,-.18,Estimated
+Li+1,Am(SO4)2-,-.05,Estimated
+Li+1,Am-Oxalate-,-.27,Estimated
+Li+1,AmEDTA-,.03,Estimated
+Li+1,BrO3-1,-.07,Estimated
+Li+1,ClO3-1,.03,Estimated
+Li+1,Co(OH)3-,-.18,Estimated
+Li+1,CuCl2-,.11,Estimated
+Li+1,Eu(SO4)2-,.32,Estimated
+Li+1,F-1,.04,Estimated
+Li+1,H-Glutarate-,.08,Estimated
+Li+1,H-Maleate-,0,Estimated
+Li+1,H-Malonate-,.06,Estimated
+Li+1,H-Succinate-,.04,Estimated
+Li+1,H-Tartrate-,-.03,Estimated
+Li+1,H2BO3-,-.08,Estimated
+Li+1,H2PO4-,-.1,Estimated
+Li+1,H3EDTA-,-.44,Estimated
+Li+1,H3SiO4-,-.1,Estimated
+Li+1,HCO3-,.01,Estimated
+Li+1,HF2-,-.14,Estimated
+Li+1,HS-,.12,Estimated
+Li+1,HSO4-,0,Estimated
+Li+1,HSeO4-,0,Estimated
+Li+1,IO3-1,-.07,Estimated
+Li+1,Mg-Citrate-,.06,Estimated
+Li+1,MgHEDTA-,.17,Estimated
+Li+1,N3-1,.01,Estimated
+Li+1,Ni(OH)3-,.26,Estimated
+Li+1,Ni-Citrate-,.32,Estimated
+Li+1,NpO2(OH)2-,.03,Estimated
+Li+1,NpO2-Oxalate-,-.54,Estimated
+Li+1,NpO2CO3-,-.23,Estimated
+Li+1,NpO2H2EDTA-1,-.23,Estimated
+Li+1,Pb(OH)3-,.24,Estimated
+Li+1,PuO2CO3-,-.23,Estimated
+Li+1,SCN-1,.08,Estimated
+Li+1,SeCN-1,.08,Estimated
+Li+1,Si2O2(OH)5-,-.1,Estimated
+Li+1,Sn(OH)3-,.47,Estimated
+Li+1,ThCO3(OH)3-,.01,Estimated
+Li+1,UO2(N3)3-,.01,Estimated
+Li+1,UO2(OH)3-,-.11,Estimated
+Li+1,UO2-Citrate-,-.14,Estimated
+Li+1,UO2F3-,-.18,Estimated
+Li+1,UO2HEDTA-,-.23,Estimated
+Li+1,Zn(OH)3-,-.07,Estimated
+Li+1,ZrF5-,-.18,Estimated
+Lu+3,Cl-1,.29,Estimated
+Mn+2,ClO4-1,.29,Estimated
+Mn+2,NO3-1,.11,Estimated
+Na+1,Cu(OH)3-,.21,Estimated
+Na+1,H2EDTA-,-.08,Estimated
+Na+1,PuEDTA-,.01,Estimated
+Nd+3,Cl-1,.26,Estimated
+Ni4(OH)4+4,Cl-1,.63,Estimated
+NiBr+,Cl-1,.31,Estimated
+NiBr+,NO3-1,.5,Estimated
+NiF+,Cl-1,.16,Estimated
+NiF+,NO3-1,.26,Estimated
+NiH2-Citrate+,Cl-1,.03,Estimated
+NiH2-Citrate+,NO3-1,.06,Estimated
+NiHS+,Cl-1,-.57,Estimated
+NiHS+,NO3-1,-.83,Estimated
+NiNO3+,Cl-1,.22,Estimated
+NiNO3+,NO3-1,.36,Estimated
+NiOH+,NO3-1,.01,Estimated
+NiSCN+,Cl-1,.14,Estimated
+NiSCN+,NO3-1,.24,Estimated
+Np(OH)2+2,NO3-1,.08,Estimated
+Np(OH)3+,NO3-1,.04,Estimated
+Np(SCN)2+2,Cl-1,.21,Estimated
+Np(SCN)2+2,NO3-1,.16,Estimated
+Np(SCN)3+,Cl-1,.06,Estimated
+Np(SCN)3+,NO3-1,.11,Estimated
+Np+3,Cl-1,.24,Estimated
+NpCl+3,Cl-1,.76,Estimated
+NpF+3,Cl-1,.39,Estimated
+NpF2+2,Cl-1,.21,Estimated
+NpF2+2,NO3-1,.16,Estimated
+NpI+3,Cl-1,.69,Estimated
+NpO2+1,NO3-1,.09,Estimated
+NpO2+2,Cl-1,.27,Estimated
+NpO2+2,NO3-1,.24,Estimated
+NpO2Cl+,Cl-1,.26,Estimated
+NpO2Cl+,NO3-1,.41,Estimated
+NpO2F+,Cl-1,.13,Estimated
+NpO2F+,NO3-1,.22,Estimated
+NpO2IO3+,Cl-1,.16,Estimated
+NpO2IO3+,NO3-1,.25,Estimated
+NpO2OH+,Cl-1,-.08,Estimated
+NpO2OH+,NO3-1,-.11,Estimated
+NpSCN+3,Cl-1,.68,Estimated
+NpSO4+2,Cl-1,.29,Estimated
+NpSO4+2,NO3-1,.26,Estimated
+Pb+2,Cl-1,.07,Estimated
+Pb3(OH)4+2,Cl-1,-.07,Estimated
+Pb3(OH)4+2,NO3-1,-.27,Estimated
+Pb4(OH)6+4,Cl-1,.11,Estimated
+Pb6(OH)8+4,Cl-1,.02,Estimated
+PbOH+1,Cl-1,.02,Estimated
+PbOH+1,NO3-1,.05,Estimated
+Pd+2,Cl-1,.51,Estimated
+Pd+2,NO3-1,.6,Estimated
+Pr+3,Cl-1,.26,Estimated
+Pu(OH)2+2,NO3-1,.07,Estimated
+Pu(OH)2+2,NO3-1,.09,Estimated
+Pu(OH)3+,NO3-1,.09,Estimated
+Pu(OH)3+,NO3-1,-.02,Estimated
+Pu+3,Cl-1,.24,Estimated
+PuBr+3,Cl-1,.39,Estimated
+PuCl+2,Cl-1,.22,Estimated
+PuCl+2,NO3-1,.17,Estimated
+PuCl+3,Cl-1,.82,Estimated
+PuF+3,Cl-1,.35,Estimated
+PuF2+2,Cl-1,.2,Estimated
+PuF2+2,NO3-1,.13,Estimated
+PuI+2,Cl-1,.22,Estimated
+PuI+2,NO3-1,.17,Estimated
+PuO2+1,Cl-1,.1,Estimated
+PuO2+1,NO3-1,.17,Estimated
+PuO2+2,Cl-1,.27,Estimated
+PuO2+2,NO3-1,.24,Estimated
+PuO2Cl+,NO3-1,.18,Estimated
+PuO2Cl2+,ClO4-1,0,Estimated
+PuO2Cl2+,NO3-1,-.3,Estimated
+PuO2F+,Cl-1,.13,Estimated
+PuO2F+,NO3-1,.22,Estimated
+PuSCN+3,Cl-1,.08,Estimated
+Sm+3,Cl-1,.26,Estimated
+Sn+4,Cl-1,-.06,Estimated
+SnCl+,Cl-1,.02,Estimated
+SnCl+,NO3-1,.05,Estimated
+SnF+,Cl-1,.09,Estimated
+SnF+,NO3-1,.15,Estimated
+SnOH+,Cl-1,.42,Estimated
+SnOH+,ClO4-1,.27,Estimated
+Tb+3,Cl-1,.26,Estimated
+Th(OH)2+2,NO3-1,.08,Estimated
+Th(OH)3+,NO3-1,.04,Estimated
+Th4(OH)12+4,Cl-1,.01,Estimated
+Tl+1,Cl-1,-.17,Estimated
+Tl+1,NO3-1,-.24,Estimated
+Tm+3,Cl-1,.26,Estimated
+U(NO3)2+2,Cl-1,.29,Estimated
+U(NO3)2+2,NO3-1,.27,Estimated
+U(OH)2+2,NO3-1,.08,Estimated
+U(OH)3+,NO3-1,.04,Estimated
+U+3,Cl-1,.24,Estimated
+UBr+3,Cl-1,.29,Estimated
+UCl+3,Cl-1,.26,Estimated
+UF+2,Cl-1,.16,Estimated
+UF+2,NO3-1,.07,Estimated
+UF+3,Cl-1,.22,Estimated
+UF2+2,Cl-1,.16,Estimated
+UF2+2,NO3-1,.07,Estimated
+UF3+,NO3-1,.02,Estimated
+UI+3,Cl-1,.34,Estimated
+UNO3+3,Cl-1,.45,Estimated
+UO2+1,Cl-1,.11,Estimated
+UO2+1,NO3-1,.19,Estimated
+UO2Br+,Cl-1,.1,Estimated
+UO2Br+,NO3-1,.17,Estimated
+UO2BrO3+,Cl-1,.16,Estimated
+UO2BrO3+,NO3-1,.25,Estimated
+UO2Cl+,Cl-1,.16,Estimated
+UO2Cl+,NO3-1,.25,Estimated
+UO2ClO3+,Cl-1,.16,Estimated
+UO2ClO3+,NO3-1,.25,Estimated
+UO2F+,NO3-1,.1,Estimated
+UO2IO3+,Cl-1,.16,Estimated
+UO2IO3+,NO3-1,.25,Estimated
+UO2N3+,Cl-1,.14,Estimated
+UO2N3+,NO3-1,.23,Estimated
+UO2NO3+,Cl-1,.16,Estimated
+UO2NO3+,NO3-1,.25,Estimated
+UO2OH+,Cl-1,.45,Estimated
+UO2SCN+,Cl-1,.09,Estimated
+UO2SCN+,NO3-1,.15,Estimated
+USO4+2,Cl-1,.16,Estimated
+USO4+2,NO3-1,.07,Estimated
+Y2CO3+4,Cl-1,.38,Estimated
+YCO3+,Cl-1,.06,Estimated
+YCO3+,NO3-1,.11,Estimated
+YHCO3+2,Cl-1,.22,Estimated
+YHCO3+2,NO3-1,.17,Estimated
+Yb+3,Cl-1,.26,Estimated
+Zn2OH+3,Cl-1,.42,Estimated
+Zn4OH4+4,Cl-1,.47,Estimated
+ZnHCO3+,ClO4-1,.21,Estimated
+ZnHCO3+,NO3-1,.07,Estimated
+ZnOH+,Cl-1,.23,Estimated
+ZnOH+,NO3-1,.37,Estimated
+Zr(NO3)+3,Cl-1,.87,Estimated
+Zr(NO3)2+2,Cl-1,.54,Estimated
+Zr(NO3)2+2,NO3-1,.64,Estimated
+Zr(OH)2+2,Cl-1,.38,Estimated
+Zr(OH)2+2,NO3-1,.41,Estimated
+Zr(OH)3+,Cl-1,.3,Estimated
+Zr(OH)3+,NO3-1,.48,Estimated
+Zr+4,Cl-1,.41,Estimated
+Zr3(OH)9+3,Cl-1,.95,Estimated
+Zr4(OH)15+,Cl-1,.01,Estimated
+Zr4(OH)15+,Cl-1,.06,Estimated
+ZrCl+3,Cl-1,.85,Estimated
+ZrCl2+2,Cl-1,.54,Estimated
+ZrCl2+2,NO3-1,.64,Estimated
+ZrF+3,Cl-1,.47,Estimated
+ZrF2+2,Cl-1,.28,Estimated
+ZrF2+2,NO3-1,.25,Estimated
+ZrF3+,Cl-1,.08,Estimated
+ZrF3+,NO3-1,.13,Estimated
+ZrSO4+2,Cl-1,.3,Estimated
+ZrSO4+2,NO3-1,.28,Estimated
+H2CO3* (aq),ClO4-1,-.061,PreGa01
+H2CO3* (aq),Cl-1,-.04,PreGa01
+Na+1,H2CO3* (aq),.087,PreGa01
+Fe+2,Cl-1,.15,PreGa02
+,,0,,

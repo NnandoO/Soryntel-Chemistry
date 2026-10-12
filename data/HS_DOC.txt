@@ -1,0 +1,2 @@
+Active DOM to DOC ratio,1.65,2
+Percentage of active HS that is FA,100,100

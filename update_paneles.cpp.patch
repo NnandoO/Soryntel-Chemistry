@@ -1,0 +1,179 @@
+--- src/interfaz/paneles.cpp
++++ src/interfaz/paneles.cpp
+@@ -4842,6 +4842,9 @@
+     ImGui::EndChild();
+ }
+ 
++#include <nlohmann/json.hpp>
++#include <fstream>
++
+ // ═══════════════════════════════════════════════════════════════════════════
+ // Panel de Convertidor de Especies
+ // ═══════════════════════════════════════════════════════════════════════════
+@@ -4890,7 +4893,7 @@
+     std::map<std::string, double> input_map;
+     input_total_wt_ = 0.0;
+     for (auto& in : inputs_) {
+-        input_map[in.element] = in.wt_pct;
++        input_map[std::string(in.element)] = in.wt_pct;
+         input_total_wt_ += in.wt_pct;
+         in.calc_elem = in.wt_pct; // For this simple mock, just reflect input
+     }
+@@ -4899,7 +4902,7 @@
+     
+     output_total_wt_ = 0.0;
+     for (auto& out : outputs_) {
+-        auto it = result_map.find(out.species);
++        auto it = result_map.find(std::string(out.species));
+         if (it != result_map.end()) {
+             out.calc_wt = it->second;
+             output_total_wt_ += it->second;
+@@ -4909,13 +4912,41 @@
+     }
+ }
+ 
++void PanelConvertidorEspecies::guardar_json(const char* path) {
++    nlohmann::json j;
++    for (auto& in : inputs_) j["inputs"].push_back({{"element", std::string(in.element)}, {"wt", in.wt_pct}});
++    for (auto& out : outputs_) j["outputs"].push_back({{"species", std::string(out.species)}, {"target", out.target_wt}, {"coeff", out.weight_coeff}});
++    std::ofstream o(path);
++    if (o.is_open()) o << j.dump(4);
++}
++
++void PanelConvertidorEspecies::cargar_json(const char* path) {
++    std::ifstream i(path);
++    if (i.is_open()) {
++        nlohmann::json j;
++        i >> j;
++        inputs_.clear();
++        for (auto& item : j["inputs"]) {
++            InputItem in{};
++            strncpy(in.element, item["element"].get<std::string>().c_str(), 31);
++            in.wt_pct = item["wt"];
++            inputs_.push_back(in);
++        }
++        outputs_.clear();
++        for (auto& item : j["outputs"]) {
++            OutputItem out{};
++            strncpy(out.species, item["species"].get<std::string>().c_str(), 31);
++            out.target_wt = item.value("target", 0.0);
++            out.weight_coeff = item.value("coeff", 0.0);
++            outputs_.push_back(out);
++        }
++        calcular();
++    }
++}
++
+ void PanelConvertidorEspecies::renderizar() {
+     // Toolbar
+     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,0));
+-    if (ImGui::Button("New")) {} ImGui::SameLine();
+-    if (ImGui::Button("Open")) {} ImGui::SameLine();
+-    if (ImGui::Button("Save")) {} ImGui::SameLine();
++    if (ImGui::Button("New")) { inputs_.clear(); outputs_.clear(); calcular(); } ImGui::SameLine();
++    if (ImGui::Button("Open")) { ImGui::OpenPopup("Open Conversion"); } ImGui::SameLine();
++    if (ImGui::Button("Save")) { ImGui::OpenPopup("Save Conversion"); } ImGui::SameLine();
+     ImGui::TextDisabled(" | "); ImGui::SameLine();
+     if (ImGui::Button("Initialize")) {} ImGui::SameLine();
+     if (ImGui::Button("Solve")) { calcular(); } ImGui::SameLine();
+@@ -4924,6 +4955,27 @@
+     ImGui::PopStyleColor();
+     ImGui::Separator();
+     
++    if (ImGui::BeginPopupModal("Save Conversion", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
++        ImGui::InputText("Filename", save_filename_, 128);
++        if (ImGui::Button("Save", ImVec2(120, 0))) {
++            guardar_json(save_filename_);
++            ImGui::CloseCurrentPopup();
++        }
++        ImGui::SameLine();
++        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
++        ImGui::EndPopup();
++    }
++    
++    if (ImGui::BeginPopupModal("Open Conversion", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
++        ImGui::InputText("Filename", open_filename_, 128);
++        if (ImGui::Button("Open", ImVec2(120, 0))) {
++            cargar_json(open_filename_);
++            ImGui::CloseCurrentPopup();
++        }
++        ImGui::SameLine();
++        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
++        ImGui::EndPopup();
++    }
++    
+     ImVec2 space = ImGui::GetContentRegionAvail();
+     float table_w = space.x * 0.65f;
+     float charts_w = space.x - table_w - 20.0f;
+@@ -4951,21 +5003,32 @@
+         ImGui::TableSetColumnIndex(4); ImGui::Text("79.500");
+         
+         int rows = std::max(inputs_.size(), outputs_.size());
+-        for (int i = 0; i < rows; ++i) {
++        for (int i = 0; i < rows + 1; ++i) { // +1 for Add Row buttons
+             ImGui::TableNextRow();
+             if (i < (int)inputs_.size()) {
+                 ImGui::TableSetColumnIndex(0);
+-                ImGui::Text("%s", inputs_[i].element.c_str());
++                ImGui::SetNextItemWidth(-FLT_MIN);
++                ImGui::PushID(i * 10 + 0);
++                ImGui::InputText("##elem", inputs_[i].element, 32);
++                ImGui::PopID();
+                 ImGui::TableSetColumnIndex(1);
+                 ImGui::SetNextItemWidth(-FLT_MIN);
+-                ImGui::PushID(i);
++                ImGui::PushID(i * 10 + 1);
+                 if (ImGui::InputDouble("##wt", &inputs_[i].wt_pct, 0, 0, "%.3f")) { calcular(); }
+                 ImGui::PopID();
+                 ImGui::TableSetColumnIndex(2);
+-                ImGui::Text("%s", inputs_[i].element.c_str());
++                ImGui::Text("%s", inputs_[i].element);
++            } else if (i == (int)inputs_.size()) {
++                ImGui::TableSetColumnIndex(0);
++                if (ImGui::Button("+ Add Elem")) {
++                    InputItem item{};
++                    strncpy(item.element, "New", 31);
++                    inputs_.push_back(item);
++                }
+             }
+             if (i < (int)outputs_.size()) {
+                 ImGui::TableSetColumnIndex(3);
+-                ImGui::Text("%s", outputs_[i].species.c_str());
++                ImGui::SetNextItemWidth(90);
++                ImGui::PushID(i * 10 + 3);
++                ImGui::InputText("##spec", outputs_[i].species, 32);
++                ImGui::PopID();
+                 ImGui::SameLine(90);
+                 ImGui::Text("%.3f", outputs_[i].calc_wt);
+                 
+@@ -4984,6 +5047,13 @@
+                     ImGui::PopID();
+                 }
++            } else if (i == (int)outputs_.size()) {
++                ImGui::TableSetColumnIndex(3);
++                if (ImGui::Button("+ Add Species")) {
++                    OutputItem item{};
++                    strncpy(item.species, "New", 31);
++                    outputs_.push_back(item);
++                }
+             }
+         }
+         ImGui::EndTable();
+@@ -5003,15 +5073,15 @@
+     std::vector<double> in_vals;
+     for (const auto& in : inputs_) {
+         if (in.wt_pct > 1.0) { // Only show major elements
+-            in_labels.push_back(in.element.c_str());
++            in_labels.push_back(in.element);
+             in_vals.push_back(in.wt_pct);
+         }
+     }
+     std::vector<const char*> out_labels;
+     std::vector<double> out_vals;
+     for (const auto& out : outputs_) {
+         if (out.calc_wt > 1.0) { // Only show major species
+-            out_labels.push_back(out.species.c_str());
++            out_labels.push_back(out.species);
+             out_vals.push_back(out.calc_wt);
+         }
+     }

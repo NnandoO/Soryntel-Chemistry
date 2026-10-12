@@ -1,0 +1,13 @@
+Id number, Component name, Alkalinity factor
+330,H+1,-1
+30,Al+3,0
+60,H3AsO3,0
+61,AsO4-3,2
+90,H3BO3,0
+270,F-1,0
+490,NH4+1,0
+580,PO4-3,2
+730,HS-1,1
+732,SO4-2,0
+770,H4SiO4,0
+0,,0

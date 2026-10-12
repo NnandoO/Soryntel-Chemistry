@@ -1,0 +1,20 @@
+{
+  "nodos": [
+    {"id":1,"tipo":5,"nombre":"Fuente_Caliente","x":100.0,"y":100.0,"pagina":0,"entradas":[],"salidas":[1],"params":{"temperature":353.15,"pressure":1.0,"flow_2":100.0}},
+    {"id":2,"tipo":5,"nombre":"Fuente_Fria","x":100.0,"y":250.0,"pagina":0,"entradas":[],"salidas":[2],"params":{"temperature":293.15,"pressure":1.0,"flow_2":50.0}},
+    {"id":3,"tipo":0,"nombre":"Mezclador","x":300.0,"y":175.0,"pagina":0,"entradas":[1,2],"salidas":[3],"params":{}},
+    {"id":4,"tipo":1,"nombre":"Divisor","x":500.0,"y":175.0,"pagina":0,"entradas":[3],"salidas":[4,5],"params":{"fraccion_0":0.6,"fraccion_1":0.4}},
+    {"id":5,"tipo":6,"nombre":"Salida_60_Pct","x":700.0,"y":100.0,"pagina":0,"entradas":[4],"salidas":[],"params":{}},
+    {"id":6,"tipo":6,"nombre":"Salida_40_Pct","x":700.0,"y":250.0,"pagina":0,"entradas":[5],"salidas":[],"params":{}}
+  ],
+  "flujos": [
+    {"id":1,"nombre":"Corriente_1","T":353.15,"P":1.0,"H":0.0,"energia":0.0,"es_energia":false,"pagina":0,"lca_equivalent":"","lca_group":"","measured_flow":-1.0,"sd":-1.0,"mb_selected":true,"mb_assayed":true,"flujo_molar":{"2":100.0}},
+    {"id":2,"nombre":"Corriente_2","T":293.15,"P":1.0,"H":0.0,"energia":0.0,"es_energia":false,"pagina":0,"lca_equivalent":"","lca_group":"","measured_flow":-1.0,"sd":-1.0,"mb_selected":true,"mb_assayed":true,"flujo_molar":{"2":50.0}},
+    {"id":3,"nombre":"Corriente_3","T":298.15,"P":1.0,"H":0.0,"energia":0.0,"es_energia":false,"pagina":0,"lca_equivalent":"","lca_group":"","measured_flow":-1.0,"sd":-1.0,"mb_selected":true,"mb_assayed":true,"flujo_molar":{}},
+    {"id":4,"nombre":"Corriente_4","T":298.15,"P":1.0,"H":0.0,"energia":0.0,"es_energia":false,"pagina":0,"lca_equivalent":"","lca_group":"","measured_flow":-1.0,"sd":-1.0,"mb_selected":true,"mb_assayed":true,"flujo_molar":{}},
+    {"id":5,"nombre":"Corriente_5","T":298.15,"P":1.0,"H":0.0,"energia":0.0,"es_energia":false,"pagina":0,"lca_equivalent":"","lca_group":"","measured_flow":-1.0,"sd":-1.0,"mb_selected":true,"mb_assayed":true,"flujo_molar":{}}
+  ],
+  "anotaciones": [
+    {"id":1,"tipo":0,"x":150.0,"y":30.0,"w":550.0,"h":40.0,"texto":"Simulacion de Balance de Masa y Energia: Mezcla de Agua Caliente y Fria con Divisor de Flujo","pagina":0,"color_fondo":2147483647,"color_borde":4294967295,"grosor_borde":1.0}
+  ]
+}

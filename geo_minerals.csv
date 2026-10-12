@@ -1,0 +1,51 @@
+Name,Symbol,Formula,Location,Reference
+Chalcopyrite,Ccp,CuFeS2,Chile,Anthony et al
+Bornite,Bn,Cu5FeS4,USA,Mindat
+Chalcocite,Cc,Cu2S,Zambia,Mindat
+Covellite,Cv,CuS,Italy,Mindat
+Enargite,En,Cu3AsS4,Peru,USGS
+Tetrahedrite,Td,(Cu,Fe)12Sb4S13,Germany,Mindat
+Tennantite,Tnt,(Cu,Fe)12As4S13,UK,Mindat
+Sphalerite,Sp,ZnS,Spain,USGS
+Galena,Gn,PbS,Australia,Mindat
+Pyrite,Py,FeS2,Spain,Anthony et al
+Pyrrhotite,Po,Fe1-xS,Canada,Mindat
+Molybdenite,Mo,MoS2,USA,Mindat
+Hematite,Hm,Fe2O3,Brazil,Mindat
+Magnetite,Mag,Fe3O4,Sweden,USGS
+Goethite,Gt,FeO(OH),Germany,Mindat
+Quartz,Qz,SiO2,Global,Mindat
+Calcite,Cal,CaCO3,Global,Mindat
+Dolomite,Dol,CaMg(CO3)2,Italy,Mindat
+Siderite,Sd,FeCO3,Austria,Mindat
+Malachite,Mlc,Cu2CO3(OH)2,DRC,Mindat
+Azurite,Az,Cu3(CO3)2(OH)2,France,Mindat
+Chrysocolla,Chr,Cu2-xAlx(H2-xSi2O5)(OH)4,Chile,Mindat
+Cuprite,Cpr,Cu2O,Namibia,Mindat
+Tenorite,Tnr,CuO,Italy,Mindat
+Bauxite,Bx,Al2O3.nH2O,Australia,USGS
+Rutile,Rt,TiO2,South Africa,Mindat
+Ilmenite,Ilm,FeTiO3,Norway,Mindat
+Cassiterite,Cst,SnO2,Bolivia,Mindat
+Wolframite,Wlf,(Fe,Mn)WO4,China,Mindat
+Scheelite,Sch,CaWO4,Sweden,Mindat
+Apatite,Ap,Ca5(PO4)3(F,Cl,OH),Morocco,Mindat
+Fluorite,Fl,CaF2,UK,Mindat
+Barite,Brt,BaSO4,USA,Mindat
+Gypsum,Gp,CaSO4.2H2O,Global,Mindat
+Anhydrite,Anh,CaSO4,Mexico,Mindat
+Halite,Hl,NaCl,Global,Mindat
+Sylvite,Syl,KCl,Canada,Mindat
+Carnallite,Crn,KMgCl3.6H2O,Germany,Mindat
+Alunite,Aln,KAl3(SO4)2(OH)6,Italy,Mindat
+Jarosite,Jar,KFe3(SO4)2(OH)6,Spain,Mindat
+Turquoise,Tur,CuAl6(PO4)4(OH)8.4H2O,Iran,Mindat
+Beryl,Brl,Be3Al2(SiO3)6,Colombia,Mindat
+Tourmaline,Trm,(Na,Ca)(Li,Mg,Al)(Al,Fe,Mn)6(BO3)3(Si6O18)(OH)4,Brazil,Mindat
+Garnet,Grt,X3Y2(SiO4)3,India,Mindat
+Olivine,Ol,(Mg,Fe)2SiO4,Egypt,Mindat
+Pyroxene,Px,XY(Si,Al)2O6,Canada,Mindat
+Amphibole,Amp,W0-1X2Y5Z8O22(OH)2,Norway,Mindat
+Mica,Mic,X2Y4-6Z8O20(OH,F)4,USA,Mindat
+Feldspar,Fsp,KAlSi3O8 - NaAlSi3O8 - CaAl2Si2O8,Global,Mindat
+Kaolinite,Kln,Al2Si2O5(OH)4,UK,Mindat

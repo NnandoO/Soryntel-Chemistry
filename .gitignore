@@ -1,0 +1,45 @@
+# ── Compilación ──
+build/
+build_win/
+_deps/
+deps_win/
+
+# ── Entorno virtual Python ──
+venv/
+__pycache__/
+*.pyc
+
+# ── Binarios y ejecutables ──
+*.o
+*.a
+*.so
+*.dll
+*.exe
+test_species
+test_math
+test_layout
+test_json
+
+# ── CMake ──
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.swp
+*~
+.cache/
+
+# ── Bases de datos temporales ──
+*.db-journal
+*.db-shm
+*.db-wal
+
+# ── Sistema operativo ──
+.DS_Store
+Thumbs.db

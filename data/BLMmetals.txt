@@ -1,0 +1,6 @@
+This file contains the names of metal components for which there are BLM reactions
+Cu+2
+Zn+2
+Ni+2
+Pb+2
+xxx

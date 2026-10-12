@@ -1,0 +1,13 @@
+This file contains the different parameter sets for surface complexation models that are defined at present. The first figure shows the number of
+parameter sets and should correspond to the number of rows with entries below. For explanation of the different entries, see the last two rows
+7
+HFO (Dzombak & Morel),2-pK DLM,600,2.25581,0.05639,0,0,0,0,0,0,0,0,0,0,0,0,0,feo-dlm_2025.vdb.txt
+HMO (Tonkin et al.),2-pK DLM,746,1.0848,0.6102,0,0,0,0,0,0,0,0,0,0,0,0,0,hmo-dlm_tonkin.vdb.txt
+Goethite (Weng/Hiemstra et al.),1-pK TPM,0,3.45,2.7,3.45,0,0,0,0.93,0.75,0,0,0,0,0,0,0,Goe_Hiem_2013.vdb.txt
+Gibbsite-DLM (Karamalidis & Dzombak 2010),2-pK DLM,32,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Gibbsite-DLM_2010.vdb.txt
+Calcite-CDM (Sö et al. 2012),1-pK TPM,0,2.45,2.45,0,0,0,0,3,4.5,0,0,0,0,0,0,0,Cal_CDM_So_2012.vdb.txt
+Fh-Hiem (Hiemstra & Zhao 2016),1-pK TPM,0,2.48,0.32,3,1.4,0,0,0.9,0.74,1,81.65,1.26E+07,1.07E-05,1.6,0.35,0.35,Fh_Hiemstra_2025.vdb.txt
+Fh-FCD (Gustafsson & Antelo 2022),1-pK TPM,0,2.942,0.0522,0.0058,2.742,0.058,1.4,0.9,0.74,1,81.65,1.26E+07,1.07E-05,1.6,0.35,0.35,Fh_FCD_2025.vdb.txt
+
+Name of parameter set, Interface model, Specific surface area, Site density for site 1 (sites/nm2), Site density for site 2, Site density for site 3,
+Site density for site 4, Inner layer capacitance (F/m2), Outer layer capacitance (F/m2), Name of database file with complexation reactions.
