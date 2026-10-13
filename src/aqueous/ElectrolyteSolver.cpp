@@ -1,6 +1,6 @@
 #include "ElectrolyteSolver.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 double ElectrolyteSolver::calcularpH(double concentracion_H, double T) {
     return motor_.ph(concentracion_H, T);

@@ -1,8 +1,8 @@
 #include "MineralDB.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
-MineralDB::MineralDB() : motor_(cma::base_datos::GestorDB::instancia()) {}
+MineralDB::MineralDB(const cma::domain::ThermoRepository& repository) : motor_(repository) {}
 
 std::vector<const cma::nucleo::Especie*> MineralDB::minerales() {
     auto todas = motor_.todas_especies();

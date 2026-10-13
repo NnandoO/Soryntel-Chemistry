@@ -7,6 +7,7 @@
 namespace cma { namespace motores {
 
 struct ResultadoDestilacion {
+    bool ok = false;
     double destilado = 0.0;      // kmol/s
     double residuo   = 0.0;      // kmol/s
     double R_min     = 0.0;      // relación de reflujo mínima

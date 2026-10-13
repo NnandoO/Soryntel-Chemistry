@@ -33,6 +33,17 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     bool modo_celda)
 {
     ResultadoGibbs res;
+    if (!std::isfinite(T_K) || !std::isfinite(P_atm) || T_K <= 0 || P_atm <= 0) {
+        res.mensaje = "Temperatura y presión deben ser finitas y positivas"; return res;
+    }
+    for (const auto& [sid, cantidad] : alimentacion) {
+        if (!db.count(sid) || !std::isfinite(cantidad) || cantidad < 0) {
+            res.mensaje = "Alimentación inválida o especie desconocida"; return res;
+        }
+    }
+    for (auto sid : especies_posibles) {
+        if (!db.count(sid)) { res.mensaje = "Especie candidata desconocida"; return res; }
+    }
 
     // Determinar especies activas
     std::vector<int64_t> activas;
@@ -69,6 +80,31 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
         if (std::abs(q) > 1e-12) necesita_carga = true;
     }
 
+    if (activas.size() > 250) { res.mensaje = "Demasiadas especies (máx. 250)"; return res; }
+    // Species containing an element absent from the feed must have exactly zero
+    // amount. Keeping them inside a strictly positive barrier makes it infeasible.
+    const auto& periodic = nucleo::TablaPeriodica::instancia();
+    std::set<std::string> feed_elements;
+    for (const auto& [sid, amount] : alimentacion) if (amount > 0)
+        for (const auto& atom : periodic.analizar_formula(db.at(sid).formula)) feed_elements.insert(atom.elem);
+    activas.erase(std::remove_if(activas.begin(), activas.end(), [&](int64_t sid) {
+        const auto atoms = periodic.analizar_formula(db.at(sid).formula);
+        return std::any_of(atoms.begin(), atoms.end(), [&](const auto& atom) { return !feed_elements.count(atom.elem); });
+    }), activas.end());
+    double feed_charge = 0;
+    for (const auto& [sid, amount] : alimentacion) feed_charge += amount * carga_sp[sid];
+    bool positive_charge = false, negative_charge = false;
+    for (auto sid : activas) {
+        positive_charge |= carga_sp[sid] > 0;
+        negative_charge |= carga_sp[sid] < 0;
+    }
+    if (std::abs(feed_charge) < 1e-14 && (!positive_charge || !negative_charge)) {
+        // Neutral feed plus ions of only one sign forces every ion to zero.
+        activas.erase(std::remove_if(activas.begin(), activas.end(), [&](int64_t sid) {
+            return std::abs(carga_sp[sid]) > 1e-14;
+        }), activas.end());
+        necesita_carga = false;
+    }
     size_t NS = activas.size();
     if (NS == 0) { res.mensaje = "No hay especies."; return res; }
     if (NS > 250) {
@@ -141,242 +177,130 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
 
     if (b.norm() < 1e-30) { res.mensaje = "Alimentación vacía."; return res; }
 
-    // Valores iniciales: warm start desde el punto anterior si está disponible
-    double total_b = b.sum();
-    Eigen::VectorXd n = Eigen::VectorXd::Ones((int)NS) * (total_b / (double)NS);
-    if (n_inout && !n_inout->empty()) {
-        double floor = std::max(1e-9 * total_b, 1e-12);
-        for (size_t j = 0; j < NS; ++j) {
-            auto it = n_inout->find(activas[j]);
-            if (it != n_inout->end() && it->second > 0.0)
-                n((int)j) = std::max(it->second, floor);
-        }
-        // Evitar warm starts con norma excesivamente distinta
-        double escala = (n.sum() > 1e-30) ? total_b / n.sum() : 1.0;
-        n *= escala;
-        for (size_t j = 0; j < NS; ++j) n((int)j) = std::max(n((int)j), 1e-12);
+    // Remove linearly dependent conservation rows (e.g. charge rows proportional
+    // to an elemental balance). KKT systems must use independent constraints.
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> row_qr(A.transpose());
+    const int rank = static_cast<int>(row_qr.rank());
+    if (rank == 0) { res.mensaje = "Sin restricciones independientes"; return res; }
+    Eigen::MatrixXd Ar(rank, static_cast<int>(NS));
+    Eigen::VectorXd br(rank);
+    for (int i = 0; i < rank; ++i) {
+        const int row = row_qr.colsPermutation().indices()(i);
+        Ar.row(i) = A.row(row); br(i) = b(row);
     }
-    if (T_K <= 0.0) { res.mensaje = "Temperatura inválida."; return res; }
-    double RT = nucleo::R_GAS * T_K / 1000.0; // kJ/mol
-
-    const double N_FLOOR = 1e-13;                       // piso de composición
+    const double RT = nucleo::R_GAS * T_K / 1000;
     const double b_scale = std::max(1.0, b.cwiseAbs().maxCoeff());
-
-    // Reparar factibilidad con conjunto activo: la corrección de mínima norma
-    // solo se reparte sobre especies "libres" (las que tocan el piso se
-    // congelan). Así se conserva la masa incluso con especies traza.
-    auto reparar_factibilidad = [&](Eigen::VectorXd& nv) {
-        for (size_t j = 0; j < NS; ++j) if (nv((int)j) < N_FLOOR) nv((int)j) = N_FLOOR;
-        std::vector<bool> libre(NS, true);
-        for (int rep = 0; rep < 25; ++rep) {
-            Eigen::VectorXd r = b - A * nv;
-            if (r.cwiseAbs().maxCoeff() < 1e-10 * b_scale) return;
-            // Construir matriz solo con columnas libres
-            std::vector<int> cols;
-            for (size_t j = 0; j < NS; ++j) if (libre[j]) cols.push_back((int)j);
-            if (cols.empty()) return;
-            Eigen::MatrixXd Af((int)NE_t, (int)cols.size());
-            for (size_t k = 0; k < cols.size(); ++k) Af.col((int)k) = A.col(cols[k]);
-            Eigen::BDCSVD<Eigen::MatrixXd> svd(Af, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            Eigen::VectorXd corr = svd.solve(r);
-            bool recorto = false;
-            for (size_t k = 0; k < cols.size(); ++k) {
-                int j = cols[k];
-                double nvj = nv(j) + corr((int)k);
-                if (nvj < N_FLOOR) { nv(j) = N_FLOOR; libre[j] = false; recorto = true; }
-                else nv(j) = nvj;
-            }
-            (void)recorto;
-        }
-    };
-    reparar_factibilidad(n);
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Iteración de Gibbs (RAND, NASA RP-1311):
-    //   desconocidas: Δπ (potenciales elementales), Δn de condensadas activas
-    //   y Δln N (total de moles gas). Los gases se actualizan en forma
-    //   exponencial (positividad garantizada).
-    // ════════════════════════════════════════════════════════════════════════
-
-    // Clasificación de fases y potencial estándar adimensional c_j
+    const double amount_scale = std::max(1.0, b.head(static_cast<int>(NE)).sum());
+    const double N_FLOOR = 1e-30;
     std::vector<bool> es_gas(NS);
-    Eigen::VectorXd cvec = Eigen::VectorXd::Zero((int)NS);
-    bool hay_gas = false;
+    Eigen::VectorXd cvec(static_cast<int>(NS));
     for (size_t j = 0; j < NS; ++j) {
-        auto it = db.find(activas[j]);
-        if (it == db.end()) { es_gas[j] = true; hay_gas = true; continue; }
-        bool condensado = (it->second.fase_std == nucleo::Fase::Solido ||
-                           it->second.fase_std == nucleo::Fase::Liquido);
-        es_gas[j] = !condensado;
-        if (es_gas[j]) hay_gas = true;
-        cvec((int)j) = it->second.energia_gibbs(T_K) / RT;
-        if (es_gas[j]) cvec((int)j) += std::log(std::max(P_atm, 1e-30));
+        const auto& species = db.at(activas[j]);
+        es_gas[j] = species.fase_std == nucleo::Fase::Gas || species.fase_std == nucleo::Fase::Mixto;
+        cvec(static_cast<int>(j)) = species.energia_gibbs(T_K) / RT;
+        if (es_gas[j]) cvec(static_cast<int>(j)) += std::log(P_atm);
     }
-
-    // Fases condensadas activas inicialmente: las del feed con cantidad > 0
-    std::vector<bool> cond_activa(NS, false);
-    for (size_t j = 0; j < NS; ++j) {
-        if (es_gas[j]) continue;
-        auto itf = alimentacion.find(activas[j]);
-        if (itf != alimentacion.end() && itf->second > 0.0) {
-            cond_activa[j] = true;
-            n((int)j) = std::max(itf->second, N_FLOOR);
-        }
+    if (!cvec.allFinite()) { res.mensaje = "Datos termodinámicos no finitos"; return res; }
+    // Positive, infeasible-start primal-dual barrier method for the convex
+    // ideal-mixture Gibbs objective. Condensed species have unit activity.
+    Eigen::VectorXd n = Eigen::VectorXd::Constant(static_cast<int>(NS), amount_scale / static_cast<double>(NS));
+    if (n_inout) for (size_t j = 0; j < NS; ++j) {
+        const auto it = n_inout->find(activas[j]);
+        if (it != n_inout->end() && std::isfinite(it->second) && it->second > 0)
+            n(static_cast<int>(j)) = 0.9 * it->second + 0.1 * amount_scale / static_cast<double>(NS);
     }
-
-    Eigen::VectorXd pi = Eigen::VectorXd::Zero((int)NE_t);
-    reparar_factibilidad(n);
-
-    bool cerca_convergencia = false;
-
-    for (int iter = 0; iter < MAX_ITER; ++iter) {
-        double N = 0.0;
-        for (size_t j = 0; j < NS; ++j) if (es_gas[j]) N += n((int)j);
-        N = std::max(N, (double)NS * N_FLOOR + 1e-30);
-
-        // residuales de equilibrio: r = c - Aᵀπ  (+ ln(n/N) para gases)
-        Eigen::VectorXd r_g = Eigen::VectorXd::Zero((int)NS);
-        Eigen::VectorXd r_c = Eigen::VectorXd::Zero((int)NS);
-        for (size_t j = 0; j < NS; ++j) {
-            double atp = 0.0;
-            for (size_t i = 0; i < NE_t; ++i) atp += A((int)i, (int)j) * pi((int)i);
-            if (es_gas[j])
-                r_g((int)j) = cvec((int)j) + std::log(std::max(n((int)j), 1e-300) / N) - atp;
-            else
-                r_c((int)j) = cvec((int)j) - atp;
-        }
-
-        // ── Test de fases condensadas: solo cuando casi convergido ──
-        bool cambio_fase = false;
-        if (cerca_convergencia) {
+    const double cost_scale = std::max(1.0, cvec.cwiseAbs().maxCoeff());
+    Eigen::VectorXd pi = Eigen::VectorXd::Zero(rank);
+    auto gradient = [&](const Eigen::VectorXd& amounts) {
+        Eigen::VectorXd grad = cvec;
+        double gas_total = 0;
+        for (size_t j = 0; j < NS; ++j) if (es_gas[j]) gas_total += amounts(static_cast<int>(j));
+        for (size_t j = 0; j < NS; ++j) if (es_gas[j])
+            grad(static_cast<int>(j)) += std::log(std::max(amounts(static_cast<int>(j)), N_FLOOR) / std::max(gas_total, N_FLOOR));
+        return Eigen::VectorXd(grad / cost_scale);
+    };
+    double mu = 0.1;
+    bool solved = false;
+    for (int stage = 0; stage < 15; ++stage) {
+        for (int iter = 0; iter < 300; ++iter) {
+            ++res.iteraciones;
+            const Eigen::VectorXd grad = gradient(n);
+            const Eigen::VectorXd dual = grad - Ar.transpose() * pi - (mu * n.cwiseInverse()).eval();
+            const Eigen::VectorXd primal = br - Ar * n;
+            const double dual_norm = dual.cwiseProduct(n).cwiseAbs().maxCoeff() / amount_scale;
+            const double primal_norm = primal.cwiseAbs().maxCoeff() / b_scale;
+            if (dual_norm < 1e-8 && primal_norm < 1e-10) { solved = true; break; }
+            solved = false;
+            Eigen::MatrixXd H = Eigen::MatrixXd::Zero(static_cast<int>(NS), static_cast<int>(NS));
+            double gas_total = 0;
+            for (size_t j = 0; j < NS; ++j) if (es_gas[j]) gas_total += n(static_cast<int>(j));
             for (size_t j = 0; j < NS; ++j) {
-                if (es_gas[j]) continue;
-                if (!cond_activa[j] && r_c((int)j) < -1e-7) {
-                    cond_activa[j] = true;
-                    n((int)j) = std::max(n((int)j), 1e-8 * b_scale);
-                    cambio_fase = true;
-                } else if (cond_activa[j] && n((int)j) <= N_FLOOR * 10.0 && r_c((int)j) > 1e-7) {
-                    cond_activa[j] = false;
-                    n((int)j) = N_FLOOR;
-                    cambio_fase = true;
+                const int jj = static_cast<int>(j);
+                H(jj,jj) = mu / (n(jj) * n(jj));
+                if (es_gas[j]) {
+                    H(jj,jj) += 1 / (cost_scale * n(jj));
+                    for (size_t k = 0; k < NS; ++k) if (es_gas[k])
+                        H(jj,static_cast<int>(k)) -= 1 / (cost_scale * gas_total);
                 }
             }
-            if (cambio_fase) cerca_convergencia = false;
-        }
-
-        // ── Sistema reducido ──
-        std::vector<int> cond_cols;
-        for (size_t j = 0; j < NS; ++j) if (!es_gas[j] && cond_activa[j]) cond_cols.push_back((int)j);
-        int NCa = (int)cond_cols.size();
-        int idxLN = (int)NE_t + NCa;              // columna de Δln N si hay gas
-        int dim = (int)NE_t + NCa + (hay_gas ? 1 : 0);
-        Eigen::MatrixXd M = Eigen::MatrixXd::Zero(dim, dim);
-        Eigen::VectorXd y = Eigen::VectorXd::Zero(dim);
-
-        Eigen::VectorXd resid = b - A * n;
-        for (int i = 0; i < (int)NE_t; ++i) {
-            double rhs_i = resid(i);
-            double rowlnN = 0.0;
-            for (size_t j = 0; j < NS; ++j) {
-                if (!es_gas[j]) continue;
-                double nj = n((int)j), aij = A(i, (int)j);
-                for (int k = 0; k < (int)NE_t; ++k)
-                    M(i, k) += aij * nj * A(k, (int)j);
-                rhs_i += aij * nj * r_g((int)j);
-                rowlnN += aij * nj;
+            // Eliminate dn using a positive definite Hessian. Row equilibration
+            // avoids losing conservation constraints for trace components.
+            // Solve in relative amounts (dn = diag(n) ds) so trace species
+            // do not make the Hessian ill-conditioned by factors of 1/n².
+            const Eigen::MatrixXd scaled_h = n.asDiagonal() * H * n.asDiagonal();
+            const Eigen::MatrixXd scaled_a = Ar * n.asDiagonal();
+            Eigen::LDLT<Eigen::MatrixXd> hsolve(scaled_h);
+            if (hsolve.info() != Eigen::Success) break;
+            const Eigen::MatrixXd hat = hsolve.solve(scaled_a.transpose());
+            const Eigen::VectorXd hd = hsolve.solve(n.cwiseProduct(dual));
+            const Eigen::MatrixXd schur = scaled_a * hat;
+            Eigen::VectorXd scaling(rank);
+            for (int row = 0; row < rank; ++row) scaling(row) = 1 / std::sqrt(std::max(schur(row,row),1e-300));
+            const Eigen::MatrixXd normalized = scaling.asDiagonal() * schur * scaling.asDiagonal();
+            const Eigen::VectorXd rhs = scaling.cwiseProduct(primal + scaled_a * hd);
+            const Eigen::VectorXd dpi = scaling.cwiseProduct(normalized.completeOrthogonalDecomposition().solve(rhs));
+            const Eigen::VectorXd dn = n.cwiseProduct(hat * dpi - hd);
+            if (!dn.allFinite() || !dpi.allFinite()) break;
+            double step = 1;
+            for (int j = 0; j < n.size(); ++j) if (dn(j) < 0)
+                step = std::min(step, -0.99 * n(j) / dn(j));
+            const double merit = dual.cwiseProduct(n).norm() / amount_scale + primal.norm() / b_scale;
+            bool accepted = false;
+            for (int search = 0; search < 60; ++search) {
+                const Eigen::VectorXd next = n + step * dn;
+                const Eigen::VectorXd next_pi = pi + step * dpi;
+                const Eigen::VectorXd next_dual = gradient(next) - Ar.transpose() * next_pi - (mu * next.cwiseInverse()).eval();
+                const double next_merit = next_dual.cwiseProduct(next).norm() / amount_scale + (br - Ar * next).norm() / b_scale;
+                if (next.allFinite() && next.minCoeff() > 0 && std::isfinite(next_merit) &&
+                    next_merit <= (1 - 1e-4 * step) * merit) {
+                    n = next; pi = next_pi; accepted = true; break;
+                }
+                step *= 0.5;
             }
-            if (hay_gas) M(i, idxLN) = rowlnN;
-            for (int cix = 0; cix < NCa; ++cix)
-                M(i, (int)NE_t + cix) = A(i, cond_cols[cix]);
-            y(i) = rhs_i;
+            if (!accepted) break;
         }
-        if (hay_gas) {
-            // definición de Δln N a partir de los gases (N' = Σ n_j')
-            for (int k = 0; k < (int)NE_t; ++k) {
-                double acc = 0.0;
-                for (size_t j = 0; j < NS; ++j)
-                    if (es_gas[j]) acc += n((int)j) * A(k, (int)j);
-                M(idxLN, k) = acc;
-            }
-            double rhs = 0.0;
-            for (size_t j = 0; j < NS; ++j)
-                if (es_gas[j]) rhs += n((int)j) * r_g((int)j);
-            y(idxLN) = rhs;
-        }
-        for (int cix = 0; cix < NCa; ++cix) {
-            int row = (int)NE_t + cix;
-            for (int i = 0; i < (int)NE_t; ++i)
-                M(row, i) = A(i, cond_cols[cix]);
-            y(row) = r_c(cond_cols[cix]);
-        }
-
-        Eigen::FullPivLU<Eigen::MatrixXd> lu(M);
-        if (!lu.isInvertible()) {
-            if (NCa > 0) { // retirar la última condensada y reintentar
-                int jc = cond_cols.back();
-                cond_activa[jc] = false;
-                n(jc) = N_FLOOR;
-                continue;
-            }
-            res.mensaje = "Sistema singular en iteración " + std::to_string(iter);
+        if (!solved) {
+            res.mensaje = "Gibbs: residual primal=" + std::to_string((Ar * n - br).norm()) +
+                " dual=" + std::to_string((gradient(n) - Ar.transpose() * pi - (mu * n.cwiseInverse()).eval()).norm()) +
+                " barrera=" + std::to_string(mu);
             break;
         }
-        Eigen::VectorXd xsol = lu.solve(y);
-        if (!xsol.allFinite()) {
-            res.mensaje = "Paso no finito en iteración " + std::to_string(iter);
-            break;
+        mu *= 0.1;
+    }
+    // Return success only with actual conservation and finite objective/states.
+    const double mass_error = (A * n - b).cwiseAbs().maxCoeff() / b_scale;
+    res.convergio = solved && mass_error < 1e-8 && n.allFinite() && mu < 1e-12;
+    if (!res.convergio && n_inout && !n_inout->empty()) {
+        // A previous optimum can be too close to a face of the feasible region
+        // for the initial barrier. Restart independently, retaining the same
+        // thermodynamic model and convergence criteria.
+        auto restarted = minimizar(alimentacion, T_K, P_atm, db, especies_posibles, nullptr, modo_celda);
+        restarted.iteraciones += res.iteraciones;
+        if (restarted.convergio) {
+            *n_inout = restarted.flujo_molar;
+            restarted.mensaje += " Reinicio desde interior (warm start inestable).";
         }
-
-        Eigen::VectorXd dpi = xsol.head((int)NE_t);
-        double dlnN = hay_gas ? xsol(idxLN) : 0.0;
-
-        // sub-relajación: limitar Δln n a ±2 por iteración
-        double alpha = 1.0;
-        {
-            double maxdln = 0.0;
-            for (size_t j = 0; j < NS; ++j) {
-                if (!es_gas[j]) continue;
-                double d = dlnN - r_g((int)j);
-                for (int i = 0; i < (int)NE_t; ++i) d += A((int)i, (int)j) * dpi(i);
-                maxdln = std::max(maxdln, std::abs(d));
-            }
-            if (maxdln > 2.0) alpha = 2.0 / maxdln;
-        }
-
-        for (int i = 0; i < (int)NE_t; ++i) pi(i) += alpha * dpi(i);
-        for (size_t j = 0; j < NS; ++j) {
-            if (!es_gas[j]) continue;
-            double dln = dlnN - r_g((int)j);
-            for (int i = 0; i < (int)NE_t; ++i) dln += A((int)i, (int)j) * dpi(i);
-            n((int)j) = std::max(n((int)j) * std::exp(alpha * dln), N_FLOOR);
-        }
-        for (int cix = 0; cix < NCa; ++cix) {
-            int j = cond_cols[cix];
-            n(j) = std::max(n(j) + alpha * xsol((int)NE_t + cix), N_FLOOR);
-        }
-        reparar_factibilidad(n);
-        res.iteraciones = iter + 1;
-
-        // ── Convergencia: masa + estacionariedad + fases estables ──
-        double res_norm = (A * n - b).cwiseAbs().maxCoeff() / b_scale;
-        double rg_max = 0.0;
-        for (size_t j = 0; j < NS; ++j)
-            if (es_gas[j] && n((int)j) > 1e-9 * N)
-                rg_max = std::max(rg_max, std::abs(r_g((int)j)));
-        cerca_convergencia = (res_norm < 1e-6 && rg_max < 1e-3);
-        double rc_max = 0.0;
-        for (size_t j = 0; j < NS; ++j)
-            if (!es_gas[j] && cond_activa[j] && n((int)j) > N_FLOOR * 10)
-                rc_max = std::max(rc_max, std::abs(r_c((int)j)));
-        bool fases_ok = !cambio_fase;
-        if (fases_ok) {
-            for (size_t j = 0; j < NS; ++j)
-                if (!es_gas[j] && !cond_activa[j] && r_c((int)j) < -1e-6) fases_ok = false;
-        }
-        if (res_norm < 1e-8 && rg_max < 1e-6 && rc_max < 1e-6 && fases_ok) {
-            res.convergio = true;
-            break;
-        }
+        return restarted;
     }
 
     double total_G = 0;
@@ -403,7 +327,7 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     }
 
     res.energia_gibbs_total = total_G;
-    res.mensaje = res.convergio
+    if (res.mensaje.empty()) res.mensaje = res.convergio
         ? "Minimización Gibbs convergió en " + std::to_string(res.iteraciones) + " iteraciones."
         : "No convergió completamente tras " + std::to_string(res.iteraciones) + " iteraciones.";
 

@@ -6,6 +6,8 @@
 #include <sstream>
 #include <cmath>
 #include <cstring>
+#include <set>
+#include <limits>
 
 namespace cma { namespace diagrama_flujo {
 
@@ -30,16 +32,18 @@ bool Flowsheet::eliminar_nodo(int64_t id) {
     if (it == nodos_.end()) return false;
 
     // Eliminar los flujos asociados a este nodo
-    for (int64_t fid : it->ids_flujos_entrada) flujos_.erase(fid);
-    for (int64_t fid : it->ids_flujos_salida)  flujos_.erase(fid);
+    const auto removed_in = it->ids_flujos_entrada;
+    const auto removed_out = it->ids_flujos_salida;
+    for (int64_t fid : removed_in) flujos_.erase(fid);
+    for (int64_t fid : removed_out) flujos_.erase(fid);
 
     // Limpiar referencias a esos flujos en los demás nodos
     for (auto& n : nodos_) {
         auto& in  = n.ids_flujos_entrada;
         auto& out = n.ids_flujos_salida;
-        for (int64_t fid : it->ids_flujos_entrada)
+        for (int64_t fid : removed_in)
             in.erase(std::remove(in.begin(), in.end(), fid), in.end());
-        for (int64_t fid : it->ids_flujos_salida)
+        for (int64_t fid : removed_out)
             out.erase(std::remove(out.begin(), out.end(), fid), out.end());
     }
 
@@ -292,6 +296,7 @@ bool Flowsheet::detectar_ciclo() const {
 // ═══════════════════════════════════════════════════════════════════════════
 
 Flowsheet::ResultadoConvergencia Flowsheet::resolver_convergencia(
+    const domain::ThermoRepository& repository,
     int max_iter, double tolerancia,
     std::function<void(int, double)> progreso)
 {
@@ -306,8 +311,8 @@ Flowsheet::ResultadoConvergencia Flowsheet::resolver_convergencia(
     // El motor de masa resuelve lazos de recirculación por tearing (sustitución
     // directa / iteración de punto fijo) sobre los flujos de corte y, al converger,
     // escribimos los resultados en los flujos del flowsheet para que queden visibles.
-    cma::motores::BalanceMasa bm;
-    auto r = bm.resolver(*this);
+    cma::motores::BalanceMasa bm(repository);
+    auto r = bm.resolver(*this, max_iter, tolerancia);
 
     if (r.convergio) {
         for (auto& f_res : r.flujos_salida) {
@@ -378,6 +383,16 @@ std::string Flowsheet::a_json() const {
             j_mol[std::to_string(sid)] = val;
         }
         j_flujo["flujo_molar"] = j_mol;
+        j_flujo["agua_kg_h"] = f.agua_kg_h;
+        json j_part = json::array();
+        for (const auto& p : f.particulas) {
+            json jp;
+            jp["mineral"] = p.mineral;
+            jp["diameter_um"] = p.diameter_um;
+            jp["mass_kg_h"] = p.mass_kg_h;
+            j_part.push_back(jp);
+        }
+        j_flujo["particulas"] = j_part;
         root["flujos"].push_back(j_flujo);
     }
 
@@ -416,14 +431,24 @@ std::string Flowsheet::a_json() const {
 }
 
 bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
-    limpiar();
+    const auto backup = *this;
+    error.clear();
     try {
         auto root = json::parse(json_str);
+        if (!root.is_object() || !root.contains("nodos") || !root["nodos"].is_array() ||
+            !root.contains("flujos") || !root["flujos"].is_array())
+            throw std::invalid_argument("Proyecto requiere arrays nodos y flujos");
+        if (root["nodos"].size() > 10000 || root["flujos"].size() > 100000)
+            throw std::invalid_argument("Proyecto excede límites de tamaño");
+        limpiar();
+        std::set<int64_t> node_ids, flow_ids;
 
         if (root.contains("nodos") && root["nodos"].is_array()) {
             for (const auto& jn : root["nodos"]) {
                 nucleo::Nodo n;
                 n.id = jn.value("id", 0LL);
+                if (n.id <= 0 || n.id == std::numeric_limits<int64_t>::max() || !node_ids.insert(n.id).second)
+                    throw std::invalid_argument("ID de nodo inválido o duplicado");
                 n.tipo = static_cast<nucleo::TipoNodo>(jn.value("tipo", 0));
                 n.nombre = jn.value("nombre", "");
                 n.canvas_x = jn.value("x", 0.0f);
@@ -450,6 +475,8 @@ bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
             for (const auto& jf : root["flujos"]) {
                 nucleo::Flujo f;
                 f.id = jf.value("id", 0LL);
+                if (f.id <= 0 || f.id == std::numeric_limits<int64_t>::max() || !flow_ids.insert(f.id).second)
+                    throw std::invalid_argument("ID de flujo inválido o duplicado");
                 f.nombre = jf.value("nombre", "");
                 f.temperatura = jf.value("T", 298.15);
                 f.presion = jf.value("P", 1.0);
@@ -466,9 +493,25 @@ bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
 
                 if (jf.contains("flujo_molar") && jf["flujo_molar"].is_object()) {
                     for (auto it = jf["flujo_molar"].begin(); it != jf["flujo_molar"].end(); ++it) {
-                        try {
-                            f.flujo_molar[std::stoll(it.key())] = it.value().get<double>();
-                        } catch(...) {}
+                        size_t consumed = 0;
+                        const auto sid = std::stoll(it.key(), &consumed);
+                        const double value = it.value().get<double>();
+                        if (consumed != it.key().size() || sid <= 0 || !std::isfinite(value) || value < 0)
+                            throw std::invalid_argument("Composición de flujo inválida");
+                        f.flujo_molar[sid] = value;
+                    }
+                }
+                f.agua_kg_h = jf.value("agua_kg_h", 0.0);
+                if (jf.contains("particulas") && jf["particulas"].is_array()) {
+                    for (const auto& jp : jf["particulas"]) {
+                        nucleo::MineralParticle p;
+                        p.mineral = jp.value("mineral", "");
+                        p.diameter_um = jp.value("diameter_um", 0.0);
+                        p.mass_kg_h = jp.value("mass_kg_h", 0.0);
+                        if (!p.mineral.empty() && std::isfinite(p.diameter_um) && p.diameter_um > 0 &&
+                            std::isfinite(p.mass_kg_h) && p.mass_kg_h >= 0) {
+                            f.particulas.push_back(p);
+                        }
                     }
                 }
                 flujos_[f.id] = f;
@@ -515,6 +558,7 @@ bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
 
         return true;
     } catch (const std::exception& e) {
+        *this = backup;
         error = e.what();
         return false;
     }

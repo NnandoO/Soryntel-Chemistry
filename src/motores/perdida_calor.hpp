@@ -12,10 +12,10 @@ struct CapaAislante {
 };
 
 struct ResultadoPerdidaCalor {
-    double flujo_calor;      // W
-    double T_pared_int;      // K
-    double T_pared_ext;      // K
-    double resistencia_total; // K/W
+    double flujo_calor = 0;      // W
+    double T_pared_int = 0;      // K
+    double T_pared_ext = 0;      // K
+    double resistencia_total = 0; // K/W
     std::vector<double> perfil_T;
     std::string mensaje;
     bool ok = false;

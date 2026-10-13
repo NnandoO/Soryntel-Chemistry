@@ -1,8 +1,8 @@
 #include "MaterialDB.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
-MaterialDB::MaterialDB() : motor_(cma::base_datos::GestorDB::instancia()) {}
+MaterialDB::MaterialDB(const cma::domain::ThermoRepository& repository) : motor_(repository) {}
 
 std::vector<const cma::nucleo::Especie*> MaterialDB::materiales() {
     auto todas = motor_.todas_especies();

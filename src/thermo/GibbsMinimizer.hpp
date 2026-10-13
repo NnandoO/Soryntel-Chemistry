@@ -1,10 +1,11 @@
 #pragma once
+#include "application/modules.hpp"
 #include "../motores/minimizador_gibbs.hpp"
 #include <map>
 #include <vector>
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ResultadoGibbs {
     std::map<int64_t, double> flujo_molar;
@@ -27,4 +28,4 @@ private:
     cma::motores::MinimizadorGibbs minimizador_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

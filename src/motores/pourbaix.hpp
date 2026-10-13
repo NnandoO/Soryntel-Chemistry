@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include "../nucleo/tipos.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 
 namespace cma { namespace motores {
 
@@ -38,7 +39,7 @@ struct DominanciaPourbaix {
 
 class CalculadorPourbaix {
 public:
-    CalculadorPourbaix() = default;
+    explicit CalculadorPourbaix(const domain::ThermoRepository& repository) : repository_(repository) {}
 
     void establecer_elemento(const std::string& elemento);
     void establecer_temperatura(double T_K);
@@ -51,6 +52,7 @@ public:
     const DominanciaPourbaix& obtener_dominancia() const { return dominancia_; }
 
 private:
+    const domain::ThermoRepository& repository_;
     std::string elemento_;
     double T_K_ = 298.15;
     double conc_ = 1e-6;       // 1 µM por defecto

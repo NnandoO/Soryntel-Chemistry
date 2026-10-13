@@ -5,19 +5,24 @@
 #include <fstream>
 #include <iostream>
 #include <cctype>
+#include "adapters/persistence/csv.hpp"
+#include <sqlite3.h>
 
 namespace cma { namespace base_datos {
 
 GestorDB& GestorDB::instancia() {
     static GestorDB db;
-    if (!db.inicializada_) {
-        db.poblar_elementos();
-        db.poblar_especies();
-        db.poblar_reacciones();
-        db.inicializada_ = true;
-    }
     return db;
 }
+
+GestorDB::GestorDB() {
+    poblar_elementos();
+    poblar_especies();
+    poblar_reacciones();
+    inicializada_ = true;
+}
+
+bool GestorDB::cargar_predeterminadas() { return inicializada_; }
 
 void GestorDB::poblar_elementos() {
     // Delegar a la tabla periódica
@@ -31,6 +36,8 @@ void GestorDB::poblar_especies() {
     for (auto& d : semilla_especies()) {
         nucleo::Especie e;
         e.id = prox_id_especie_++;
+        e.provenance.source = "seed:datos_especies.hpp record " + std::to_string(e.id);
+        e.provenance.revision = "legacy-import; reference pending";
         e.nombre = d.nombre;
         e.formula = d.formula;
         e.masa_molar = d.M;
@@ -173,13 +180,14 @@ const nucleo::Especie* GestorDB::especie_por_nombre(const std::string& nombre) c
 std::vector<const nucleo::Especie*> GestorDB::buscar_especies(const std::string& query) const {
     std::vector<const nucleo::Especie*> res;
     std::string q = query;
-    std::transform(q.begin(), q.end(), q.begin(), ::tolower);
+    auto lowercase = [](unsigned char c) { return static_cast<char>(std::tolower(c)); };
+    std::transform(q.begin(), q.end(), q.begin(), lowercase);
 
     for (auto& [id, sp] : especies_) {
         std::string nom = sp.nombre;
-        std::transform(nom.begin(), nom.end(), nom.begin(), ::tolower);
+        std::transform(nom.begin(), nom.end(), nom.begin(), lowercase);
         std::string form = sp.formula;
-        std::transform(form.begin(), form.end(), form.begin(), ::tolower);
+        std::transform(form.begin(), form.end(), form.begin(), lowercase);
         if (nom.find(q) != std::string::npos || form.find(q) != std::string::npos)
             res.push_back(&sp);
     }
@@ -227,70 +235,104 @@ std::vector<const nucleo::Elemento*> GestorDB::todos_elementos() const {
 }
 
 bool GestorDB::exportar_sqlite(const std::string& ruta) const {
-    // Placeholder - exportaría a SQLite si estuviera disponible
-    return false;
+    sqlite3* raw = nullptr;
+    if (sqlite3_open(ruta.c_str(), &raw) != SQLITE_OK) { if (raw) sqlite3_close(raw); return false; }
+    std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
+    auto exec = [&](const char* sql) { return sqlite3_exec(raw, sql, nullptr, nullptr, nullptr) == SQLITE_OK; };
+    if (!exec("BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS cma_species (id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL); CREATE TABLE IF NOT EXISTS cma_species_provenance (id INTEGER PRIMARY KEY, source TEXT NOT NULL, reference TEXT, revision TEXT, quality INTEGER NOT NULL, min_kelvin REAL, max_kelvin REAL); DELETE FROM cma_species; DELETE FROM cma_species_provenance;")) {
+        exec("ROLLBACK"); return false;
+    }
+    sqlite3_stmt* statement = nullptr;
+    if (sqlite3_prepare_v2(raw, "INSERT INTO cma_species VALUES (?,?,?,?,?,?,?,?,?,?,?)", -1, &statement, nullptr) != SQLITE_OK) {
+        exec("ROLLBACK"); return false;
+    }
+    std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> stmt(statement, sqlite3_finalize);
+    sqlite3_stmt* provenance_statement=nullptr;
+    if (sqlite3_prepare_v2(raw,"INSERT INTO cma_species_provenance VALUES (?,?,?,?,?,?,?)",-1,&provenance_statement,nullptr)!=SQLITE_OK) {
+        exec("ROLLBACK"); return false;
+    }
+    std::unique_ptr<sqlite3_stmt,decltype(&sqlite3_finalize)> provenance_stmt(provenance_statement,sqlite3_finalize);
+    for (const auto& [id, species] : especies_) {
+        sqlite3_bind_int64(statement, 1, id);
+        sqlite3_bind_text(statement, 2, species.nombre.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(statement, 3, species.formula.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(statement, 4, species.masa_molar);
+        sqlite3_bind_double(statement, 5, species.h_formacion);
+        sqlite3_bind_double(statement, 6, species.s_formacion);
+        sqlite3_bind_int(statement, 7, static_cast<int>(species.fase_std));
+        sqlite3_bind_double(statement, 8, species.cp_a);
+        sqlite3_bind_double(statement, 9, species.cp_b);
+        sqlite3_bind_double(statement, 10, species.cp_c);
+        sqlite3_bind_double(statement, 11, species.cp_d);
+        if (sqlite3_step(statement) != SQLITE_DONE) { exec("ROLLBACK"); return false; }
+        sqlite3_reset(statement);
+        sqlite3_clear_bindings(statement);
+        const auto& provenance=species.provenance;
+        sqlite3_bind_int64(provenance_statement,1,id);
+        sqlite3_bind_text(provenance_statement,2,provenance.source.c_str(),-1,SQLITE_TRANSIENT);
+        sqlite3_bind_text(provenance_statement,3,provenance.reference.c_str(),-1,SQLITE_TRANSIENT);
+        sqlite3_bind_text(provenance_statement,4,provenance.revision.c_str(),-1,SQLITE_TRANSIENT);
+        sqlite3_bind_int(provenance_statement,5,static_cast<int>(provenance.quality));
+        if (provenance.min_kelvin>0) sqlite3_bind_double(provenance_statement,6,provenance.min_kelvin);
+        else sqlite3_bind_null(provenance_statement,6);
+        if (provenance.max_kelvin>0) sqlite3_bind_double(provenance_statement,7,provenance.max_kelvin);
+        else sqlite3_bind_null(provenance_statement,7);
+        if (sqlite3_step(provenance_statement)!=SQLITE_DONE) { exec("ROLLBACK"); return false; }
+        sqlite3_reset(provenance_statement); sqlite3_clear_bindings(provenance_statement);
+    }
+    if (!exec("COMMIT")) { exec("ROLLBACK"); return false; }
+    return true;
 }
 
 bool GestorDB::cargar_desde_csv(const std::string& ruta) {
     std::ifstream archivo(ruta);
-    if (!archivo.is_open()) {
-        std::cerr << "Error al abrir CSV: " << ruta << std::endl;
-        return false;
-    }
-    
-    std::string linea;
-    bool primera_linea = true;
-    
-    // Asumimos un ID dinámico que empiece después de los hardcodeados
-    int64_t next_id = 10000;
-    if (!especies_.empty()) {
-        next_id = especies_.rbegin()->first + 1;
-    }
-    
-    while (std::getline(archivo, linea)) {
-        if (primera_linea) {
-            primera_linea = false;
-            continue;
+    if (!archivo) return false;
+    std::string line;
+    if (!std::getline(archivo, line)) return false;
+    // UTF-8 BOM is allowed only on the header.
+    if (line.compare(0, 3, "\xEF\xBB\xBF") == 0) line.erase(0, 3);
+    std::vector<nucleo::Especie> pending;
+    try {
+        const auto header = adapters::csv_row(line);
+        if (header.size() < 6 || header[0] != "Nombre" || header[1] != "Formula") return false;
+        while (std::getline(archivo, line)) {
+            if (line.empty() || line[0] == '#' || line[0] == '/') continue;
+            const auto fields = adapters::csv_row(line);
+            if (fields.size() != header.size() || fields[0].empty() || fields[1].empty()) return false;
+            nucleo::Especie species;
+            species.nombre = fields[0]; species.formula = fields[1];
+            species.provenance.source = ruta;
+            species.provenance.revision = "CSV import; Hf kJ/mol, Sf J/(mol K), Cp unavailable";
+            species.masa_molar = adapters::csv_number(fields[2]);
+            species.h_formacion = adapters::csv_number(fields[3]);
+            species.s_formacion = adapters::csv_number(fields[4]);
+            const double phase = adapters::csv_number(fields[5]);
+            if (species.masa_molar < 0 || phase != std::floor(phase) || phase < 0 || phase > 3) return false;
+            const nucleo::Fase phases[] = {nucleo::Fase::Gas, nucleo::Fase::Liquido, nucleo::Fase::Solido, nucleo::Fase::Mixto};
+            species.fase_std = phases[static_cast<int>(phase)];
+            // Cp is deliberately unspecified in the source CSV; never fabricate it.
+            pending.push_back(std::move(species));
         }
-        
-        if (linea.empty() || linea[0] == '#' || linea[0] == '/') continue;
-        
-        std::stringstream ss(linea);
-        std::string token;
-        std::vector<std::string> columnas;
-        
-        while (std::getline(ss, token, ',')) {
-            size_t start = token.find_first_not_of(" \r\n\t");
-            size_t end = token.find_last_not_of(" \r\n\t");
-            if (start != std::string::npos && end != std::string::npos) {
-                columnas.push_back(token.substr(start, end - start + 1));
-            } else {
-                columnas.push_back("");
-            }
+    } catch (const std::exception&) { return false; }
+    if (archivo.bad() || pending.empty()) return false;
+    // Parse first, then commit atomically. Reimporting the same data is idempotent.
+    auto species_map = especies_;
+    auto names = nombre_a_id_especie_;
+    int64_t next = species_map.empty() ? 1 : species_map.rbegin()->first + 1;
+    for (auto& species : pending) {
+        auto existing = names.find(species.nombre);
+        if (existing != names.end()) {
+            const auto& previous = species_map.at(existing->second);
+            if (previous.formula != species.formula || previous.fase_std != species.fase_std) return false;
+            continue; // retain seeded coefficients and stable project IDs
         }
-        
-        if (columnas.size() >= 6) {
-            nucleo::Especie esp;
-            esp.id = next_id++;
-            esp.nombre = columnas[0];
-            esp.formula = columnas[1];
-            try {
-                esp.masa_molar = std::stod(columnas[2]);
-                esp.h_formacion = std::stod(columnas[3]);
-                esp.s_formacion = std::stod(columnas[4]);
-                int f = std::stoi(columnas[5]);
-                if (f == 0) esp.fase_std = nucleo::Fase::Gas;
-                else if (f == 1) esp.fase_std = nucleo::Fase::Liquido;
-                else esp.fase_std = nucleo::Fase::Solido;
-                
-                especies_[esp.id] = esp;
-                nombre_a_id_especie_[esp.nombre] = esp.id;
-            } catch (const std::exception& e) {
-                std::cerr << "Error parseando CSV en linea: " << linea << std::endl;
-            }
-        }
+        species.id = next++;
+        names[species.nombre] = species.id;
+        species_map[species.id] = species;
     }
-    
+    especies_.swap(species_map);
+    nombre_a_id_especie_.swap(names);
+    prox_id_especie_ = next;
     return true;
 }
 

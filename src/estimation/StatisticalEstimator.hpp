@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include <string>
 #include "../motores/estimador_propiedades.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct PropiedadesEstimadas {
     double h_formacion = 0.0;
@@ -20,4 +21,4 @@ private:
     cma::motores::EstimadorPropiedades motor_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

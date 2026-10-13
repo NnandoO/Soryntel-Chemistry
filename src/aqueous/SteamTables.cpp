@@ -1,6 +1,6 @@
 #include "SteamTables.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 PropiedadesAgua SteamTables::propiedades(double T, double P) {
     auto raw = motor_.propiedades(T, P);

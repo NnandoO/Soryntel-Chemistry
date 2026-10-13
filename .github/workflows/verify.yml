@@ -1,0 +1,59 @@
+name: Scientific and architecture checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: desktop-reference
+            gui: 'ON'
+            advanced: 'ON'
+            sanitizers: 'OFF'
+            type: Release
+          - name: core-sanitizers
+            gui: 'OFF'
+            advanced: 'OFF'
+            sanitizers: 'ON'
+            type: Debug
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ libeigen3-dev libsqlite3-dev python3 libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libxkbcommon-dev wayland-protocols xvfb xauth
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.type }}
+          -DCMA_BUILD_GUI=${{ matrix.gui }}
+          -DCMA_WITH_IPHREEQC=${{ matrix.advanced }}
+          -DCMA_SANITIZERS=${{ matrix.sanitizers }}
+          -DCMA_WARNINGS_AS_ERRORS=ON
+      - name: Compile
+        run: cmake --build build -j 2
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build --output-on-failure
+      - name: Desktop startup
+        if: matrix.gui == 'ON'
+        run: timeout 30s xvfb-run -a ./build/cma_chemistry --smoke-test
+      - name: Catalog report
+        run: ./build/cma_catalog_audit data > build/catalog_audit.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: verification-${{ matrix.name }}
+          path: |
+            build/catalog_audit.json
+            build/Testing/Temporary/LastTest.log

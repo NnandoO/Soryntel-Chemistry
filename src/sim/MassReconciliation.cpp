@@ -1,6 +1,6 @@
 #include "MassReconciliation.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoReconciliacion MassReconciliation::reconciliar(
     const std::vector<Medicion>& entradas,
@@ -17,4 +17,4 @@ ResultadoReconciliacion MassReconciliation::reconciliar(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

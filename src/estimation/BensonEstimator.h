@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class BensonEstimator {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "BensonEstimator.hpp"

@@ -1,6 +1,6 @@
 #include "HeatLossCalc.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 cma::motores::CapaAislante HeatLossCalc::toCapaAislante(const Capa& c) {
     cma::motores::CapaAislante ca;
@@ -27,4 +27,4 @@ ResultadoPerdida HeatLossCalc::plano(double T_int, double T_ext, double area,
     return res;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

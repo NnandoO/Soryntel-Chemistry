@@ -5,26 +5,10 @@
 #include <algorithm>
 #include <cstring>
 #include <memory>
+#include <cmath>
+#include <cctype>
 
-namespace hsc_clone {
-
-std::string ExternalAPI::ejecutarComando(const std::string& cmd) {
-    // Sanitización básica para evitar inyección de shell
-    std::string safe_cmd = cmd;
-    std::string bad_chars = ";|&$`\"'<>";
-    safe_cmd.erase(std::remove_if(safe_cmd.begin(), safe_cmd.end(),
-        [&bad_chars](char c) { return bad_chars.find(c) != std::string::npos; }), safe_cmd.end());
-
-    std::string resultado;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(safe_cmd.c_str(), "r"), pclose);
-    if (!pipe) {
-        return "Error al ejecutar comando";
-    }
-    char buffer[4096];
-    while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr)
-        resultado += buffer;
-    return resultado;
-}
+namespace cma::application::modules {
 
 bool ExternalAPI::importarCSV(const std::string& ruta,
                               std::vector<std::vector<double>>& datos)
@@ -32,7 +16,8 @@ bool ExternalAPI::importarCSV(const std::string& ruta,
     std::ifstream file(ruta);
     if (!file.is_open()) return false;
 
-    datos.clear();
+    std::vector<std::vector<double>> parsed;
+    size_t width = 0;
     std::string linea;
     while (std::getline(file, linea)) {
         if (linea.empty()) continue;
@@ -43,15 +28,23 @@ bool ExternalAPI::importarCSV(const std::string& ruta,
             token.erase(std::remove_if(token.begin(), token.end(),
                 [](unsigned char c) { return std::isspace(c); }), token.end());
             try {
-                fila.push_back(std::stod(token));
+                size_t consumed = 0;
+                double value = std::stod(token, &consumed);
+                if (consumed != token.size() || !std::isfinite(value)) return false;
+                fila.push_back(value);
             } catch (...) {
-                fila.push_back(0.0);
+                return false;
             }
         }
-        if (!fila.empty())
-            datos.push_back(fila);
+        if (!linea.empty() && linea.back() == ',') return false;
+        if (fila.empty()) return false;
+        if (width == 0) width = fila.size();
+        if (fila.size() != width) return false;
+        parsed.push_back(std::move(fila));
     }
-    return !datos.empty();
+    if (file.bad() || parsed.empty()) return false;
+    datos = std::move(parsed);
+    return true;
 }
 
 bool ExternalAPI::exportarJSON(const std::string& ruta, const std::string& json) {
@@ -61,4 +54,4 @@ bool ExternalAPI::exportarJSON(const std::string& ruta, const std::string& json)
     return file.good();
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

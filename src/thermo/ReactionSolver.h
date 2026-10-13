@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class ReactionSolver {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "ReactionSolver.hpp"

@@ -1,16 +1,17 @@
 #pragma once
-#include "base_datos/gestor_db.hpp"
+#include "application/modules.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include "nucleo/tipos.hpp"
 #include <vector>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 class MaterialDB {
 public:
-    MaterialDB();
+    explicit MaterialDB(const cma::domain::ThermoRepository& repository);
     std::vector<const cma::nucleo::Especie*> materiales();
 private:
-    cma::base_datos::GestorDB& motor_;
+    const cma::domain::ThermoRepository& motor_;
 };
 
 }

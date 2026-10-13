@@ -1,7 +1,6 @@
 #include "ReactionSolver.hpp"
-#include "base_datos/gestor_db.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoReaccion ReactionSolver::resolver(
     const std::vector<cma::nucleo::Flujo>& entradas,
@@ -11,7 +10,7 @@ ResultadoReaccion ReactionSolver::resolver(
     ResultadoReaccion r;
     try {
         r.flujo_salida = balance_masa_.reactor(entradas, rxn, conversion, T, P);
-        auto db = cma::base_datos::GestorDB::instancia().mapa_especies();
+        const auto& db = repository_.mapa_especies();
         r.calor_reaccion = balance_energia_.calor_reaccion(rxn, T, db);
         r.ok = true;
     } catch (const std::exception& e) {
@@ -21,4 +20,4 @@ ResultadoReaccion ReactionSolver::resolver(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

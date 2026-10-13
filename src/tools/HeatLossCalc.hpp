@@ -1,9 +1,10 @@
 #pragma once
+#include "application/modules.hpp"
 #include <string>
 #include <vector>
 #include "../motores/perdida_calor.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct Capa {
     std::string material;
@@ -28,4 +29,4 @@ private:
     static cma::motores::CapaAislante toCapaAislante(const Capa& c);
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

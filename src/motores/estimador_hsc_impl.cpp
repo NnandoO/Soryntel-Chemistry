@@ -1,6 +1,5 @@
 #include "estimador_propiedades.hpp"
 #include "nucleo/tabla_periodica.hpp"
-#include "base_datos/gestor_db.hpp"
 #include "nucleo/tipos.hpp"
 #include <cmath>
 #include <algorithm>
@@ -31,10 +30,9 @@ PropiedadesEstimadasHSC EstimadorPropiedades::estimar_hsc(const std::string& for
     }
 
     // Calcular MW
-    auto& db = base_datos::GestorDB::instancia();
     double mw_calc = 0.0;
     for (const auto& c : componentes) {
-        auto el = db.elemento_por_simbolo(c.elem);
+        auto el = tp.por_simbolo(c.elem);
         if (el) {
             mw_calc += el->masa_atomica * c.cuenta;
         }
@@ -42,7 +40,7 @@ PropiedadesEstimadasHSC EstimadorPropiedades::estimar_hsc(const std::string& for
     res.mw = mw_calc;
 
     // Buscar en BD
-    auto especies = db.todas_especies();
+    auto especies = repository_ ? repository_->todas_especies() : std::vector<const nucleo::Especie*>{};
     
     for (const auto* e : especies) {
         std::string form_db = e->formula;
@@ -52,10 +50,7 @@ PropiedadesEstimadasHSC EstimadorPropiedades::estimar_hsc(const std::string& for
         
         if (e->formula == formula || form_db == formula || e->nombre == formula) {
             res.has_db = true;
-            res.h_db = e->h_formacion + e->entalpia_ref(res.T_K) / 1000.0; // Wait, entalpia_ref computes enthalpy difference. Enthalpy of formation + diff
-            res.h_db = e->h_formacion + (e->entalpia_ref(res.T_K) - e->entalpia_ref(298.15)) / 1000.0;
-            // Actually wait, entalpia_ref in tipos.hpp already does \int Cp dT / 1000? Let's assume h_formacion + entalpia_ref.
-            res.h_db = e->h_formacion + e->entalpia_ref(res.T_K) / 1000.0; 
+            res.h_db = e->entalpia_abs(res.T_K); // kJ/mol, no second conversion
             res.s_db = e->s_formacion + e->entropia_ref(res.T_K);
             res.cp_db = e->cp(res.T_K);
             break;
@@ -77,7 +72,7 @@ PropiedadesEstimadasHSC EstimadorPropiedades::estimar_hsc(const std::string& for
         
         cp_est_298 += cp_atom * c.cuenta;
 
-        auto el = db.elemento_por_simbolo(c.elem);
+        auto el = tp.por_simbolo(c.elem);
         if (el) {
             double s_atom = 1.5 * 8.314 * log(el->masa_atomica) - 3.9;
             if (s_atom < 0) s_atom = 10.0;
@@ -88,9 +83,8 @@ PropiedadesEstimadasHSC EstimadorPropiedades::estimar_hsc(const std::string& for
     }
     
     if (res.has_db) {
-        h_est_298 = res.h_db;
-        s_est_298 = res.s_db;
-        cp_est_298 = res.cp_db;
+        res.h_est = res.h_db; res.s_est = res.s_db; res.cp_est = res.cp_db;
+        return res;
     } else {
         h_est_298 = h_est_298 - 100.0; 
     }

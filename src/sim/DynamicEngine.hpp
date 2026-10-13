@@ -1,11 +1,12 @@
 #pragma once
+#include "application/modules.hpp"
 #include "../motores/simulacion_dinamica.hpp"
 #include <vector>
 #include <string>
 #include <map>
 #include <functional>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ResultadoDinamico {
     std::vector<double> tiempos;
@@ -26,4 +27,4 @@ private:
     cma::motores::SimulacionDinamica simulacion_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

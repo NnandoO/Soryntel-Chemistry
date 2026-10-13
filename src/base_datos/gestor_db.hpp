@@ -5,12 +5,14 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "domain/ports/ThermoRepository.hpp"
 
 namespace cma { namespace base_datos {
 
-class GestorDB {
+class GestorDB final : public domain::ThermoRepository {
 public:
     static GestorDB& instancia();
+    GestorDB();
 
     bool cargar_predeterminadas();
     bool exportar_sqlite(const std::string& ruta) const;
@@ -41,7 +43,6 @@ public:
     bool inicializada() const { return inicializada_; }
 
 private:
-    GestorDB() = default;
     GestorDB(const GestorDB&) = delete;
     GestorDB& operator=(const GestorDB&) = delete;
 

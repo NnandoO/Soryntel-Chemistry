@@ -1,4 +1,5 @@
 #pragma once
+#include "application/modules.hpp"
 #include <thread>
 #include <atomic>
 #include "motores/balance_exergia.hpp"
@@ -241,6 +242,7 @@ private:
 class PanelEquilibrioFases {
 public:
     ~PanelEquilibrioFases() {
+        calc_cancelled_ = true;
         if (calc_thread_.joinable()) calc_thread_.join();
     }
     
@@ -299,6 +301,7 @@ private:
     std::atomic<bool> is_calculating_{false};
     std::atomic<float> calc_progress_{0.0f};
     std::atomic<bool> calculation_done_{false};
+    std::atomic<bool> calc_cancelled_{false};
     
     // Valid dimensions of the current plot data
     int plot_t_steps_ = 0;
@@ -449,7 +452,7 @@ public:
 private:
     double T_min_ = 298, T_max_ = 2000;
     int curva_activa_ = 0; // 0=H, 1=S, 2=Cp, 3=G, 4=Ellingham
-    hsc_clone::PropertyDiagrams motor_;
+    cma::application::modules::PropertyDiagrams motor_;
     
     // UI state for multiple species
     bool show_select_species_modal_ = false;
@@ -458,7 +461,7 @@ private:
     
     struct CurvaEspecie {
         std::string nombre;
-        std::vector<hsc_clone::PuntoPropiedad> datos;
+        std::vector<cma::application::modules::PuntoPropiedad> datos;
         std::vector<double> Ts_cache;
         std::vector<double> Ys_cache;
     };
@@ -566,9 +569,9 @@ private:
     };
     
     std::vector<FilaAqua> filas_;
-    bool usar_davies_ = false;
+    bool usar_davies_ = true;
     bool usar_pitzer_ = false;
-    bool usar_harvie_ = true;
+    bool usar_harvie_ = false;
     bool db_inicializada_ = false;
 
     motores::SolucionesAcuosas motor_;
@@ -740,7 +743,7 @@ private:
 
     bool mostrar_grafico_ = false;
 
-    hsc_clone::SpeciesConverter motor_;
+    cma::application::modules::SpeciesConverter motor_;
     
     char save_filename_[128] = "conversion.json";
     char open_filename_[128] = "conversion.json";
@@ -776,6 +779,7 @@ private:
 // ── Panel de Estimación de Propiedades ──────────────────────────────────
 class PanelEstimacionProp {
 public:
+    explicit PanelEstimacionProp(const domain::ThermoRepository& repository) : motor_(repository) {}
     void renderizar();
 private:
     char formula_[64] = "CuSO4";
@@ -894,13 +898,14 @@ private:
     char entrada_1_[64] = "1,2,3,4,5";
     char entrada_2_[64] = "2.1,4.3,6.5,8.7,10.9";
     bool entrenado_ = false;
-    hsc_clone::ResultadoFit res_fit_;
+    cma::application::modules::ResultadoFit res_fit_;
     std::vector<double> datos_x_, datos_y_;
 };
 
 // ── Panel de ReactionSolver ─────────────────────────────────────────────
 class PanelReactionSolver {
 public:
+    explicit PanelReactionSolver(const domain::ThermoRepository& repository) : motor_(repository) {}
     void renderizar();
 private:
     char ecuacion_[128] = "2CO(g) + O2(g) = 2CO2(g)";
@@ -946,7 +951,7 @@ private:
     bool error_parsing_ = false;
     bool balance_ok_ = true;
 
-    hsc_clone::ReactionSolver motor_;
+    cma::application::modules::ReactionSolver motor_;
 
     void balancear_ecuacion();
     void guardar_tab_actual();
@@ -962,7 +967,7 @@ private:
     char comando_[256] = "echo Hola desde CMA Chemistry";
     char resultado_[4096] = {};
     bool ejecutado_ = false;
-    hsc_clone::ExternalAPI motor_;
+    cma::application::modules::ExternalAPI motor_;
 };
 
 // ── Panel de Gráficos 3D ─────────────────────────────────────────────────
@@ -1083,7 +1088,7 @@ private:
 // ── Panel POURBAIX (Eh-pH) ──────────────────────────────────────────────────
 class PanelPourbaix {
 public:
-    PanelPourbaix();
+    explicit PanelPourbaix(const domain::ThermoRepository& repository);
     void renderizar();
 
 private:

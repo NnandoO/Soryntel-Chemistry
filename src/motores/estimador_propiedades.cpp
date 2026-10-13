@@ -31,7 +31,7 @@ std::vector<EstimadorPropiedades::GrupoJoback> EstimadorPropiedades::grupos_joba
 }
 
 PropiedadesEstimadas EstimadorPropiedades::estimar_joback(
-    const std::string& formula_smiles, const std::string& nombre)
+    const std::string& formula_smiles, const std::string& /*nombre*/)
 {
     PropiedadesEstimadas res;
     auto grupos = grupos_joback();
@@ -207,7 +207,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
     return estimar_joback(formula, tipo);
 }
 
-double EstimadorPropiedades::estimar_cp_gas(double M, double T, int tipo) {
+double EstimadorPropiedades::estimar_cp_gas(double /*M*/, double T, int /*tipo*/) {
     // Correlación de Rowlinson-Bondi
     double R = 8.314;
     return R * (3.5 + 2.0 * std::exp(-T / 500.0)); // aproximación
@@ -243,11 +243,9 @@ double EstimadorPropiedades::estimar_Hf_benson(
     return Hf + correccion;
 }
 
-double EstimadorPropiedades::estimar_S_benson(const std::string& formula, double M) {
+double EstimadorPropiedades::estimar_S_benson(const std::string& /*formula*/, double M) {
     // Estimación simple basada en masa molar
     return 100.0 + 50.0 * std::log(M / 16.0);
 }
 
 }} // namespace
-
-#include "estimador_hsc_impl.cpp"

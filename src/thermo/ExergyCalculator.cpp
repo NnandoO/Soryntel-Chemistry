@@ -1,6 +1,6 @@
 #include "ExergyCalculator.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoExergia ExergyCalculator::analizar(
     double h_in, double h_out,
@@ -22,4 +22,4 @@ ResultadoExergia ExergyCalculator::analizar(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

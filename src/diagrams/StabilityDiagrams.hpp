@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include <vector>
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct PuntoEstabilidad {
     double log_pO2;

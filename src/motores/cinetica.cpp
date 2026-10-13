@@ -64,7 +64,8 @@ ResultadoCinetica Cinetica::reactor_batch(double C0, int orden, double k,
     return res;
 }
 
-ResultadoCinetica Cinetica::reactor_cstr(double C0, int orden, double k, double tau, double Cb0) const {
+// This overload uses r=k*C^order; a second-reactant concentration is not part of that law.
+ResultadoCinetica Cinetica::reactor_cstr(double C0, int orden, double k, double tau, double /*Cb0*/) const {
     ResultadoCinetica res;
     res.tiempo = tau;
 

@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include "motores/agua.hpp"
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct PropiedadesAgua {
     double T;

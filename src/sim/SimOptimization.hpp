@@ -1,4 +1,5 @@
 #pragma once
+#include "application/modules.hpp"
 // ═══════════════════════════════════════════════════════════════════════════
 // SimOptimization — Optimización de modelos de simulación
 //
@@ -21,7 +22,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 enum class MetodoOptimizacion {
     MonteCarlo,
@@ -108,4 +109,4 @@ private:
     double percentile(std::vector<double>& data, double p);
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

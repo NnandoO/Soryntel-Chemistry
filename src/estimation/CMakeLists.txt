@@ -4,4 +4,4 @@ add_library(cma_estimation STATIC
 )
 target_include_directories(cma_estimation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(cma_estimation PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(cma_estimation PUBLIC Eigen3::Eigen SQLite3::SQLite3)
+target_link_libraries(cma_estimation PUBLIC cma_domain)

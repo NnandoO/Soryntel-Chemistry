@@ -1,6 +1,6 @@
 #include "LCAEvaluator.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ImpactoLCA LCAEvaluator::evaluar(double kWh, double gas_m3, double comb_kg,
                                  double materia_kg, double prod_kg, double agua_m3)
@@ -15,4 +15,4 @@ ImpactoLCA LCAEvaluator::evaluar(double kWh, double gas_m3, double comb_kg,
     return res;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

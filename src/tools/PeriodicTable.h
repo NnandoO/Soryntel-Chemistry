@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class PeriodicTable {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "PeriodicTable.hpp"

@@ -6,4 +6,4 @@ add_library(cma_thermo STATIC
 )
 target_include_directories(cma_thermo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(cma_thermo PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(cma_thermo PUBLIC Eigen3::Eigen SQLite3::SQLite3)
+target_link_libraries(cma_thermo PUBLIC cma_domain)

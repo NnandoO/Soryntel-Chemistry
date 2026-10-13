@@ -1,14 +1,13 @@
 #include "StabilityDiagrams.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
-std::vector<PuntoEstabilidad> StabilityDiagrams::generar(const std::string& metal,
-                                                          double T)
+std::vector<PuntoEstabilidad> StabilityDiagrams::generar(const std::string&,
+                                                          double)
 {
-    std::vector<PuntoEstabilidad> out;
-    out.push_back({-100.0, -100.0, metal + " (s)"});
-    out.push_back({0.0, 0.0, metal + "O2 (s)"});
-    return out;
+    // This compatibility API lacks a repository/activity model. No fabricated points.
+    // The desktop's stability calculator has a separate thermodynamic solver.
+    return {};
 }
 
 }
