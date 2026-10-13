@@ -275,7 +275,7 @@ void Aplicacion::renderizar() {
             ImVec2 c(pos_run.x + 19.0f, pos_run.y + 19.0f);
             dl->AddTriangleFilled(ImVec2(c.x-6, c.y-8), ImVec2(c.x-6, c.y+8), ImVec2(c.x+8, c.y), IM_COL32(80, 220, 100, 255));
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Ejecutar Simulación (Run)"));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Ejecutar Simulación (Run)"));
 
         ImGui::Spacing();
 
@@ -289,7 +289,7 @@ void Aplicacion::renderizar() {
             ImVec2 c(pos_rst.x + 19.0f, pos_rst.y + 19.0f);
             dl->AddRectFilled(ImVec2(c.x-6, c.y-6), ImVec2(c.x+6, c.y+6), IM_COL32(220, 80, 80, 255));
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Reiniciar Simulación (Reset)"));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Reiniciar Simulación (Reset)"));
     }
     ImGui::End();
     ImGui::PopStyleVar(2);
@@ -437,7 +437,7 @@ void Aplicacion::renderizar() {
             }
 
             if (ImGui::BeginTabItem(tr("Árbol de proceso"))) {
-                ImGui::Text(tr("Elementos del Proceso:"));
+                ImGui::TextUnformatted(tr("Elementos del Proceso:"));
                 ImGui::Separator();
                 if (ImGui::TreeNode(tr("Unidades (Nodos)"))) {
                     for (auto& n : flowsheet_->nodos()) {
@@ -466,10 +466,10 @@ void Aplicacion::renderizar() {
             }
 
             if (ImGui::BeginTabItem(tr("Log Viewer"))) {
-                ImGui::Text(tr("Registro de Simulación:"));
+                ImGui::TextUnformatted(tr("Registro de Simulación:"));
                 ImGui::Separator();
-                ImGui::TextDisabled(tr("Simulación lista."));
-                ImGui::TextDisabled(tr("Haga clic en 'Play' en la barra superior."));
+                ImGui::TextDisabled("%s", tr("Simulación lista."));
+                ImGui::TextDisabled("%s", tr("Haga clic en 'Play' en la barra superior."));
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
