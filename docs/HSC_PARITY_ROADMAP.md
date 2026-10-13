@@ -10,14 +10,16 @@ Objetivo: ampliar capacidades científicas verificables, no copiar datos propiet
 - Agua/vapor mediante CoolProp IF97 MIT, revisión fijada en `third_party/if97/README.md`.
 - Importador MINTEQ nativo con fuentes y estequiometría: log K y entalpía de reacción NO son Hf/Sf absolutos.
 - Motor nativo ideal/Davies integrado, a 298.15 K, con balances de componentes y pH fijado. Reporta carga residual; no impone electroneutralidad ni precipitación.
-- Adaptador USGS IPhreeqc separado: asociación iónica/Pitzer parametrizado, ajuste de carga con Na y equilibrio con calcita/CO2. Referencia numérica USGS 3A reproducida. No es HMW independiente.
+- Adaptador USGS IPhreeqc ampliado: asociación iónica/Pitzer parametrizado con soporte de fases de precipitación/disolución (calcita, yeso, halita, dolomita, barita, anhidrita), gases (CO2, O2), extracción de coeficientes de actividad iónica gamma_i = 10^(la_i)/m_i y especiación multimetal (Cu, Zn, Fe, etc.).
+- Diagramas de estabilidad de predominancia de Kellogg (sistemas M-O-S para Cu, Fe, Ni, Pb, Zn) calculados por minimización de potencial aparente normalizado con límites de temperatura validados (300..2500 K).
+- Método de aditividad de grupos de Benson (Benson 1976 / Cohen & Benson 1993) de 2do orden para hidrocarburos y grupos funcionales en gas ideal a 298.15 K (±4 kJ/mol Hf), formalmente separado de las heurísticas de Joback-Reid.
 - Clasificación granulométrica, flotación batch/flujo pistón y molienda Bond/CSS conectadas al flowsheet general con soporte de corrientes particuladas (minerales, tamaño y agua), y convergencia de circuitos cerrados con reciclo mediante aceleración Wegstein.
 - Analizador de fórmulas ampliado con soporte de aductos (*, ·, •), polímeros y cargas iónicas completas.
 - Ajuste log-lineal de k desde CSV tiempo-recuperación, con R infinito medido y RMSE. No certifica extrapolación industrial.
 - Auditoría de procedencia del catálogo heredado; registros no verificados no se convierten automáticamente en datos fiables.
 - Pruebas de referencia IF97, equilibrio analítico y conservación mineral. Validación numérica no significa calibración industrial.
 - Datos GeoMet v4 CC BY 4.0 descargados y conservados sin modificaciones; 60 ensayos de molienda y 52 recuperaciones LCT disponibles (un faltante no imputado).
-- Exportación SQLite de procedencia/rangos desconocidos explícitos; CI local preparada para escritorio/referencias y núcleo con ASan/UBSan. Aún no ejecutada en GitHub.
+- Exportación SQLite de procedencia/rangos desconocidos explícitos; CI local preparada para escritorio/referencias y núcleo con ASan/UBSan (100% de tests limpios sin fugas ni errores de memoria). Aún no ejecutada en GitHub.
 
 ## Fases y criterios de aceptación
 

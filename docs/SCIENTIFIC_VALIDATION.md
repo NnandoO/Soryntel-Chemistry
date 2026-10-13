@@ -7,8 +7,10 @@
 | Agua/vapor IF97 | IAPWS tablas 5, 15, 33, 42 y saturación; tolerancia 3e-6 escalada | Hielo, transporte bifásico o precisión experimental universal |
 | Gibbs | Casos del conjunto de referencia y barrido térmico; reinicio de warm start fallido | Soluciones reales no ideales ni equivalencia de bases comerciales |
 | MINTEQ nativo | Formato/estequiometría, importación atómica, equilibrio analítico de dímero y balance de carbonatos | Electronegatividad/electroneutralidad resuelta, precipitación o extrapolación térmica |
-| USGS IPhreeqc | Caso 3A: pH ±0.003, Ca ±5e-6 mol/kg, SI calcita ±1e-7; NaCl Pitzer conserva Na/Cl ±1e-7 | Que cada interacción/temperatura del panel esté validada experimentalmente |
+| USGS IPhreeqc | Calcita (3A: pH ±0.003, Ca ±5e-6, SI ±1e-7); yeso analítico (0.015 mol/kg, SI ±1e-6); halita Pitzer (6.16 mol/kg, SI ±1e-6); coeficientes de actividad iónica gamma_i; multimetal Cu/Zn/Fe | Que cada interacción/temperatura del panel esté validada experimentalmente |
 | Clasificación/flotación/molienda | Partición, conservación de masa/agua, recuperación de primer orden, molienda Bond y circuitos cerrados con reciclo (Wegstein) | Calibración de un banco continuo CSTR o de una planta completa |
+| Diagramas estabilidad Kellogg | Predominancia por minimización G_norm para Cu-O-S, Fe-O-S, Ni-O-S, Pb-O-S, Zn-O-S; límites 300..2500 K | Soluciones sólidas no ideales ni cinética de tostación/reducción |
+| Estimación Benson vs Joback | Benson 2do orden (Cohen & Benson 1993) en gas ideal 298.15 K (±4 kJ/mol Hf); Joback-Reid como alternativa declarada | Propiedades en fase líquida o extrapolación térmica certificada |
 | Ajuste cinético | Recuperación de k de una serie analítica sintética; rechazo de R >= R infinito y tiempos sin información | Ajuste independiente de R infinito, incertidumbre estadística o validación industrial |
 | Catálogo heredado | Auditoría de masa/formula/Cp con soporte de aductos/iones/polímeros, fuentes y rangos; metadatos exportados en SQLite | Corrección automática de los 16 566 registros o certificación de sus valores |
 

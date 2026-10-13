@@ -9,8 +9,9 @@
 #include "motores/estimador_propiedades.hpp"
 #include "sim/SimOptimization.hpp"
 #include "tools/ExternalAPI.hpp"
-#include "tools/ExternalAPI.h"
 #include "tools/DataFitter.hpp"
+#include "estimation/BensonEstimator.hpp"
+#include "diagrams/StabilityDiagrams.hpp"
 #include "application/Pca.hpp"
 #include "adapters/desktop/process.hpp"
 #include "base_datos/gestor_db.hpp"
@@ -234,6 +235,53 @@ int main() {
     }
     CHECK(std::abs(solids_out - 100000.0) / 100000.0 < 1e-5);
     CHECK(std::abs(water_out - 35000.0) / 35000.0 < 1e-5);
+
+    // Estimación por aditividad de grupos de Benson (Benson 1976 / Cohen & Benson 1993)
+    cma::application::modules::BensonEstimator benson_est;
+    auto b_c6h6 = benson_est.estimarBenson("C6H6");
+    CHECK(b_c6h6.ok);
+    CHECK(near(b_c6h6.h_formacion, 82.86, 0.05)); // 6 x 13.81 kJ/mol
+    CHECK(b_c6h6.mensaje.find("Benson") != std::string::npos);
+
+    auto b_c2h6 = benson_est.estimarBenson("C2H6");
+    CHECK(b_c2h6.ok);
+    CHECK(near(b_c2h6.h_formacion, -84.34, 0.05)); // 2 x -42.17 kJ/mol
+
+    auto b_c3h8 = benson_est.estimarBenson("C3H8");
+    CHECK(b_c3h8.ok);
+    CHECK(near(b_c3h8.h_formacion, -105.26, 0.05)); // 2 x (-42.17) + (-20.92)
+
+    auto b_ch4 = benson_est.estimarBenson("CH4");
+    CHECK(b_ch4.ok);
+    CHECK(near(b_ch4.h_formacion, -74.87, 0.05));
+
+    // Diagramas de estabilidad de Kellogg (predominancia pirometalúrgica)
+    cma::application::modules::StabilityDiagrams stab_solver;
+    auto cu_points = stab_solver.generar("Cu", 900.0);
+    CHECK(!cu_points.empty());
+    bool has_cu = false, has_cu2s = false, has_cuso4 = false;
+    for (const auto& pt : cu_points) {
+        if (pt.fase == "Cu") has_cu = true;
+        if (pt.fase == "Cu2S") has_cu2s = true;
+        if (pt.fase.find("CuSO4") != std::string::npos) has_cuso4 = true;
+    }
+    CHECK(has_cu && has_cu2s && has_cuso4);
+
+    auto fe_points = stab_solver.generar("Fe", 1000.0);
+    CHECK(!fe_points.empty());
+    bool has_fe = false, has_fes = false, has_feso4 = false, has_oxide = false;
+    for (const auto& pt : fe_points) {
+        if (pt.fase == "Fe") has_fe = true;
+        if (pt.fase == "FeS") has_fes = true;
+        if (pt.fase.find("FeSO4") != std::string::npos) has_feso4 = true;
+        if (pt.fase == "Fe3O4" || pt.fase == "Fe2O3" || pt.fase == "FeO") has_oxide = true;
+    }
+    CHECK(has_fe && has_fes && has_feso4 && has_oxide);
+
+    // Comprobación de límites: rechazo de temperaturas no físicas o metales desconocidos
+    CHECK(stab_solver.generar("Cu", 200.0).empty()); // T < 300 K
+    CHECK(stab_solver.generar("Cu", 3000.0).empty()); // T > 2500 K
+    CHECK(stab_solver.generar("Inexistente", 900.0).empty());
 
     std::cout << checks << " checks; " << failures << " failures\n";
     return failures ? 1 : 0;

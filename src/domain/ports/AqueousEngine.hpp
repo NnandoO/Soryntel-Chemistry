@@ -10,6 +10,10 @@ struct AqueousRequest {
     bool balance_sodium=false;
     bool equilibrate_calcite=false, equilibrate_co2=false;
     double calcite_moles=0, log_co2_pressure=-2;
+    // Fases de equilibrio mineral: nombre -> moles iniciales disponibles (SI objetivo = 0.0)
+    std::map<std::string,double> equilibrium_phases;
+    // Fases gaseosas: nombre -> log10(P en atm)
+    std::map<std::string,double> gas_phases;
 };
 struct AqueousResponse {
     bool ok=false;
