@@ -12,16 +12,10 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
+  build-linux:
+    name: Build & Package (Linux)
     runs-on: ubuntu-24.04
     timeout-minutes: 35
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      AWS_CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DIST_ID }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +31,7 @@ jobs:
             libxi-dev libwayland-dev libxkbcommon-dev wayland-protocols \
             xvfb xauth dpkg
 
-      - name: Configure CMake (Release)
+      - name: Configure CMake (Release Linux)
         run: >-
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
@@ -45,7 +39,7 @@ jobs:
           -DCMA_WITH_IPHREEQC=ON
           -DCMA_WARNINGS_AS_ERRORS=ON
 
-      - name: Compile CMA Chemistry
+      - name: Compile CMA Chemistry (Linux)
         run: cmake --build build -j 2
 
       - name: Run scientific and regression test suite
@@ -65,12 +59,87 @@ jobs:
           cp dist/CMA_Chemistry-*-Linux.deb dist/cma-chemistry-latest-linux.deb
           ls -lh dist/
 
-      - name: Upload Build Artifacts to GitHub
+      - name: Upload Linux Artifacts to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: cma-chemistry-packages
+          name: cma-chemistry-linux-packages
           path: dist/*
           retention-days: 14
+
+  build-windows:
+    name: Build & Package (Windows)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install build dependencies (MinGW cross-toolchain)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build g++-mingw-w64-x86-64 libeigen3-dev zip
+
+      - name: Configure CMake (Release Windows MinGW)
+        run: >-
+          cmake -S . -B build_win -G Ninja
+          -DCMAKE_TOOLCHAIN_FILE=Toolchain-mingw64.cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMA_BUILD_GUI=ON
+          -DCMA_WITH_IPHREEQC=ON
+          -DCMA_WARNINGS_AS_ERRORS=ON
+
+      - name: Compile CMA Chemistry (Windows)
+        run: cmake --build build_win -j 2
+
+      - name: Package with CPack (.zip)
+        run: |
+          cpack --config build_win/CPackConfig.cmake
+          mkdir -p dist
+          mv CMA_Chemistry-*-win64.zip dist/
+          # Crear copia "latest" fija para enlace de descarga
+          cp dist/CMA_Chemistry-*-win64.zip dist/cma-chemistry-latest-windows.zip
+          ls -lh dist/
+
+      - name: Upload Windows Artifacts to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: cma-chemistry-windows-packages
+          path: dist/*
+          retention-days: 14
+
+  deploy:
+    name: Deploy All Packages to AWS S3
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      AWS_CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DIST_ID }}
+
+    steps:
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cma-chemistry-linux-packages
+          path: dist
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cma-chemistry-windows-packages
+          path: dist
+
+      - name: Inspect Packages
+        run: ls -lh dist/
 
       - name: Configure AWS Credentials
         if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
@@ -84,7 +153,7 @@ jobs:
         if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
         run: |
           echo "Subiendo paquetes a s3://${AWS_S3_BUCKET}/releases/ ..."
-          aws s3 cp dist/ s3://${AWS_S3_BUCKET}/releases/ --recursive --exclude "*" --include "*.tar.gz" --include "*.deb"
+          aws s3 cp dist/ s3://${AWS_S3_BUCKET}/releases/ --recursive --exclude "*" --include "*.tar.gz" --include "*.deb" --include "*.zip"
           echo "Despliegue a S3 completado con éxito."
 
       - name: Invalidate CloudFront Cache (Optional)

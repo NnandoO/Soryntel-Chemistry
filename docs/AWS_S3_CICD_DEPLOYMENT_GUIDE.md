@@ -130,14 +130,16 @@ Nunca use la cuenta raíz ni claves de administrador global para el CI/CD.
 
 ## 4. Estructura de Archivos Subidos a S3
 
-Cada vez que se sube un cambio a `main` o se crea una versión con git tag (ej. `git tag v1.0.0 && git push origin v1.0.0`), el workflow `.github/workflows/release.yml` generará y subirá a S3:
+Cada vez que se sube un cambio a `main` o se crea una versión con git tag (ej. `git tag v1.0.0 && git push origin v1.0.0`), el workflow `.github/workflows/release.yml` compilará en paralelo para Linux y Windows, generando y subiendo a S3:
 
 1. **Archivos Versionados:**
-   - `s3://NOMBRE_DE_SU_BUCKET/releases/CMA_Chemistry-1.0.0-Linux.tar.gz`
-   - `s3://NOMBRE_DE_SU_BUCKET/releases/CMA_Chemistry-1.0.0-Linux.deb`
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/CMA_Chemistry-1.0.0-win64.zip` (Windows)
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/CMA_Chemistry-1.0.0-Linux.tar.gz` (Linux)
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/CMA_Chemistry-1.0.0-Linux.deb` (Linux Debian/Ubuntu)
 2. **Archivos de Enlace Fijo ("latest"):**
-   - `s3://NOMBRE_DE_SU_BUCKET/releases/cma-chemistry-latest-linux.tar.gz`
-   - `s3://NOMBRE_DE_SU_BUCKET/releases/cma-chemistry-latest-linux.deb`
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/cma-chemistry-latest-windows.zip` (Windows)
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/cma-chemistry-latest-linux.tar.gz` (Linux)
+   - `s3://NOMBRE_DE_SU_BUCKET/releases/cma-chemistry-latest-linux.deb` (Linux Debian/Ubuntu)
 
 ---
 
@@ -145,14 +147,20 @@ Cada vez que se sube un cambio a `main` o se crea una versión con git tag (ej. 
 
 Para vincular la descarga en su landing page, sitio web corporativo o portal (HTML, React, WordPress, etc.), utilice la URL pública fija de Amazon S3:
 
-### Formato de la URL:
+### Formato de las URLs:
 ```
+# Windows
+https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-windows.zip
+
+# Linux
 https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.tar.gz
 https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.deb
 ```
 
 *(Ejemplo real si su bucket es `cma-downloads` en `us-east-1`)*:
-`https://cma-downloads.s3.us-east-1.amazonaws.com/releases/cma-chemistry-latest-linux.tar.gz`
+- Windows: `https://cma-downloads.s3.us-east-1.amazonaws.com/releases/cma-chemistry-latest-windows.zip`
+- Linux tarball: `https://cma-downloads.s3.us-east-1.amazonaws.com/releases/cma-chemistry-latest-linux.tar.gz`
+- Linux deb: `https://cma-downloads.s3.us-east-1.amazonaws.com/releases/cma-chemistry-latest-linux.deb`
 
 ---
 
@@ -161,21 +169,32 @@ https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-lates
 ```html
 <div class="download-section">
   <h2>Descargar CMA Chemistry</h2>
-  <p>Versión estable más reciente para Linux (Ubuntu, Debian, Fedora, Arch):</p>
-  
-  <!-- Enlace Tarball comprimido -->
-  <a href="https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.tar.gz" 
-     class="btn btn-primary" 
-     download>
-    📦 Descargar Binario (.tar.gz)
-  </a>
 
-  <!-- Enlace Paquete instalador Debian/Ubuntu -->
-  <a href="https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.deb" 
-     class="btn btn-secondary" 
-     download>
-    🐧 Descargar Instalador (.deb)
-  </a>
+  <!-- Windows -->
+  <div class="download-os">
+    <h3>Windows (64-bit)</h3>
+    <p>Incluye ejecutable autónomo y todos los catálogos/datos termodinámicos:</p>
+    <a href="https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-windows.zip" 
+       class="btn btn-primary" 
+       download>
+      🪟 Descargar para Windows (.zip)
+    </a>
+  </div>
+
+  <!-- Linux -->
+  <div class="download-os">
+    <h3>Linux (Ubuntu, Debian, Fedora, Arch)</h3>
+    <a href="https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.tar.gz" 
+       class="btn btn-secondary" 
+       download>
+      📦 Descargar Binario Linux (.tar.gz)
+    </a>
+    <a href="https://NOMBRE_DE_SU_BUCKET.s3.REGION.amazonaws.com/releases/cma-chemistry-latest-linux.deb" 
+       class="btn btn-secondary" 
+       download>
+      🐧 Descargar Instalador Debian/Ubuntu (.deb)
+    </a>
+  </div>
 </div>
 ```
 
