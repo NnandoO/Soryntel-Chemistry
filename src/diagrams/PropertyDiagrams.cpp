@@ -1,7 +1,7 @@
 #include "PropertyDiagrams.hpp"
 #include <cmath>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 std::vector<PuntoPropiedad> PropertyDiagrams::generarCurvas(
     double h_ref, double s_ref, double cp_a, double cp_b,

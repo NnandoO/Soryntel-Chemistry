@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <sstream>
+#include <stdexcept>
 
 namespace cma { namespace motores {
 
@@ -12,12 +13,15 @@ ResultadoODEs SimulacionDinamica::resolver(
                       std::map<std::string,double>& dydt)> f)
 {
     ResultadoODEs res;
+    error_.clear();
     if (condiciones_iniciales.empty()) {
         error_ = "Sin condiciones iniciales";
         return res;
     }
-    if (t_final <= t_inicial || paso <= 0) {
+    if (!std::isfinite(t_inicial) || !std::isfinite(t_final) || !std::isfinite(paso) ||
+        t_final <= t_inicial || paso <= 0 || !f || (t_final - t_inicial) / paso > 1000000) {
         error_ = "t_final debe ser > t_inicial y paso > 0";
+        res.mensaje = error_;
         return res;
     }
 
@@ -26,7 +30,9 @@ ResultadoODEs SimulacionDinamica::resolver(
 
     std::map<std::string, double> y = condiciones_iniciales;
     double t = t_inicial;
-    int n = vars.size();
+    for (const auto& [name, value] : y) {
+        if (!std::isfinite(value)) { res.mensaje = "Condición inicial no finita: " + name; return res; }
+    }
 
     auto guardar = [&]() {
         res.tiempos.push_back(t);
@@ -36,36 +42,49 @@ ResultadoODEs SimulacionDinamica::resolver(
 
     guardar();
 
-    int pasos = (int)((t_final - t_inicial) / paso);
+    int pasos = static_cast<int>(std::ceil((t_final - t_inicial) / paso));
     for (int i = 0; i < pasos; ++i) {
+        const double h = std::min(paso, t_final - t);
         // RK4
         std::map<std::string, double> k1, k2, k3, k4, yt;
 
-        auto f_eval = [&](const std::map<std::string,double>& yy,
+        auto f_eval = [&](double tiempo, const std::map<std::string,double>& yy,
                           std::map<std::string,double>& kk) {
             std::map<std::string,double> dydt;
-            f(t, yy, dydt);
-            for (auto& v : vars) kk[v] = dydt[v] * paso;
+            f(tiempo, yy, dydt);
+            for (auto& v : vars) {
+                auto it = dydt.find(v);
+                if (it == dydt.end() || !std::isfinite(it->second))
+                    throw std::invalid_argument("Derivada ausente o no finita: " + v);
+                kk[v] = it->second * h;
+            }
         };
 
-        f_eval(y, k1);
+        try {
+        f_eval(t, y, k1);
 
         yt = y;
         for (auto& v : vars) yt[v] = y[v] + 0.5 * k1[v];
-        f_eval(yt, k2);
+        f_eval(t + h / 2, yt, k2);
 
         yt = y;
         for (auto& v : vars) yt[v] = y[v] + 0.5 * k2[v];
-        f_eval(yt, k3);
+        f_eval(t + h / 2, yt, k3);
 
         yt = y;
         for (auto& v : vars) yt[v] = y[v] + k3[v];
-        f_eval(yt, k4);
+        f_eval(t + h, yt, k4);
 
         for (auto& v : vars)
             y[v] = y[v] + (k1[v] + 2*k2[v] + 2*k3[v] + k4[v]) / 6.0;
 
-        t += paso;
+        for (const auto& [name, value] : y)
+            if (!std::isfinite(value)) throw std::invalid_argument("Estado no finito: " + name);
+        } catch (const std::exception& e) {
+            error_ = res.mensaje = e.what();
+            return res;
+        }
+        t = (i + 1 == pasos) ? t_final : t + h;
         guardar();
     }
 
@@ -89,13 +108,19 @@ std::vector<double> SimulacionDinamica::perfil_temperatura_horno(
     double t_max, double dt)
 {
     std::vector<double> perfil;
+    if (!std::isfinite(dt) || !std::isfinite(t_max) || dt <= 0 || t_max < 0 ||
+        t_max / dt > 1000000 || !std::isfinite(T0) || !std::isfinite(T_amb) ||
+        !std::isfinite(masa) || !std::isfinite(cp) || !std::isfinite(hA) ||
+        masa <= 0 || cp <= 0 || hA < 0) {
+        error_ = "Parámetros de horno inválidos";
+        return perfil;
+    }
     double T = T0;
     double denom = masa * cp;
     if (std::abs(denom) < 1e-15) { perfil.push_back(T); return perfil; }
     for (double t = 0; t <= t_max; t += dt) {
         perfil.push_back(T);
-        double dTdt = -hA * (T - T_amb) / denom;
-        T += dTdt * dt;
+        T = T_amb + (T0 - T_amb) * std::exp(-hA * (t + dt) / denom);
     }
     return perfil;
 }
@@ -104,6 +129,11 @@ ResultadoODEs SimulacionDinamica::reactor_batch_dinamico(
     double T, double V, double k0, double Ea,
     const std::vector<double>& C0, int orden, double t_max, double dt)
 {
+    if (C0.empty() || !std::isfinite(T) || T <= 0 || !std::isfinite(V) || V <= 0 ||
+        !std::isfinite(k0) || k0 < 0 || !std::isfinite(Ea) || Ea < 0 || orden < 0 || orden > 2 ||
+        std::any_of(C0.begin(), C0.end(), [](double c) { return !std::isfinite(c) || c < 0; })) {
+        ResultadoODEs res; res.mensaje = "Parámetros de reactor inválidos"; return res;
+    }
     // Arrhenius: k = k0 * exp(-Ea/(R*T)) — Ea en kJ/mol, R en J/(mol·K)
     double R = 8.314462618;
     double k = k0 * std::exp(-Ea * 1000.0 / (R * T));
@@ -112,7 +142,7 @@ ResultadoODEs SimulacionDinamica::reactor_batch_dinamico(
     for (size_t i = 0; i < C0.size(); ++i)
         ci["C[" + std::to_string(i) + "]"] = C0[i];
 
-    auto f = [&](double t, const std::map<std::string,double>& y,
+    auto f = [&](double, const std::map<std::string,double>& y,
                  std::map<std::string,double>& dydt) {
         double c0 = y.at("C[0]");
         double rate = k * std::pow(std::max(c0, 0.0), orden);

@@ -1,7 +1,8 @@
 #pragma once
+#include "application/modules.hpp"
 #include <vector>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct PuntoPropiedad {
     double T;

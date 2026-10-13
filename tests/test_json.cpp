@@ -1,4 +1,4 @@
-#include "src/diagrama_flujo/flowsheet.hpp"
+#include "diagrama_flujo/flowsheet.hpp"
 #include <iostream>
 int main() {
     cma::diagrama_flujo::Flowsheet fs;
@@ -11,6 +11,7 @@ int main() {
         std::cout << "SUCCESS" << std::endl;
     } else {
         std::cout << "ERROR: " << err << std::endl;
+        return 1;
     }
     return 0;
 }

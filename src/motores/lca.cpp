@@ -38,7 +38,7 @@ double LCA::huella_carbono_total(const ImpactoLCA& impacto) {
 
 ImpactoLCA LCA::evaluar_proceso(
     double kWh, double gas_m3, double combustible_kg,
-    double materia_kg, double producto_kg, double agua_m3)
+    double materia_kg, double /*producto_kg*/, double agua_m3)
 {
     ImpactoLCA res;
 

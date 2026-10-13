@@ -5,8 +5,7 @@ add_library(cma_tools STATIC
     UnitConverter.cpp
     LCAEvaluator.cpp
     DataFitter.cpp
-    ExternalAPI.cpp
 )
 target_include_directories(cma_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(cma_tools PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(cma_tools PUBLIC Eigen3::Eigen SQLite3::SQLite3)
+target_link_libraries(cma_tools PUBLIC cma_domain cma_platform)

@@ -1,0 +1,94 @@
+name: Build, Package & Deploy to S3
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      AWS_CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DIST_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build g++ libeigen3-dev libsqlite3-dev python3 \
+            libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+            libxi-dev libwayland-dev libxkbcommon-dev wayland-protocols \
+            xvfb xauth dpkg
+
+      - name: Configure CMake (Release)
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMA_BUILD_GUI=ON
+          -DCMA_WITH_IPHREEQC=ON
+          -DCMA_WARNINGS_AS_ERRORS=ON
+
+      - name: Compile CMA Chemistry
+        run: cmake --build build -j 2
+
+      - name: Run scientific and regression test suite
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Desktop UI smoke test
+        run: timeout 30s xvfb-run -a ./build/cma_chemistry --smoke-test
+
+      - name: Package with CPack (.tar.gz and .deb)
+        run: |
+          cpack --config build/CPackConfig.cmake
+          mkdir -p dist
+          mv CMA_Chemistry-*-Linux.tar.gz dist/
+          mv CMA_Chemistry-*-Linux.deb dist/
+          # Crear copias "latest" para enlaces fijos de descarga
+          cp dist/CMA_Chemistry-*-Linux.tar.gz dist/cma-chemistry-latest-linux.tar.gz
+          cp dist/CMA_Chemistry-*-Linux.deb dist/cma-chemistry-latest-linux.deb
+          ls -lh dist/
+
+      - name: Upload Build Artifacts to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: cma-chemistry-packages
+          path: dist/*
+          retention-days: 14
+
+      - name: Configure AWS Credentials
+        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to AWS S3
+        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
+        run: |
+          echo "Subiendo paquetes a s3://${AWS_S3_BUCKET}/releases/ ..."
+          aws s3 cp dist/ s3://${AWS_S3_BUCKET}/releases/ --recursive --exclude "*" --include "*.tar.gz" --include "*.deb"
+          echo "Despliegue a S3 completado con éxito."
+
+      - name: Invalidate CloudFront Cache (Optional)
+        if: env.AWS_CLOUDFRONT_DIST_ID != '' && env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          echo "Invalidando caché de CloudFront para /releases/* ..."
+          aws cloudfront create-invalidation --distribution-id ${AWS_CLOUDFRONT_DIST_ID} --paths "/releases/*"

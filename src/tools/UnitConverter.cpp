@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 static double to_base_temperature(double v, const std::string& u) {
     if (u == "K") return v;
@@ -82,4 +82,4 @@ double UnitConverter::convertir(double valor, const std::string& de, const std::
     return valor;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

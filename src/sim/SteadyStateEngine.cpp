@@ -1,6 +1,6 @@
 #include "SteadyStateEngine.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoSteadyState SteadyStateEngine::ejecutar(const cma::diagrama_flujo::Flowsheet& fs) {
     auto res = balance_masa_.resolver(fs);
@@ -11,4 +11,4 @@ ResultadoSteadyState SteadyStateEngine::ejecutar(const cma::diagrama_flujo::Flow
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

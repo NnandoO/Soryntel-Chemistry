@@ -212,7 +212,7 @@ void GestorUnidades::guardar_a_json(const std::string& ruta) const {
 double GestorUnidades::convertir(double valor, const std::string& categoria, int from_idx, int to_idx) const {
     for (const auto& cat : categorias_) {
         if (cat.nombre == categoria) {
-            if (from_idx >= 0 && from_idx < cat.unidades.size() && to_idx >= 0 && to_idx < cat.unidades.size()) {
+            if (from_idx >= 0 && static_cast<size_t>(from_idx) < cat.unidades.size() && to_idx >= 0 && static_cast<size_t>(to_idx) < cat.unidades.size()) {
                 const auto& u_from = cat.unidades[from_idx];
                 const auto& u_to = cat.unidades[to_idx];
                 
@@ -234,7 +234,7 @@ double GestorUnidades::obtener_factor(const std::string& categoria, int from_idx
     // Para mostrar en la UI, devolvemos el factor directo (si es multiplicativo)
     for (const auto& cat : categorias_) {
         if (cat.nombre == categoria) {
-            if (from_idx >= 0 && from_idx < cat.unidades.size() && to_idx >= 0 && to_idx < cat.unidades.size()) {
+            if (from_idx >= 0 && static_cast<size_t>(from_idx) < cat.unidades.size() && to_idx >= 0 && static_cast<size_t>(to_idx) < cat.unidades.size()) {
                 if (cat.nombre == "Temperature") return 0.0; // No simple multiplier for temp
                 const auto& u_from = cat.unidades[from_idx];
                 const auto& u_to = cat.unidades[to_idx];

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <sstream>
+#include "domain/DataProvenance.hpp"
 
 namespace cma { namespace nucleo {
 
@@ -35,6 +36,7 @@ constexpr const char* nombre_fase(Fase f) {
 
 // ── Especie química ─────────────────────────────────────────────────────────
 struct Especie {
+    domain::DataProvenance provenance;
     int64_t     id        = 0;
     std::string nombre;
     std::string formula;
@@ -129,6 +131,18 @@ struct Reaccion {
     }
 };
 
+// ── Partículas y Procesamiento Mineral ──────────────────────────────────────
+struct MineralParticle {
+    std::string mineral;
+    double diameter_um = 0.0;
+    double mass_kg_h   = 0.0;
+};
+
+struct ParticleStream {
+    std::vector<MineralParticle> particles;
+    double water_kg_h = 0.0;
+};
+
 // ── Flujo (Stream) ──────────────────────────────────────────────────────────
 struct Flujo {
     int64_t     id     = 0;
@@ -144,6 +158,18 @@ struct Flujo {
     double fraccion_solido = 0.0;
     double fraccion_liquido = 0.0;
     double fraccion_gas = 0.0;
+
+    // Corriente particulada (procesamiento mineral)
+    std::vector<MineralParticle> particulas;
+    double agua_kg_h = 0.0;
+
+    ParticleStream a_corriente_particulas() const {
+        return {particulas, agua_kg_h};
+    }
+    void desde_corriente_particulas(const ParticleStream& stream) {
+        particulas = stream.particles;
+        agua_kg_h = stream.water_kg_h;
+    }
 
     // Propiedades térmicas
     double temperatura = STP_TEMP;    // K
@@ -168,6 +194,8 @@ struct Flujo {
     double flujo_total() const {
         double s = 0;
         for (auto& [_, n] : flujo_molar) s += n;
+        for (const auto& p : particulas) s += p.mass_kg_h;
+        s += agua_kg_h;
         return s;
     }
 
@@ -245,6 +273,10 @@ struct Flujo {
             if (it != db.end())
                 m += n * it->second.masa_molar;
         }
+        for (const auto& p : particulas) {
+            m += p.mass_kg_h / 3.6; // kg/h -> g/s (m is in g/s before / 1000)
+        }
+        m += agua_kg_h / 3.6;
         return m / 1000.0;
     }
 };

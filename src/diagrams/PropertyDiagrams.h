@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class PropertyDiagrams {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "PropertyDiagrams.hpp"

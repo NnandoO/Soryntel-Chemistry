@@ -1,10 +1,11 @@
 #pragma once
+#include "application/modules.hpp"
 #include "../motores/reconciliacion_datos.hpp"
 #include <vector>
 #include <string>
 #include <map>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 using Medicion = cma::motores::Medicion;
 
@@ -25,4 +26,4 @@ private:
     cma::motores::ReconciliacionDatos reconciliacion_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

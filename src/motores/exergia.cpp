@@ -1,15 +1,20 @@
 #include "exergia.hpp"
 #include <cmath>
 #include <sstream>
+#include <limits>
 
 namespace cma { namespace motores {
 
-double Exergia::exergia_fisica(double h, double h0, double T, double T0,
+double Exergia::exergia_fisica(double h, double h0, double /*T*/, double T0,
                                 double s, double s0) {
     return (h - h0) - T0 * (s - s0);
 }
 
 double Exergia::exergia_quimica_especie(const std::string& formula, double T0) {
+    if (!std::isfinite(T0) || std::abs(T0-298.15)>1e-8) {
+        error_="Tabla de exergía química solo a 298.15 K";
+        return std::numeric_limits<double>::quiet_NaN();
+    }
     // Valores de exergía química estándar (kJ/mol) a 298.15K, 1 atm
     static const std::map<std::string, double> tabla = {
         {"O2", 3.97}, {"N2", 0.72}, {"H2", 236.09}, {"H2O", 0.0},
@@ -28,8 +33,8 @@ double Exergia::exergia_quimica_especie(const std::string& formula, double T0) {
     auto it = tabla.find(formula);
     if (it != tabla.end()) return it->second;
 
-    // Estimación por defecto
-    return 100.0;
+    error_="No hay exergía química de referencia para "+formula;
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 ResultadoExergia Exergia::analizar_proceso(

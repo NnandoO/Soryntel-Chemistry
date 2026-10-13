@@ -181,55 +181,142 @@ const Elemento* TablaPeriodica::por_nombre(const std::string& nombre) const {
     return nullptr;
 }
 
-std::vector<TablaPeriodica::CompAtom> TablaPeriodica::analizar_formula(const std::string& formula) const {
-    int pos = 0;
-    auto parse_group = [&](auto& self, int& p) -> std::vector<CompAtom> {
-        std::vector<CompAtom> group;
-        while (p < formula.size() && formula[p] != ')') {
-            if (formula[p] == '(') {
-                p++; // saltar '('
-                auto inner = self(self, p);
-                if (p < formula.size() && formula[p] == ')') p++; // saltar ')'
-                
-                int mult = 0;
-                while (p < formula.size() && std::isdigit(formula[p])) {
-                    mult = mult * 10 + (formula[p] - '0');
-                    p++;
-                }
-                if (mult == 0) mult = 1;
-                
-                for (auto& ca : inner) {
-                    ca.cuenta *= mult;
-                    bool found = false;
-                    for (auto& g_ca : group) {
-                        if (g_ca.elem == ca.elem) { g_ca.cuenta += ca.cuenta; found = true; break; }
-                    }
-                    if (!found) group.push_back(ca);
-                }
-            } else if (std::isupper(formula[p])) {
-                std::string el(1, formula[p++]);
-                if (p < formula.size() && std::islower(formula[p])) el += formula[p++];
-                
-                int cnt = 0;
-                while (p < formula.size() && std::isdigit(formula[p])) {
-                    cnt = cnt * 10 + (formula[p] - '0');
-                    p++;
-                }
-                if (cnt == 0) cnt = 1;
-                
-                bool found = false;
-                for (auto& ca : group) {
-                    if (ca.elem == el) { ca.cuenta += cnt; found = true; break; }
-                }
-                if (!found) group.push_back({el, cnt});
-            } else {
-                p++; // ignorar otros caracteres (e.g., cargas +, -)
-            }
+std::vector<TablaPeriodica::CompAtom> TablaPeriodica::analizar_formula(const std::string& raw) const {
+    if (raw.size() > 4096) return {};
+    std::string formula = raw;
+    const std::string digits[] = {"₀","₁","₂","₃","₄","₅","₆","₇","₈","₉"};
+    for (int i = 0; i < 10; ++i) {
+        size_t at = 0;
+        while ((at = formula.find(digits[i], at)) != std::string::npos)
+            formula.replace(at, digits[i].size(), 1, static_cast<char>('0' + i));
+    }
+    if (formula == "e-" || formula == "e") return {};
+
+    // Suffix polymer: (C8H8)n -> (C8H8)
+    if (formula.size() >= 2 && (formula.back() == 'n' || formula.back() == 'N') && formula[formula.size()-2] == ')') {
+        formula.pop_back();
+    }
+
+    // Phase/charge suffixes are not chemical groups.
+    if (!formula.empty() && formula.back() == ')') {
+        const auto open = formula.rfind('(');
+        if (open != std::string::npos) {
+            const auto tag = formula.substr(open + 1, formula.size() - open - 2);
+            if (tag == "g" || tag == "l" || tag == "s" || tag == "a" || tag == "aq" ||
+                tag == "α" || tag == "β" || (!tag.empty() && (tag[0] == '+' || tag[0] == '-')))
+                formula.resize(open);
         }
-        return group;
+    }
+
+    // Strip superscript ionic charges (⁺, ⁻, ²⁺, ²⁻, etc.)
+    auto ends_with = [](const std::string& str, const std::string& suffix) {
+        return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
     };
-    
-    return parse_group(parse_group, pos);
+    if (ends_with(formula, "\xE2\x81\xBA") || ends_with(formula, "\xE2\x81\xBB")) { // ⁺ or ⁻
+        formula.erase(formula.size() - 3);
+        if (ends_with(formula, "\xC2\xB9") || ends_with(formula, "\xC2\xB2") || ends_with(formula, "\xC2\xB3")) {
+            formula.erase(formula.size() - 2);
+        } else if (formula.size() >= 3 && static_cast<unsigned char>(formula[formula.size()-3]) == 0xE2 &&
+                   static_cast<unsigned char>(formula[formula.size()-2]) == 0x81 &&
+                   static_cast<unsigned char>(formula[formula.size()-1]) >= 0xB0 &&
+                   static_cast<unsigned char>(formula[formula.size()-1]) <= 0xB9) {
+            formula.erase(formula.size() - 3);
+        }
+    } else if (!formula.empty() && (formula.back() == '+' || formula.back() == '-')) {
+        formula.pop_back();
+        while (!formula.empty() && std::isdigit(static_cast<unsigned char>(formula.back()))) {
+            formula.pop_back();
+        }
+    }
+
+    // Split into adduct parts by *, · (C2 B7), • (E2 80 A2)
+    std::vector<std::string> parts;
+    size_t idx = 0;
+    std::string current;
+    while (idx < formula.size()) {
+        if (formula[idx] == '*') {
+            parts.push_back(current); current.clear(); ++idx;
+        } else if (idx + 1 < formula.size() && static_cast<unsigned char>(formula[idx]) == 0xC2 && static_cast<unsigned char>(formula[idx+1]) == 0xB7) { // ·
+            parts.push_back(current); current.clear(); idx += 2;
+        } else if (idx + 2 < formula.size() && static_cast<unsigned char>(formula[idx]) == 0xE2 && static_cast<unsigned char>(formula[idx+1]) == 0x80 && static_cast<unsigned char>(formula[idx+2]) == 0xA2) { // •
+            parts.push_back(current); current.clear(); idx += 3;
+        } else {
+            current.push_back(formula[idx++]);
+        }
+    }
+    parts.push_back(current);
+
+    std::map<std::string, int> all_atoms;
+    for (std::string& part : parts) {
+        while (!part.empty() && std::isspace(static_cast<unsigned char>(part.front()))) part.erase(0, 1);
+        while (!part.empty() && std::isspace(static_cast<unsigned char>(part.back()))) part.pop_back();
+        if (part.empty()) return {};
+
+        // Variable hydrate like nH2O -> H2O
+        if (part.size() >= 2 && part[0] == 'n' && std::isupper(static_cast<unsigned char>(part[1]))) {
+            part.erase(0, 1);
+        }
+
+        // Leading integer multiplier (e.g. 2PbO -> 2, PbO)
+        int multiplier = 1;
+        size_t num_len = 0;
+        while (num_len < part.size() && std::isdigit(static_cast<unsigned char>(part[num_len]))) {
+            ++num_len;
+        }
+        if (num_len > 0) {
+            try {
+                multiplier = std::stoi(part.substr(0, num_len));
+            } catch (...) { return {}; }
+            part.erase(0, num_len);
+            if (part.empty() || multiplier <= 0 || multiplier > 100000) return {};
+        }
+
+        size_t pos = 0;
+        bool valid = true;
+        auto number = [&]() {
+            int count = 0; bool seen = false;
+            while (pos < part.size() && std::isdigit(static_cast<unsigned char>(part[pos]))) {
+                seen = true;
+                if (count > 100000) { valid = false; return 1; }
+                count = count * 10 + part[pos++] - '0';
+            }
+            if (seen && count == 0) { valid = false; return 1; }
+            return seen ? count : 1;
+        };
+        auto parse = [&](auto& self, int depth) -> std::map<std::string,int> {
+            std::map<std::string,int> atoms;
+            if (depth > 32) { valid = false; return atoms; }
+            while (valid && pos < part.size() && part[pos] != ')') {
+                std::map<std::string,int> sub;
+                if (part[pos] == '(') {
+                    ++pos; sub = self(self, depth + 1);
+                    if (pos == part.size() || part[pos] != ')') { valid = false; break; }
+                    ++pos;
+                } else if (std::isupper(static_cast<unsigned char>(part[pos]))) {
+                    std::string element(1, part[pos++]);
+                    if (pos < part.size() && std::islower(static_cast<unsigned char>(part[pos]))) element += part[pos++];
+                    if (!por_simbolo(element)) { valid = false; break; }
+                    sub[element] = 1;
+                } else { valid = false; break; }
+                const int factor = number();
+                for (const auto& [element, count] : sub) {
+                    if (count > 1000000 / factor || atoms[element] > 1000000 - count * factor) { valid = false; break; }
+                    atoms[element] += count * factor;
+                }
+            }
+            return atoms;
+        };
+
+        const auto part_atoms = parse(parse, 0);
+        if (!valid || pos != part.size()) return {};
+        for (const auto& [elem, count] : part_atoms) {
+            all_atoms[elem] += count * multiplier;
+        }
+    }
+
+    std::vector<CompAtom> result;
+    for (const auto& [element, count] : all_atoms) result.push_back({element,count});
+    return result;
 }
 
 }} // namespace

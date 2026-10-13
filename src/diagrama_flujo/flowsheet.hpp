@@ -1,5 +1,6 @@
 #pragma once
 #include "nucleo/tipos.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include <vector>
 #include <map>
 #include <memory>
@@ -85,6 +86,7 @@ public:
         std::string mensaje;
     };
     ResultadoConvergencia resolver_convergencia(
+        const domain::ThermoRepository& repository,
         int max_iter = 500,
         double tolerancia = 1e-6,
         std::function<void(int, double)> progreso = nullptr);

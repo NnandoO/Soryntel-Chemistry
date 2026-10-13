@@ -1,55 +1,72 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 project(CMA_Chemistry VERSION 1.0.0 LANGUAGES CXX)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-add_compile_definitions(_USE_MATH_DEFINES)
-
-# ── Dependencias externas (usando directorios cacheados) ──
-include(FetchContent)
-
-set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/_deps)
-
-FetchContent_Declare(glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
-    GIT_TAG 3.4
-    SOURCE_DIR ${CMAKE_SOURCE_DIR}/deps_win/glfw_src
-)
-FetchContent_Declare(imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.91.8
-    SOURCE_DIR ${FETCHCONTENT_BASE_DIR}/imgui-src
-)
-FetchContent_Declare(implot
-    GIT_REPOSITORY https://github.com/epezent/implot.git
-    GIT_TAG v0.17
-    SOURCE_DIR ${FETCHCONTENT_BASE_DIR}/implot-src
-)
-FetchContent_Declare(eigen
-    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-    GIT_TAG 3.4.0
-    SOURCE_DIR ${FETCHCONTENT_BASE_DIR}/eigen-src
-)
-FetchContent_Declare(implot3d
-    GIT_REPOSITORY https://github.com/brenocq/implot3d.git
-    GIT_TAG main
-    SOURCE_DIR ${FETCHCONTENT_BASE_DIR}/implot3d-src
-)
-
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
-
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-
-FetchContent_MakeAvailable(glfw imgui implot implot3d eigen)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(CMA_BUILD_GUI "Build the desktop adapter" ON)
+option(CMA_SANITIZERS "Enable address and undefined behavior sanitizers" OFF)
+option(CMA_WARNINGS_AS_ERRORS "Reject compiler warnings" OFF)
+option(CMA_WITH_IPHREEQC "Build the USGS advanced aqueous adapter (downloads pinned source)" ON)
+include(CTest)
+find_package(Eigen3 CONFIG REQUIRED)
+if(Eigen3_VERSION VERSION_LESS 3.4)
+    message(FATAL_ERROR "Eigen >= 3.4 is required")
+endif()
 find_package(SQLite3 REQUIRED)
-
-# ── Módulos nuevos ──
+if(TARGET SQLite3::SQLite3)
+    set(CMA_SQLITE_TARGET SQLite3::SQLite3)
+else()
+    set(CMA_SQLITE_TARGET SQLite::SQLite3)
+endif()
+find_package(Threads REQUIRED)
+add_library(cma_options INTERFACE)
+target_compile_definitions(cma_options INTERFACE _USE_MATH_DEFINES)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(cma_options INTERFACE -Wall -Wextra -Wpedantic -Wno-format-security)
+    if(CMA_WARNINGS_AS_ERRORS)
+        target_compile_options(cma_options INTERFACE -Werror)
+    endif()
+    if(CMA_SANITIZERS)
+        target_compile_options(cma_options INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
+        target_link_options(cma_options INTERFACE -fsanitize=address,undefined)
+    endif()
+endif()
+# Scientific core has no persistence or desktop link dependencies.
+file(GLOB CMA_DOMAIN_SOURCES CONFIGURE_DEPENDS src/motores/*.cpp)
+add_library(cma_domain STATIC ${CMA_DOMAIN_SOURCES}
+    src/nucleo/tabla_periodica.cpp src/diagrama_flujo/flowsheet.cpp)
+target_include_directories(cma_domain PUBLIC src)
+target_include_directories(cma_domain SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/third_party/if97)
+target_link_libraries(cma_domain PUBLIC Eigen3::Eigen cma_options)
+add_library(cma_persistence STATIC src/base_datos/gestor_db.cpp
+    src/adapters/persistence/MinteqImporter.cpp
+    src/base_datos/gestor_elementos.cpp src/base_datos/gestor_unidades.cpp)
+target_include_directories(cma_persistence PUBLIC src)
+target_link_libraries(cma_persistence PUBLIC cma_domain PRIVATE ${CMA_SQLITE_TARGET})
+add_library(cma_platform STATIC src/adapters/desktop/process.cpp src/tools/ExternalAPI.cpp)
+add_library(cma_advanced_aqueous STATIC src/adapters/scientific/PhreeqcEngine.cpp)
+target_include_directories(cma_advanced_aqueous PUBLIC src)
+target_link_libraries(cma_advanced_aqueous PUBLIC cma_options)
+if(CMA_WITH_IPHREEQC)
+    include(FetchContent)
+    set(IPHREEQC_ENABLE_MODULE OFF CACHE BOOL "" FORCE)
+    if(POLICY CMP0135)
+        cmake_policy(SET CMP0135 NEW)
+    endif()
+    FetchContent_Declare(iphreeqc
+        URL https://codeload.github.com/phreeqc-dev/iphreeqc/tar.gz/f107fcb2f2e1e3167ce4c1328e477b54dee3d21b
+        URL_HASH SHA256=c70904cd4ec3104489d5c9be9ee90788bab0182370d78062f366f662cc0b0744)
+    FetchContent_MakeAvailable(iphreeqc)
+    target_link_libraries(cma_advanced_aqueous PRIVATE IPhreeqc)
+    target_compile_definitions(cma_advanced_aqueous PRIVATE CMA_HAVE_IPHREEQC)
+endif()
+target_include_directories(cma_platform PUBLIC src)
+target_link_libraries(cma_platform PUBLIC cma_options)
+target_compile_definitions(cma_platform PRIVATE CMA_SOURCE_RESOURCE_DIR="${CMAKE_SOURCE_DIR}")
+if(WIN32)
+    target_link_libraries(cma_platform PRIVATE comdlg32)
+endif()
 add_subdirectory(src/sim)
 add_subdirectory(src/thermo)
 add_subdirectory(src/diagrams)
@@ -57,94 +74,77 @@ add_subdirectory(src/aqueous)
 add_subdirectory(src/db)
 add_subdirectory(src/estimation)
 add_subdirectory(src/tools)
-
-# ── Fuentes de ImGui ──
-set(IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
-)
-set(IMPLOT_SOURCES
-    ${implot_SOURCE_DIR}/implot.cpp
-    ${implot_SOURCE_DIR}/implot_items.cpp
-)
-set(IMPLOT3D_SOURCES
-    ${implot3d_SOURCE_DIR}/implot3d.cpp
-    ${implot3d_SOURCE_DIR}/implot3d_items.cpp
-    ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp
-)
-
-# ── Ejecutable principal ──
-add_executable(cma_chemistry
-    src/main.cpp
-    src/nucleo/tabla_periodica.cpp
-    src/base_datos/gestor_db.cpp
-    src/base_datos/gestor_elementos.cpp
-    src/base_datos/gestor_unidades.cpp
-    src/diagrama_flujo/flowsheet.cpp
-    src/interfaz/aplicacion.cpp
-    src/interfaz/paneles.cpp
-    src/interfaz/lienzo.cpp
-    src/motores/balance_masa.cpp
-    src/motores/balance_energia.cpp
-    src/motores/balance_exergia.cpp
-    src/motores/minimizador_gibbs.cpp
-    src/motores/equilibrio_fases.cpp
-    src/motores/electroquimica.cpp
-    src/motores/cinetica.cpp
-    src/motores/destilacion.cpp
-    src/motores/simulacion_dinamica.cpp
-    src/motores/reconciliacion_datos.cpp
-    src/motores/exergia.cpp
-    src/motores/agua.cpp
-    src/motores/soluciones_acuosas.cpp
-    src/motores/perdida_calor.cpp
-    src/motores/estimador_propiedades.cpp
-    src/motores/lca.cpp
-    src/motores/pourbaix.cpp
-    src/utils/i18n.cpp
-    ${IMGUI_SOURCES}
-    ${IMPLOT_SOURCES}
-    ${IMPLOT3D_SOURCES}
-)
-target_include_directories(cma_chemistry PRIVATE
-    src
-    ${glfw_SOURCE_DIR}/include
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
-    ${implot_SOURCE_DIR}
-    ${implot3d_SOURCE_DIR}
-    ${eigen_SOURCE_DIR}
-    ${SQLite3_INCLUDE_DIRS}
-)
-target_link_libraries(cma_chemistry PRIVATE
-    glfw ${CMAKE_DL_LIBS} ${SQLite3_LIBRARIES}
-    cma_sim cma_thermo cma_diagrams cma_aqueous
-    cma_db cma_estimation cma_tools
-)
-
-find_package(OpenGL REQUIRED)
-target_link_libraries(cma_chemistry PRIVATE OpenGL::GL)
-
-# ── Instalación y Empaquetado (CPack) ──
-install(TARGETS cma_chemistry DESTINATION bin)
-# Si hay bases de datos, deberían copiarse a bin o share (por simplicidad, asumimos relativas al binario en dev)
-
-set(CPACK_PACKAGE_NAME "CMA_Chemistry")
-set(CPACK_PACKAGE_VENDOR "CMA")
-set(CPACK_PACKAGE_VERSION "1.0.0")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CMA Chemistry - Chemical Engineering Simulator")
-
-if(WIN32)
-    set(CPACK_GENERATOR "NSIS")
-    set(CPACK_NSIS_DISPLAY_NAME "CMA Chemistry")
-else()
-    set(CPACK_GENERATOR "DEB;TGZ")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Nando")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgl1, libsqlite3-0")
+add_executable(cma_catalog_audit tools/catalog_audit.cpp)
+target_link_libraries(cma_catalog_audit PRIVATE cma_persistence)
+if(BUILD_TESTING)
+    if(CMA_WITH_IPHREEQC)
+        add_executable(cma_advanced_aqueous_tests tests/advanced_aqueous.cpp)
+        target_link_libraries(cma_advanced_aqueous_tests PRIVATE cma_advanced_aqueous)
+        add_test(NAME usgs_advanced_aqueous_reference COMMAND cma_advanced_aqueous_tests
+            ${CMAKE_SOURCE_DIR}/data/reference/phreeqc)
+    endif()
+    add_executable(cma_reference_tests tests/scientific_reference.cpp)
+    target_link_libraries(cma_reference_tests PRIVATE cma_domain cma_persistence)
+    add_test(NAME scientific_reference_models COMMAND cma_reference_tests ${CMAKE_SOURCE_DIR}/data)
+    add_executable(cma_regression_tests tests/regression.cpp)
+    target_link_libraries(cma_regression_tests PRIVATE cma_domain cma_persistence cma_platform cma_sim cma_thermo cma_tools cma_diagrams cma_estimation ${CMA_SQLITE_TARGET})
+    add_test(NAME scientific_regressions COMMAND cma_regression_tests)
+    add_executable(cma_gibbs_tests tests/test_hsc_gem_debug.cpp)
+    target_link_libraries(cma_gibbs_tests PRIVATE cma_domain cma_persistence)
+    add_test(NAME gibbs_reference COMMAND cma_gibbs_tests)
+    add_executable(cma_json_tests tests/test_json.cpp)
+    target_link_libraries(cma_json_tests PRIVATE cma_domain)
+    add_test(NAME project_roundtrip COMMAND cma_json_tests)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME architecture_boundaries COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_SOURCE_DIR}/tests/check_architecture.py ${CMAKE_SOURCE_DIR})
+    add_test(NAME source_structure COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_structure.py)
+    add_test(NAME external_reference_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/reference_data.py)
 endif()
-
-include(CPack)
+if(CMA_BUILD_GUI)
+    include(FetchContent)
+    FetchContent_Declare(glfw GIT_REPOSITORY https://github.com/glfw/glfw.git GIT_TAG 3.4 GIT_SHALLOW TRUE)
+    FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git GIT_TAG v1.91.8 GIT_SHALLOW TRUE)
+    FetchContent_Declare(implot GIT_REPOSITORY https://github.com/epezent/implot.git GIT_TAG v0.17 GIT_SHALLOW TRUE)
+    FetchContent_Declare(implot3d GIT_REPOSITORY https://github.com/brenocq/implot3d.git
+        GIT_TAG 7913cf11684730119bd284fd8e7052d140e72f61)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(glfw imgui implot implot3d)
+    find_package(OpenGL REQUIRED)
+    add_library(cma_graphics STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+        ${implot_SOURCE_DIR}/implot.cpp ${implot_SOURCE_DIR}/implot_items.cpp
+        ${implot3d_SOURCE_DIR}/implot3d.cpp ${implot3d_SOURCE_DIR}/implot3d_items.cpp
+        ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp)
+    target_include_directories(cma_graphics PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+        ${implot_SOURCE_DIR} ${implot3d_SOURCE_DIR})
+    target_link_libraries(cma_graphics PUBLIC glfw OpenGL::GL ${CMAKE_DL_LIBS})
+    file(GLOB CMA_PANEL_SOURCES CONFIGURE_DEPENDS src/interfaz/panels/*.cpp
+        src/interfaz/application/*.cpp src/interfaz/canvas/*.cpp)
+    add_executable(cma_chemistry src/main.cpp src/interfaz/aplicacion.cpp
+        src/interfaz/paneles.cpp src/interfaz/lienzo.cpp src/utils/i18n.cpp ${CMA_PANEL_SOURCES})
+    target_link_libraries(cma_chemistry PRIVATE cma_graphics cma_domain cma_persistence cma_platform
+        cma_sim cma_thermo cma_diagrams cma_aqueous cma_db cma_estimation cma_tools cma_advanced_aqueous Threads::Threads)
+    include(GNUInstallDirs)
+    target_compile_definitions(cma_chemistry PRIVATE CMA_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/cma-chemistry")
+    install(TARGETS cma_chemistry DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(DIRECTORY assets data DESTINATION ${CMAKE_INSTALL_DATADIR}/cma-chemistry)
+    install(FILES tools/rendering/cma_benson_render.py DESTINATION ${CMAKE_INSTALL_DATADIR}/cma-chemistry/tools/rendering)
+    install(FILES third_party/if97/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/cma-chemistry/licenses RENAME IF97-LICENSE)
+    install(FILES third_party/phreeqc/LICENSE-SUNDIALS.note DESTINATION ${CMAKE_INSTALL_DATADIR}/cma-chemistry/licenses)
+    set(CPACK_PACKAGE_NAME "CMA_Chemistry")
+    set(CPACK_PACKAGE_VENDOR "CMA")
+    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Chemical engineering simulator")
+    set(CPACK_GENERATOR "TGZ;DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Soryntel Chemistry Team <info@soryntel.com>")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    include(CPack)
+endif()

@@ -1,17 +1,18 @@
 #pragma once
-#include "base_datos/gestor_db.hpp"
+#include "application/modules.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include "nucleo/tipos.hpp"
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 class ThermoDB {
 public:
-    ThermoDB();
+    explicit ThermoDB(const cma::domain::ThermoRepository& repository);
     const cma::nucleo::Especie* especiePorNombre(const std::string& nombre);
     const cma::nucleo::Especie* especiePorId(int64_t id);
 private:
-    cma::base_datos::GestorDB& motor_;
+    const cma::domain::ThermoRepository& motor_;
 };
 
 }

@@ -1,7 +1,8 @@
 #pragma once
+#include "application/modules.hpp"
 #include "motores/soluciones_acuosas.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 class ElectrolyteSolver {
 public:

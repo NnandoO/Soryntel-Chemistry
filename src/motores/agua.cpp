@@ -1,133 +1,124 @@
 #include "agua.hpp"
+#define REGION3_ITERATE
+#include <IF97.h>
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 #include <algorithm>
-#include <sstream>
 
-namespace cma { namespace motores {
-
-double Agua::P_saturacion(double T) {
-    // Ecuación de Antoine para agua: log10(P_mmHg) = 8.071 - 1730.63/(233.43 + T°C)
-    double Tc = T - 273.15;
-    if (Tc < 0 || Tc > 374) return -1;
-    double logP = 8.07131 - 1730.63 / (233.43 + Tc);
-    return std::pow(10, logP) * 0.000133322; // convertir mmHg a MPa
+namespace cma::motores {
+namespace {
+constexpr double critical_temperature = 647.096;
+constexpr double critical_pressure = 22.064;
+PropiedadesAgua saturated(double temperature, double pressure, bool vapor) {
+    const double pascal = pressure * 1e6;
+    PropiedadesAgua state;
+    state.T = temperature; state.P = pressure;
+    state.h = (vapor ? IF97::hvap_p(pascal) : IF97::hliq_p(pascal)) / 1000;
+    state.s = (vapor ? IF97::svap_p(pascal) : IF97::sliq_p(pascal)) / 1000;
+    state.v = 1 / (vapor ? IF97::rhovap_p(pascal) : IF97::rholiq_p(pascal));
+    state.cp = (vapor ? IF97::cpvap_p(pascal) : IF97::cpliq_p(pascal)) / 1000;
+    state.cv = (vapor ? IF97::cvvap_p(pascal) : IF97::cvliq_p(pascal)) / 1000;
+    state.mu = vapor ? IF97::viscvap_p(pascal) : IF97::viscliq_p(pascal);
+    state.k = vapor ? IF97::tcondvap_p(pascal) : IF97::tcondliq_p(pascal);
+    state.fase = vapor ? "vapor saturado" : "líquido saturado";
+    state.ok = true;
+    return state;
 }
-
-double Agua::h_liquido(double T) {
-    // Cp ~ 4.18 kJ/(kg·K), h ≈ Cp*(T - 273.15)
-    return 4.18 * (T - 273.15);
 }
-
-double Agua::h_vapor(double T) {
-    // h_v = h_l + calor latente (~2500 kJ/kg a 0°C, disminuye con T)
-    double h_l = h_liquido(T);
-    double h_fg = 2500.9 - 2.365 * (T - 273.15);
-    return h_l + h_fg;
-}
-
-double Agua::s_liquido(double T) {
-    // s ≈ Cp*ln(T/273.15)
-    return 4.18 * std::log(T / 273.15);
-}
-
-double Agua::s_vapor(double T) {
-    double s_l = s_liquido(T);
-    double h_fg = 2500.9 - 2.365 * (T - 273.15);
-    return s_l + h_fg / T;
-}
-
-PropiedadesAgua Agua::propiedades(double T, double P) {
-    PropiedadesAgua res;
-    res.T = T;
-    res.P = P;
-
-    double P_sat = P_saturacion(T);
-    double Tc = T - 273.15;
-
-    if (P_sat < 0 || P > P_sat * 1.1) {
-        // Líquido comprimido o supercrítico
-        res.fase = (T > 647.0) ? "supercrítico" : "líquido comprimido";
-        res.h = h_liquido(T);
-        res.s = s_liquido(T);
-        res.v = 0.001; // m³/kg aproximadamente
-        res.cp = 4.18;
-        res.cv = 4.18;
-    } else if (P < P_sat * 0.9) {
-        // Vapor sobrecalentado
-        res.fase = "vapor";
-        res.h = h_vapor(T);
-        res.s = s_vapor(T);
-        double R = 0.4615; // kJ/(kg·K) para agua
-        res.v = R * T / (std::max(P, 1e-6) * 1000); // m³/kg
-        res.cp = 1.87;
-        res.cv = 1.41;
-    } else {
-        // Mezcla bifásica
-        res.fase = "mezcla (líq+vap)";
-        double x = (P - P_sat * 0.9) / (P_sat * 0.2); // fracción de vapor
-        x = std::max(0.0, std::min(1.0, x));
-        res.h = h_liquido(T) + x * (h_vapor(T) - h_liquido(T));
-        res.s = s_liquido(T) + x * (s_vapor(T) - s_liquido(T));
-        double Rv = 0.4615; // kJ/(kg·K) para agua
-        res.v = 0.001 + x * (0.001 * Rv * T / (std::max(P, 1e-6) * 1000));
-        res.cp = 4.18 + x * (1.87 - 4.18);
-        res.cv = 4.18 + x * (1.41 - 4.18);
+PropiedadesAgua Agua::propiedades(double temperature, double pressure) {
+    PropiedadesAgua state;
+    state.T = temperature; state.P = pressure;
+    error_.clear();
+    try {
+        if (!std::isfinite(temperature) || !std::isfinite(pressure) || pressure <= 0)
+            throw std::invalid_argument("Temperatura/presión no finita o no positiva");
+        if (temperature < critical_temperature && temperature >= 273.15) {
+            const double saturation = IF97::psat97(temperature) / 1e6;
+            if (std::abs(pressure - saturation) <= 1e-9 * std::max(1.0,saturation))
+                throw std::invalid_argument("Sobre saturación: especifique calidad de vapor o elija líquido/vapor saturado");
+        }
+        const double pascal = pressure * 1e6;
+        state.h = IF97::hmass_Tp(temperature,pascal) / 1000;
+        state.s = IF97::smass_Tp(temperature,pascal) / 1000;
+        state.v = 1 / IF97::rhomass_Tp(temperature,pascal);
+        state.cp = IF97::cpmass_Tp(temperature,pascal) / 1000;
+        state.cv = IF97::cvmass_Tp(temperature,pascal) / 1000;
+        state.mu = IF97::visc_Tp(temperature,pascal);
+        state.k = IF97::tcond_Tp(temperature,pascal);
+        if (temperature >= critical_temperature)
+            state.fase = pressure >= critical_pressure ? "fluido supercrítico" : "vapor";
+        else state.fase = pressure > IF97::psat97(temperature)/1e6 ? "líquido comprimido" : "vapor sobrecalentado";
+        state.ok = true;
+    } catch (const std::exception& e) {
+        error_ = state.mensaje = std::string("Fuera de cálculo IF97: ") + e.what();
+        state.fase = state.mensaje;
     }
-
-    res.mu = viscosidad_liquida(T);
-    res.k = conductividad_termica(T, P);
-
-    return res;
+    return state;
 }
-
-std::pair<PropiedadesAgua, PropiedadesAgua> Agua::saturacion_T(double T) {
-    PropiedadesAgua liq, vap;
-    liq.T = vap.T = T;
-    liq.P = vap.P = P_saturacion(T);
-    liq.fase = "líquido saturado";
-    vap.fase = "vapor saturado";
-    liq.h = h_liquido(T);
-    vap.h = h_vapor(T);
-    liq.s = s_liquido(T);
-    vap.s = s_vapor(T);
-    liq.v = 0.001;
-    vap.v = 0.001 * 0.4615 * T / (liq.P * 1000);
-    liq.cp = 4.18;
-    vap.cp = 1.87;
-    liq.cv = 4.18;
-    vap.cv = 1.41;
-    liq.mu = vap.mu = viscosidad_liquida(T);
-    liq.k = vap.k = conductividad_termica(T, liq.P);
-    return {liq, vap};
+std::pair<PropiedadesAgua,PropiedadesAgua> Agua::saturacion_T(double temperature) {
+    error_.clear();
+    try {
+        if (!std::isfinite(temperature) || temperature < 273.15 || temperature >= critical_temperature)
+            throw std::invalid_argument("Saturación requiere 273.15 <= T < 647.096 K");
+        const double pressure = IF97::psat97(temperature) / 1e6;
+        return {saturated(temperature,pressure,false),saturated(temperature,pressure,true)};
+    } catch (const std::exception& e) {
+        PropiedadesAgua invalid;
+        error_ = invalid.fase = invalid.mensaje = e.what();
+        return {invalid,invalid};
+    }
 }
-
-double Agua::temperatura_saturacion(double P) {
-    if (P <= 0) return 273.15;
-    double P_mmHg = P / 0.000133322;
-    double logP = std::log10(P_mmHg);
-    if (std::abs(8.07131 - logP) < 1e-10) return 373.15;
-    double Tc = 1730.63 / (8.07131 - logP) - 233.43;
-    return std::clamp(Tc + 273.15, 273.15, 647.0);
+PropiedadesAgua Agua::mezcla_saturada(double pressure, double quality) {
+    error_.clear();
+    try {
+        if (!std::isfinite(pressure) || !std::isfinite(quality) || quality < 0 || quality > 1)
+            throw std::invalid_argument("Calidad de vapor requiere 0 <= x <= 1");
+        const double temperature = IF97::Tsat97(pressure * 1e6);
+        const auto liquid = saturated(temperature,pressure,false);
+        const auto vapor = saturated(temperature,pressure,true);
+        if (quality == 0) return liquid;
+        if (quality == 1) return vapor;
+        PropiedadesAgua state;
+        state.T = temperature; state.P = pressure;
+        state.h = liquid.h + quality * (vapor.h - liquid.h);
+        state.s = liquid.s + quality * (vapor.s - liquid.s);
+        state.v = liquid.v + quality * (vapor.v - liquid.v);
+        // Cp, Cv and transport properties of a two-phase mixture require an
+        // additional physical model. Do not interpolate them as if single-phase.
+        state.cp = state.cv = state.mu = state.k = std::numeric_limits<double>::quiet_NaN();
+        state.fase = "mezcla saturada";
+        state.mensaje = "Cp/Cv/transporte no definidos para la mezcla bifásica";
+        state.ok = true;
+        return state;
+    } catch (const std::exception& e) {
+        PropiedadesAgua invalid; error_ = invalid.fase = invalid.mensaje = e.what(); return invalid;
+    }
 }
-
-double Agua::calor_latente(double T) {
-    double h_l = h_liquido(T);
-    double h_v = h_vapor(T);
-    return h_v - h_l;
+double Agua::temperatura_saturacion(double pressure) {
+    error_.clear();
+    try {
+        if (!std::isfinite(pressure)) throw std::invalid_argument("Presión no finita");
+        return IF97::Tsat97(pressure * 1e6);
+    } catch (const std::exception& e) { error_ = e.what(); return std::numeric_limits<double>::quiet_NaN(); }
 }
-
-double Agua::viscosidad_liquida(double T) {
-    // Correlación aproximada [Pa·s]
-    double Tc = T - 273.15;
-    if (Tc < 0) Tc = 0;
-    if (Tc > 300) Tc = 300;
-    return 1.0e-3 * std::exp(-0.02 * Tc);
+double Agua::presion_saturacion(double temperature) {
+    error_.clear();
+    try {
+        if (!std::isfinite(temperature)) throw std::invalid_argument("Temperatura no finita");
+        return IF97::psat97(temperature) / 1e6;
+    } catch (const std::exception& e) { error_ = e.what(); return std::numeric_limits<double>::quiet_NaN(); }
 }
-
-double Agua::conductividad_termica(double T, double P) {
-    // Aproximación para líquido [W/(m·K)]
-    double Tc = T - 273.15;
-    return 0.56 + 0.0018 * Tc;
+double Agua::calor_latente(double temperature) {
+    const auto states = saturacion_T(temperature);
+    return states.first.ok && states.second.ok ? states.second.h - states.first.h : std::numeric_limits<double>::quiet_NaN();
 }
-
-}} // namespace
+double Agua::viscosidad_liquida(double temperature) {
+    const auto states = saturacion_T(temperature);
+    return states.first.ok ? states.first.mu : std::numeric_limits<double>::quiet_NaN();
+}
+double Agua::conductividad_termica(double temperature,double pressure) {
+    const auto state = propiedades(temperature,pressure);
+    return state.ok ? state.k : std::numeric_limits<double>::quiet_NaN();
+}
+}

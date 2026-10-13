@@ -1,6 +1,6 @@
 #include "StatisticalEstimator.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 PropiedadesEstimadas StatisticalEstimator::estimarJoback(const std::string& formula) {
     auto motor_res = motor_.estimar_joback(formula);
@@ -13,4 +13,4 @@ PropiedadesEstimadas StatisticalEstimator::estimarJoback(const std::string& form
     return res;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

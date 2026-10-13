@@ -1,3 +1,5 @@
+"""Historical, scientifically invalid conversion. Retained only for traceability."""
+raise SystemExit("Disabled: reaction log K / enthalpy are not absolute species Hf/Sf. Use cma_catalog_audit data and the native MINTEQ importer.")
 import csv
 import math
 def clean_name(name):

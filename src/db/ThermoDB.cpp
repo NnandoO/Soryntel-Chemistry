@@ -1,8 +1,8 @@
 #include "ThermoDB.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
-ThermoDB::ThermoDB() : motor_(cma::base_datos::GestorDB::instancia()) {}
+ThermoDB::ThermoDB(const cma::domain::ThermoRepository& repository) : motor_(repository) {}
 
 const cma::nucleo::Especie* ThermoDB::especiePorNombre(const std::string& nombre) {
     return motor_.especie_por_nombre(nombre);

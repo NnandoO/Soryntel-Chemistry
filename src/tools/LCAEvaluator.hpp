@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include <string>
 #include "../motores/lca.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ImpactoLCA {
     double emision_CO2 = 0.0;
@@ -21,4 +22,4 @@ private:
     cma::motores::LCA motor_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

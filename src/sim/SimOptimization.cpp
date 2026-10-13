@@ -1,6 +1,7 @@
 #include "SimOptimization.hpp"
+#include <set>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers privados
@@ -438,6 +439,19 @@ ResultadoOptimizacion SimOptimization::optimizar(
     int max_iteraciones, int seed)
 {
     std::mt19937 rng(seed);
+    ResultadoOptimizacion invalid;
+    if (!f || max_iteraciones < 1 || max_iteraciones > 1000000 || variables.empty()) {
+        invalid.mensaje = "Configuración de optimización inválida"; return invalid;
+    }
+    std::set<std::string> names;
+    for (const auto& var : variables) {
+        if (var.nombre.empty() || !names.insert(var.nombre).second ||
+            !std::isfinite(var.min) || !std::isfinite(var.max) ||
+            !std::isfinite(var.valor_inicial) || var.min > var.max ||
+            var.valor_inicial < var.min || var.valor_inicial > var.max) {
+            invalid.mensaje = "Variable de decisión inválida"; return invalid;
+        }
+    }
 
     switch (metodo) {
         case MetodoOptimizacion::MonteCarlo:
@@ -464,7 +478,8 @@ std::vector<std::pair<double, double>> SimOptimization::sensibilidad(
     FuncObjetivo f, int n_puntos)
 {
     std::vector<std::pair<double, double>> resultado;
-    resultado.reserve(n_puntos);
+    if (n_puntos < 2 || n_puntos > 1000000 || !f) return resultado;
+    resultado.reserve(static_cast<size_t>(n_puntos));
 
     // Punto base: valores iniciales
     std::map<std::string, double> base;
@@ -476,7 +491,9 @@ std::vector<std::pair<double, double>> SimOptimization::sensibilidad(
     for (auto& v : variables)
         if (v.nombre == variable_analizar) { var = &v; break; }
 
-    if (!var) return resultado;
+    if (!var || !f || n_puntos < 2 || n_puntos > 1000000 ||
+        !std::isfinite(var->min) || !std::isfinite(var->max) || var->min > var->max)
+        return resultado;
 
     for (int i = 0; i < n_puntos; ++i) {
         double t = (double)i / (n_puntos - 1);
@@ -488,4 +505,4 @@ std::vector<std::pair<double, double>> SimOptimization::sensibilidad(
     return resultado;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

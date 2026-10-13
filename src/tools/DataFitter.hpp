@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include <vector>
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ResultadoFit {
     std::vector<double> coeficientes;
@@ -17,4 +18,4 @@ public:
     ResultadoFit polinomial(const std::vector<double>& x, const std::vector<double>& y, int grado);
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

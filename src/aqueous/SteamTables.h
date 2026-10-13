@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class SteamTables {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "SteamTables.hpp"

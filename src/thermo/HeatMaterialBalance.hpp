@@ -1,10 +1,11 @@
 #pragma once
+#include "application/modules.hpp"
 #include "../motores/balance_energia.hpp"
 #include <vector>
 #include <string>
 #include <map>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ResultadoBalanceTermico {
     double entalpia_entrada = 0.0;
@@ -27,4 +28,4 @@ private:
     cma::motores::BalanceEnergia balance_energia_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

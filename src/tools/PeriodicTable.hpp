@@ -1,9 +1,10 @@
 #pragma once
+#include "application/modules.hpp"
 #include <string>
 #include <vector>
 #include "../nucleo/tabla_periodica.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct Elemento {
     int numero_atomico = 0;
@@ -28,4 +29,4 @@ private:
     static Elemento fromNucleo(const cma::nucleo::Elemento& e);
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

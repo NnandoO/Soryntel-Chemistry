@@ -1,6 +1,6 @@
 #include "HeatMaterialBalance.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoBalanceTermico HeatMaterialBalance::calcular(
     const cma::nucleo::Nodo& nodo,
@@ -20,4 +20,4 @@ ResultadoBalanceTermico HeatMaterialBalance::calcular(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

@@ -1,8 +1,9 @@
 #pragma once
+#include "application/modules.hpp"
 #include "../motores/exergia.hpp"
 #include <string>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 struct ResultadoExergia {
     double exergia_fisica = 0;
@@ -24,4 +25,4 @@ private:
     cma::motores::Exergia exergia_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

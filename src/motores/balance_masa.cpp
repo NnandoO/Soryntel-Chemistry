@@ -1,5 +1,5 @@
 #include "motores/balance_masa.hpp"
-#include "base_datos/gestor_db.hpp"
+#include "motores/mineral_processing.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -8,8 +8,11 @@
 
 namespace cma { namespace motores {
 
-ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs) {
+ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, int max_iter, double tolerancia) {
     ResultadoBalanceMasa res;
+    if (max_iter <= 0 || max_iter > 1000000 || !std::isfinite(tolerancia) || tolerancia <= 0) {
+        res.mensaje = "Límites de convergencia inválidos"; return res;
+    }
     auto nodos = fs.nodos();
     if (nodos.empty()) { res.mensaje = "El diagrama está vacío."; return res; }
 
@@ -54,8 +57,8 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs) 
                 for (int64_t fid : n.ids_flujos_salida)
                     flujos_corte.push_back(fid);
 
-        const int    MAX_ITER = 1000;
-        const double TOL      = 1e-9;
+        const int    MAX_ITER = max_iter;
+        const double TOL      = tolerancia;
 
         double error = 1e30;
         int iter = 0;
@@ -110,6 +113,10 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs) 
                     for (auto& [sid, n] : it->second.flujo_molar) {
                         n *= factor;
                     }
+                    for (auto& p : it->second.particulas) {
+                        p.mass_kg_h *= factor;
+                    }
+                    it->second.agua_kg_h *= factor;
                 }
             }
 
@@ -125,7 +132,7 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs) 
     }
 
     // ── Verificación global: masa entrante (fuentes) vs masa saliente (sumideros) ──
-    auto& gestor = base_datos::GestorDB::instancia();
+    const auto& gestor = repository_;
     double masa_in_total = 0.0, masa_out_total = 0.0;
     auto masa_flujo = [&gestor](const nucleo::Flujo& f) {
         double m = 0.0;
@@ -133,6 +140,10 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs) 
             auto* sp = gestor.especie_por_id(sid);
             m += n * (sp ? sp->masa_molar : 0.0);
         }
+        for (const auto& p : f.particulas) {
+            m += p.mass_kg_h / 3600.0;
+        }
+        m += f.agua_kg_h / 3600.0;
         return m;
     };
     for (auto& n : nodos) {
@@ -189,6 +200,29 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
                             salida.flujo_molar[sid] = val;
                         }
                     } catch (...) {}
+                }
+            }
+            if (nodo.params.count("agua_kg_h")) {
+                salida.agua_kg_h = std::max(0.0, nodo.params.at("agua_kg_h"));
+            } else if (nodo.params.count("water")) {
+                salida.agua_kg_h = std::max(0.0, nodo.params.at("water"));
+            }
+            int min_idx = 0;
+            while (nodo.params.count("mineral_" + std::to_string(min_idx) + "_flow")) {
+                double flow = std::max(0.0, nodo.params.at("mineral_" + std::to_string(min_idx) + "_flow"));
+                double d = nodo.params.count("mineral_" + std::to_string(min_idx) + "_d")
+                         ? std::max(1e-3, nodo.params.at("mineral_" + std::to_string(min_idx) + "_d")) : 100.0;
+                std::string name = "Mineral_" + std::to_string(min_idx + 1);
+                if (auto itPrev = flujos_trabajo.find(salida.id); itPrev != flujos_trabajo.end() && min_idx < static_cast<int>(itPrev->second.particulas.size())) {
+                    name = itPrev->second.particulas[min_idx].mineral;
+                }
+                salida.particulas.push_back({name, d, flow});
+                ++min_idx;
+            }
+            if (salida.particulas.empty() && !nodo.ids_flujos_salida.empty()) {
+                if (auto itPrev = flujos_trabajo.find(nodo.ids_flujos_salida[0]); itPrev != flujos_trabajo.end()) {
+                    salida.particulas = itPrev->second.particulas;
+                    if (salida.agua_kg_h <= 0.0) salida.agua_kg_h = itPrev->second.agua_kg_h;
                 }
             }
             if (!nodo.ids_flujos_salida.empty())
@@ -296,7 +330,7 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
             double T = nodo.params.count("temperatura") ? nodo.params.at("temperatura") : entradas[0].temperatura;
             double P = nodo.params.count("presion") ? nodo.params.at("presion") : entradas[0].presion;
             int64_t rxn_id = nodo.params.count("reaccion_id") ? (int64_t)nodo.params.at("reaccion_id") : 1;
-            auto& db = cma::base_datos::GestorDB::instancia();
+            const auto& db = repository_;
             const auto* rxn = db.reaccion_por_id(rxn_id);
             if (!rxn) {
                 // Sin reacción definida: pasar flujo sin convertir (más seguro que inventar reacción)
@@ -329,6 +363,15 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
         case nucleo::TipoNodo::SXMixerSettler:
         case nucleo::TipoNodo::CeldaElectroobtencion:
             procesar_separacion(nodo, entradas, flujos_trabajo);
+            break;
+        // ── Conminución (Trituración y Molienda) ──
+        case nucleo::TipoNodo::TrituradoraMandibula:
+        case nucleo::TipoNodo::TrituradoraGiratoria:
+        case nucleo::TipoNodo::TrituradoraCono:
+        case nucleo::TipoNodo::MolinoSAG:
+        case nucleo::TipoNodo::MolinoBolas:
+        case nucleo::TipoNodo::MolinoBarras:
+            procesar_conminucion(nodo, entradas, flujos_trabajo);
             break;
 
         // ── Hornos / tostador / convertidor: reacción + división ──
@@ -421,7 +464,7 @@ void BalanceMasa::procesar_separacion(const nucleo::Nodo& nodo,
     if (entradas.empty()) return;
     if (nodo.ids_flujos_salida.size() < 2) return;
     auto mezcla = combinar_entradas(entradas);
-    auto& gestor = base_datos::GestorDB::instancia();
+    const auto& gestor = repository_;
 
     nucleo::Flujo sal0;
     sal0.id = nodo.ids_flujos_salida[0];
@@ -438,6 +481,51 @@ void BalanceMasa::procesar_separacion(const nucleo::Nodo& nodo,
                         : (nodo.params.count("recovery") ? nodo.params.at("recovery") : 0.85);
     double efficiency    = nodo.params.count("efficiency") ? nodo.params.at("efficiency") : 0.98;
     double bypass        = nodo.params.count("bypass") ? nodo.params.at("bypass") : 0.15;
+
+    // ── Manejo de corrientes particuladas (Procesamiento Mineral) ──
+    if (!mezcla.particulas.empty() || mezcla.agua_kg_h > 0.0) {
+        if (nodo.tipo == nucleo::TipoNodo::Hidrociclon || nodo.tipo == nucleo::TipoNodo::Zaranda) {
+            double d50 = nodo.params.count("d50") ? nodo.params.at("d50") : 150.0;
+            double sharpness = nodo.params.count("sharpness") ? nodo.params.at("sharpness") : 2.0;
+            double bp = nodo.params.count("bypass") ? nodo.params.at("bypass") : 0.15;
+            double water_to_coarse = nodo.params.count("water_to_coarse") ? nodo.params.at("water_to_coarse") : 0.25;
+            auto split_res = MineralProcessing::classify(mezcla.a_corriente_particulas(), d50, sharpness, bp, water_to_coarse);
+            if (split_res.ok) {
+                // Salida 0 = overflow (finos/residue); Salida 1 = underflow (gruesos/product)
+                sal0.desde_corriente_particulas(split_res.residue);
+                sal1.desde_corriente_particulas(split_res.product);
+            }
+        } else if (nodo.tipo == nucleo::TipoNodo::CeldaFlotacion) {
+            double residence = nodo.params.count("residence_time") ? nodo.params.at("residence_time") : 10.0;
+            double float_water = nodo.params.count("water_recovery") ? nodo.params.at("water_recovery") : 0.15;
+            std::map<std::string, FlotationKinetics> kinetics;
+            for (const auto& p : mezcla.particulas) {
+                double k = nodo.params.count("k_" + p.mineral) ? nodo.params.at("k_" + p.mineral) :
+                           (nodo.params.count("rate") ? nodo.params.at("rate") : 0.3);
+                double Rinf = nodo.params.count("Rinf_" + p.mineral) ? nodo.params.at("Rinf_" + p.mineral) :
+                              (nodo.params.count("recovery") ? nodo.params.at("recovery") : 0.85);
+                kinetics[p.mineral] = {k, Rinf};
+            }
+            auto float_res = MineralProcessing::flotation(mezcla.a_corriente_particulas(), kinetics, residence, float_water);
+            if (float_res.ok) {
+                // Salida 0 = concentrado (product); Salida 1 = relave (residue)
+                sal0.desde_corriente_particulas(float_res.product);
+                sal1.desde_corriente_particulas(float_res.residue);
+            }
+        } else {
+            double f1_solids = (nodo.tipo == nucleo::TipoNodo::Espesador) ? efficiency : (1.0 - efficiency);
+            double f1_water = (nodo.tipo == nucleo::TipoNodo::Espesador) ? (1.0 - efficiency) : efficiency;
+            for (const auto& p : mezcla.particulas) {
+                auto p0 = p, p1 = p;
+                p1.mass_kg_h = p.mass_kg_h * f1_solids;
+                p0.mass_kg_h = p.mass_kg_h - p1.mass_kg_h;
+                sal0.particulas.push_back(p0);
+                sal1.particulas.push_back(p1);
+            }
+            sal1.agua_kg_h = mezcla.agua_kg_h * f1_water;
+            sal0.agua_kg_h = mezcla.agua_kg_h - sal1.agua_kg_h;
+        }
+    }
 
     for (auto& [sid, n] : mezcla.flujo_molar) {
         if (n <= 0.0) continue;
@@ -546,7 +634,7 @@ void BalanceMasa::procesar_reactor_generico(const nucleo::Nodo& nodo,
         double T = nodo.params.count("temperatura") ? nodo.params.at("temperatura") : mezcla.temperatura;
         double P = nodo.params.count("presion") ? nodo.params.at("presion") : mezcla.presion;
         int64_t rxn_id = (int64_t)nodo.params.at("reaccion_id");
-        auto& db = cma::base_datos::GestorDB::instancia();
+        const auto& db = repository_;
         const auto* rxn = db.reaccion_por_id(rxn_id);
         if (rxn) producto = reactor(entradas, *rxn, conv, T, P, -1);
     }
@@ -573,6 +661,15 @@ void BalanceMasa::procesar_reactor_generico(const nucleo::Nodo& nodo,
             sal1.flujo_molar[sid] = nsp * f1;
             sal0.flujo_molar[sid] = nsp * (1.0 - f1);
         }
+        for (auto& p : producto.particulas) {
+            auto p0 = p, p1 = p;
+            p1.mass_kg_h = p.mass_kg_h * 0.5;
+            p0.mass_kg_h = p.mass_kg_h - p1.mass_kg_h;
+            sal0.particulas.push_back(p0);
+            sal1.particulas.push_back(p1);
+        }
+        sal1.agua_kg_h = producto.agua_kg_h * 0.5;
+        sal0.agua_kg_h = producto.agua_kg_h - sal1.agua_kg_h;
         flujos_trabajo[nodo.ids_flujos_salida[0]] = sal0;
         flujos_trabajo[nodo.ids_flujos_salida[1]] = sal1;
         return;
@@ -598,6 +695,18 @@ nucleo::Flujo BalanceMasa::combinar_entradas(const std::vector<nucleo::Flujo>& e
     nucleo::Flujo out;
     for (auto& e : entradas) {
         for (auto& [sid, n] : e.flujo_molar) out.flujo_molar[sid] += n;
+        for (const auto& p : e.particulas) {
+            bool found = false;
+            for (auto& op : out.particulas) {
+                if (op.mineral == p.mineral && std::abs(op.diameter_um - p.diameter_um) < 1e-4) {
+                    op.mass_kg_h += p.mass_kg_h;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) out.particulas.push_back(p);
+        }
+        out.agua_kg_h += e.agua_kg_h;
     }
     double tot = out.flujo_total();
     if (tot > 0) {
@@ -639,6 +748,12 @@ std::vector<nucleo::Flujo> BalanceMasa::dividir(const nucleo::Flujo& entrada,
         double frac = fracciones[i] / total_frac;
         for (auto& [sid, n] : entrada.flujo_molar)
             out.flujo_molar[sid] = n * frac;
+        for (const auto& p : entrada.particulas) {
+            auto cp = p;
+            cp.mass_kg_h *= frac;
+            out.particulas.push_back(cp);
+        }
+        out.agua_kg_h = entrada.agua_kg_h * frac;
         salidas.push_back(out);
     }
     return salidas;
@@ -742,6 +857,53 @@ Eigen::VectorXd BalanceMasa::resolver_sistema_lineal(
     if (solver.info() != Eigen::Success)
         return Eigen::VectorXd::Zero(b.size());
     return solver.solve(b);
+}
+
+void BalanceMasa::procesar_conminucion(const nucleo::Nodo& nodo,
+                                       const std::vector<nucleo::Flujo>& entradas,
+                                       std::map<int64_t, nucleo::Flujo>& flujos_trabajo) const
+{
+    if (entradas.empty()) return;
+    auto producto = combinar_entradas(entradas);
+    producto.id = nodo.ids_flujos_salida.empty() ? -1 : nodo.ids_flujos_salida[0];
+    producto.nombre = nodo.nombre + "_salida";
+
+    if (!producto.particulas.empty()) {
+        double solids_t_h = 0.0;
+        for (const auto& p : producto.particulas) solids_t_h += p.mass_kg_h / 1000.0;
+
+        if (nodo.tipo == nucleo::TipoNodo::MolinoBolas ||
+            nodo.tipo == nucleo::TipoNodo::MolinoSAG ||
+            nodo.tipo == nucleo::TipoNodo::MolinoBarras) {
+            double wi = nodo.params.count("wi") ? nodo.params.at("wi") : 13.5;
+            double power = nodo.params.count("power") ? nodo.params.at("power") : 2500.0;
+            if (solids_t_h > 0.0 && wi > 0.0 && power > 0.0) {
+                double specific_energy_kWh_t = power / solids_t_h;
+                for (auto& p : producto.particulas) {
+                    if (p.diameter_um > 0.0) {
+                        double inv_sqrt_p = 1.0 / std::sqrt(p.diameter_um) + specific_energy_kWh_t / (10.0 * wi);
+                        if (inv_sqrt_p > 0.0) {
+                            p.diameter_um = 1.0 / (inv_sqrt_p * inv_sqrt_p);
+                        }
+                    }
+                }
+            }
+        } else if (nodo.tipo == nucleo::TipoNodo::TrituradoraMandibula ||
+                   nodo.tipo == nucleo::TipoNodo::TrituradoraGiratoria ||
+                   nodo.tipo == nucleo::TipoNodo::TrituradoraCono) {
+            double css_um = (nodo.params.count("css") ? nodo.params.at("css") : 25.0) * 1000.0;
+            if (css_um > 0.0) {
+                for (auto& p : producto.particulas) {
+                    if (p.diameter_um > css_um) {
+                        p.diameter_um = css_um;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!nodo.ids_flujos_salida.empty())
+        flujos_trabajo[nodo.ids_flujos_salida[0]] = producto;
 }
 
 }} // namespace

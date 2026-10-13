@@ -1,10 +1,3 @@
 #pragma once
-
-namespace hsc_clone {
-
-class StabilityDiagrams {
-public:
-    void initializeModule();
-};
-
-}
+// Compatibility include: one authoritative definition per module.
+#include "StabilityDiagrams.hpp"

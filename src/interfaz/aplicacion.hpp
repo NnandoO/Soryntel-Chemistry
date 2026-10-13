@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "interfaz/lienzo.hpp"
 #include "interfaz/paneles.hpp"
+#include "interfaz/panels/scientific.hpp"
 
 #include "diagrama_flujo/flowsheet.hpp"
 #include "base_datos/gestor_db.hpp"
@@ -43,6 +44,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include "application/ports/FileDialog.hpp"
 
 namespace cma { namespace interfaz {
 
@@ -51,19 +53,29 @@ public:
     int ancho_ = 1280;
     int alto_ = 800;
 
-    Aplicacion();
+    Aplicacion(base_datos::GestorDB& repository, application::FileDialog& file_dialog,
+               const domain::AqueousDatabase& aqueous_database, const domain::AqueousEngine& aqueous_engine);
     ~Aplicacion();
 
     bool iniciar(int argc, char** argv);
     void ejecutar();
 
 private:
+    base_datos::GestorDB& repository_;
+    application::FileDialog& file_dialog_;
+    NativeAqueousPanel panel_native_aqueous_;
+    AdvancedAqueousPanel panel_advanced_aqueous_;
+    MineralProcessingPanel panel_mineral_processing_;
+    CatalogAuditPanel panel_catalog_audit_;
+    bool mostrar_mineral_processing_ = false, mostrar_catalog_audit_ = false;
+    std::string review_panel_;
     bool iniciar_ventana();
     bool iniciar_imgui();
     void cerrar();
 
     void frame_glfw();
     void renderizar();
+    void renderizar_modulos();
 
     void menu_principal();
     void menu_archivo();
@@ -105,6 +117,7 @@ private:
 
     GLFWwindow* ventana_ = nullptr;
     bool ejecutando_ = false;
+    bool smoke_test_ = false;
 
     std::unique_ptr<diagrama_flujo::Flowsheet> flowsheet_;
 

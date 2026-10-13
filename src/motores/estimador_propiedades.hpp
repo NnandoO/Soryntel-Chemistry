@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "domain/ports/ThermoRepository.hpp"
 
 namespace cma { namespace motores {
 
@@ -35,6 +36,8 @@ struct PropiedadesEstimadasHSC {
 
 class EstimadorPropiedades {
 public:
+    EstimadorPropiedades() = default;
+    explicit EstimadorPropiedades(const domain::ThermoRepository& repository) : repository_(&repository) {}
     // Estimación por contribución de grupos (Joback-Reid)
     PropiedadesEstimadas estimar_joback(const std::string& formula_smiles,
                                          const std::string& nombre = "");
@@ -62,6 +65,7 @@ public:
     std::string ultimo_error() const { return error_; }
 
 private:
+    const domain::ThermoRepository* repository_ = nullptr;
     std::string error_;
     struct GrupoJoback {
         std::string nombre;

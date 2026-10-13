@@ -1,6 +1,6 @@
 #include "GibbsMinimizer.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoGibbs GibbsMinimizer::minimizar(
     const std::map<int64_t, double>& alimentacion,
@@ -20,4 +20,4 @@ ResultadoGibbs GibbsMinimizer::minimizar(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

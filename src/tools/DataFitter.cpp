@@ -1,92 +1,52 @@
 #include "DataFitter.hpp"
 #include <Eigen/Dense>
 #include <cmath>
+#include <algorithm>
 
-namespace hsc_clone {
-
+namespace cma::application::modules {
 ResultadoFit DataFitter::lineal(const std::vector<double>& x, const std::vector<double>& y) {
-    ResultadoFit res;
-    if (x.size() != y.size() || x.size() < 2) {
-        res.mensaje = "Los datos deben tener el mismo tamano y al menos 2 puntos";
-        return res;
-    }
-
-    size_t n = x.size();
-    Eigen::MatrixXd X(n, 2);
-    Eigen::VectorXd Y(n);
-    for (size_t i = 0; i < n; ++i) {
-        X(i, 0) = 1.0;
-        X(i, 1) = x[i];
-        Y(i) = y[i];
-    }
-
-    auto ldlt = (X.transpose() * X).ldlt();
-    if (ldlt.info() != Eigen::Success) {
-        res.mensaje = "Error: Matriz singular";
-        return res;
-    }
-    Eigen::VectorXd coef = ldlt.solve(X.transpose() * Y);
-
-    double y_mean = Y.mean();
-    double ss_tot = 0.0, ss_res = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-        double y_pred = coef(0) + coef(1) * x[i];
-        ss_tot += (y[i] - y_mean) * (y[i] - y_mean);
-        ss_res += (y[i] - y_pred) * (y[i] - y_pred);
-    }
-
-    res.coeficientes = {coef(0), coef(1)};
-    res.r_cuadrado = (ss_tot > 0) ? (1.0 - ss_res / ss_tot) : 0.0;
-    res.ok = true;
-    return res;
+    return polinomial(x, y, 1);
 }
-
 ResultadoFit DataFitter::polinomial(const std::vector<double>& x, const std::vector<double>& y, int grado) {
-    ResultadoFit res;
-    if (x.size() != y.size() || x.size() < static_cast<size_t>(grado + 1)) {
-        res.mensaje = "Se necesitan al menos " + std::to_string(grado + 1) + " puntos";
-        return res;
+    ResultadoFit result;
+    if (grado < 0 || grado > 12 || x.size() != y.size() || x.size() < static_cast<size_t>(grado + 1) ||
+        x.size() > 1000000 || std::any_of(x.begin(),x.end(),[](double v){ return !std::isfinite(v); }) ||
+        std::any_of(y.begin(),y.end(),[](double v){ return !std::isfinite(v); })) {
+        result.mensaje = "Datos no finitos, grado inválido o puntos insuficientes"; return result;
     }
-
-    size_t n = x.size();
-    int m = grado + 1;
-    Eigen::MatrixXd X(n, m);
-    Eigen::VectorXd Y(n);
-    for (size_t i = 0; i < n; ++i) {
-        double xp = 1.0;
-        for (int j = 0; j < m; ++j) {
-            X(i, j) = xp;
-            xp *= x[i];
+    const auto bounds = std::minmax_element(x.begin(), x.end());
+    const double center = (*bounds.first + *bounds.second) / 2;
+    const double scale = (*bounds.second - *bounds.first) / 2;
+    if (grado > 0 && scale <= 0) { result.mensaje = "Valores X no identifican un polinomio"; return result; }
+    Eigen::MatrixXd design(static_cast<Eigen::Index>(x.size()), grado + 1);
+    Eigen::VectorXd target(static_cast<Eigen::Index>(x.size()));
+    for (size_t i = 0; i < x.size(); ++i) {
+        const double u = scale > 0 ? (x[i] - center) / scale : 0;
+        double power = 1;
+        for (int j = 0; j <= grado; ++j) { design(static_cast<Eigen::Index>(i),j) = power; power *= u; }
+        target(static_cast<Eigen::Index>(i)) = y[i];
+    }
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> solver(design);
+    if (solver.rank() != grado + 1) { result.mensaje = "Polinomio no identificable (matriz singular)"; return result; }
+    const Eigen::VectorXd coefficients = solver.solve(target);
+    if (!coefficients.allFinite()) { result.mensaje = "Ajuste no finito"; return result; }
+    result.coeficientes.assign(static_cast<size_t>(grado + 1), 0);
+    // Transform the centered polynomial back to coefficients of powers of x.
+    const double divisor = scale > 0 ? scale : 1;
+    for (int j = 0; j <= grado; ++j) {
+        double binomial = 1;
+        for (int k = 0; k <= j; ++k) {
+            result.coeficientes[static_cast<size_t>(k)] += coefficients(j) * binomial * std::pow(-center, j-k) / std::pow(divisor,j);
+            if (k < j) binomial *= static_cast<double>(j-k) / (k+1);
         }
-        Y(i) = y[i];
     }
-
-    auto ldlt = (X.transpose() * X).ldlt();
-    if (ldlt.info() != Eigen::Success) {
-        res.mensaje = "Error: Matriz singular";
-        return res;
+    if (std::any_of(result.coeficientes.begin(),result.coeficientes.end(),[](double v){return !std::isfinite(v);})) {
+        result.mensaje = "Coeficientes fuera de rango"; return result;
     }
-    Eigen::VectorXd coef = ldlt.solve(X.transpose() * Y);
-
-    double y_mean = Y.mean();
-    double ss_tot = 0.0, ss_res = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-        double y_pred = 0.0;
-        double xp = 1.0;
-        for (int j = 0; j < m; ++j) {
-            y_pred += coef(j) * xp;
-            xp *= x[i];
-        }
-        ss_tot += (y[i] - y_mean) * (y[i] - y_mean);
-        ss_res += (y[i] - y_pred) * (y[i] - y_pred);
-    }
-
-    res.coeficientes.resize(m);
-    for (int j = 0; j < m; ++j)
-        res.coeficientes[j] = coef(j);
-    res.r_cuadrado = (ss_tot > 0) ? (1.0 - ss_res / ss_tot) : 0.0;
-    res.ok = true;
-    return res;
+    const double residual = (design * coefficients - target).squaredNorm();
+    const double total = (target.array() - target.mean()).matrix().squaredNorm();
+    result.r_cuadrado = total > 0 ? 1 - residual / total : (residual < 1e-20 ? 1 : 0);
+    result.ok = true; result.mensaje = "Ajuste por QR con X centrada y escalada";
+    return result;
 }
-
-} // namespace hsc_clone
+}

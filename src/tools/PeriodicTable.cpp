@@ -1,7 +1,7 @@
 #include "PeriodicTable.hpp"
 #include <algorithm>
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 Elemento PeriodicTable::fromNucleo(const cma::nucleo::Elemento& e) {
     Elemento el;
@@ -57,4 +57,4 @@ const Elemento* PeriodicTable::buscar(const std::string& simbolo_o_nombre) const
     return it != cache_.end() ? &(*it) : nullptr;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

@@ -31,7 +31,7 @@ std::vector<EstimadorPropiedades::GrupoJoback> EstimadorPropiedades::grupos_joba
 }
 
 PropiedadesEstimadas EstimadorPropiedades::estimar_joback(
-    const std::string& formula_smiles, const std::string& nombre)
+    const std::string& formula_smiles, const std::string& /*nombre*/)
 {
     PropiedadesEstimadas res;
     auto grupos = grupos_joback();
@@ -204,10 +204,208 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_joback(
 PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
     const std::string& formula, const std::string& tipo)
 {
-    return estimar_joback(formula, tipo);
+    // Método de aditividad de grupos de Benson (Benson 1976; Cohen & Benson 1993).
+    // Aplicable estrictamente a gases ideales a 298.15 K, 1 bar.
+    // Incertidumbre estándar típica: ±4 kJ/mol en Delta Hf°, ±5 J/(mol*K) en S°.
+    struct BensonGroup {
+        std::string tag;
+        double dHf;   // kJ/mol
+        double Sf;    // J/(mol*K)
+        double cp300; // J/(mol*K)
+    };
+
+    const std::map<std::string, BensonGroup> db_benson = {
+        {"C-(H)4",       {"C-(H)4",       -74.87, 186.26, 35.64}},
+        {"C-(C)(H)3",    {"C-(C)(H)3",    -42.17, 127.24, 25.77}},
+        {"C-(C)2(H)2",   {"C-(C)2(H)2",   -20.92,  39.41, 23.01}},
+        {"C-(C)3(H)",    {"C-(C)3(H)",     -7.95, -46.02, 19.25}},
+        {"C-(C)4",       {"C-(C)4",         2.09,-146.44, 17.57}},
+        {"Cd-(H)2",      {"Cd-(H)2",       26.19, 115.35, 21.76}},
+        {"Cd-(C)(H)",    {"Cd-(C)(H)",     35.94,  32.76, 17.15}},
+        {"Cd-(C)2",      {"Cd-(C)2",       43.26, -48.53, 16.74}},
+        {"C-(Cd)(H)3",   {"C-(Cd)(H)3",   -42.17, 127.24, 25.77}},
+        {"Cb-(H)",       {"Cb-(H)",        13.81,  46.78, 14.23}},
+        {"Cb-(C)",       {"Cb-(C)",        23.01, -31.80, 18.41}},
+        {"O-(C)(H)",     {"O-(C)(H)",    -158.57, 121.75, 18.41}},
+        {"C-(C)(O)(H)2", {"C-(C)(O)(H)2", -27.61,  42.68, 25.10}},
+        {"C-(O)(H)3",    {"C-(O)(H)3",    -34.31, 128.87, 27.20}},
+        {"O-(C)2",       {"O-(C)2",       -99.58,  39.08, 15.06}},
+        {"CO-(C)(H)",    {"CO-(C)(H)",   -123.85, 145.60, 27.61}},
+        {"CO-(C)2",      {"CO-(C)2",     -132.21,  62.59, 23.85}},
+        {"CO-(C)(O)",    {"CO-(C)(O)",   -142.26,  60.67, 24.27}},
+        {"O-(CO)(H)",    {"O-(CO)(H)",   -242.67, 110.88, 19.66}},
+        {"N-(C)(H)2",    {"N-(C)(H)2",     20.92, 123.85, 24.27}},
+        {"C-(C)(N)(H)2", {"C-(C)(N)(H)2", -27.60,  44.35, 25.10}}
+    };
+
+    double nC = 0, nH = 0, nO = 0, nN = 0, nCl = 0;
+    std::string f = formula;
+    for (size_t i = 0; i < f.size(); ++i) {
+        if (std::isalpha(static_cast<unsigned char>(f[i]))) {
+            std::string element;
+            element += f[i];
+            if (i + 1 < f.size() && std::islower(static_cast<unsigned char>(f[i+1]))) {
+                element += f[i+1];
+                i++;
+            }
+            std::string num;
+            while (i + 1 < f.size() && std::isdigit(static_cast<unsigned char>(f[i+1]))) {
+                num += f[i+1];
+                i++;
+            }
+            int n = num.empty() ? 1 : std::stoi(num);
+            if (element == "C") nC += n;
+            else if (element == "H") nH += n;
+            else if (element == "O") nO += n;
+            else if (element == "N") nN += n;
+            else if (element == "Cl") nCl += n;
+        }
+    }
+
+    if (nC <= 0) {
+        return estimar_joback(formula, tipo);
+    }
+
+    std::map<std::string, int> grupos;
+    bool benson_identificado = false;
+
+    if (nC == 6 && nH == 6 && nO == 0 && nN == 0 && nCl == 0) {
+        grupos["Cb-(H)"] = 6;
+        benson_identificado = true;
+    } else if (nC == 7 && nH == 8 && nO == 0 && nN == 0 && nCl == 0 &&
+               (formula.find("c") != std::string::npos || formula == "C7H8" || formula.find("Ph") != std::string::npos || formula.find("tol") != std::string::npos)) {
+        grupos["Cb-(H)"] = 5;
+        grupos["Cb-(C)"] = 1;
+        grupos["C-(Cd)(H)3"] = 1;
+        benson_identificado = true;
+    } else if (nC == 4 && nH == 10 && nO == 0 && nN == 0 && nCl == 0 &&
+               (formula.find("CH(CH3)3") != std::string::npos || formula.find("(CH3)3CH") != std::string::npos || formula.find("iso") != std::string::npos)) {
+        grupos["C-(C)(H)3"] = 3;
+        grupos["C-(C)3(H)"] = 1;
+        benson_identificado = true;
+    } else if (nC == 5 && nH == 12 && nO == 0 && nN == 0 && nCl == 0 &&
+               (formula.find("C(CH3)4") != std::string::npos || formula.find("neo") != std::string::npos)) {
+        grupos["C-(C)(H)3"] = 4;
+        grupos["C-(C)4"] = 1;
+        benson_identificado = true;
+    } else if (nO == 0 && nN == 0 && nCl == 0 && nH == 2 * nC + 2) {
+        if (nC == 1) {
+            grupos["C-(H)4"] = 1;
+        } else if (nC == 2) {
+            grupos["C-(C)(H)3"] = 2;
+        } else {
+            grupos["C-(C)(H)3"] = 2;
+            grupos["C-(C)2(H)2"] = static_cast<int>(nC - 2);
+        }
+        benson_identificado = true;
+    } else if (nO == 0 && nN == 0 && nCl == 0 && nH == 2 * nC && nC >= 2) {
+        if (nC == 2) {
+            grupos["Cd-(H)2"] = 2;
+        } else if (nC == 3) {
+            grupos["Cd-(H)2"] = 1;
+            grupos["Cd-(C)(H)"] = 1;
+            grupos["C-(Cd)(H)3"] = 1;
+        } else {
+            grupos["Cd-(H)2"] = 1;
+            grupos["Cd-(C)(H)"] = 1;
+            grupos["C-(Cd)(H)3"] = 1;
+            grupos["C-(C)2(H)2"] = static_cast<int>(nC - 3);
+        }
+        benson_identificado = true;
+    } else if (nO == 1 && nN == 0 && nCl == 0 && nH == 2 * nC + 2 &&
+               (formula.find("OH") != std::string::npos || formula.find("ol") != std::string::npos || formula.find("O") != std::string::npos)) {
+        grupos["O-(C)(H)"] = 1;
+        if (nC == 1) {
+            grupos["C-(O)(H)3"] = 1;
+        } else {
+            grupos["C-(C)(O)(H)2"] = 1;
+            if (nC == 2) {
+                grupos["C-(C)(H)3"] = 1;
+            } else {
+                grupos["C-(C)(H)3"] = 1;
+                grupos["C-(C)2(H)2"] = static_cast<int>(nC - 2);
+            }
+        }
+        benson_identificado = true;
+    } else if (nO == 2 && nN == 0 && nCl == 0 && nH == 2 * nC &&
+               (formula.find("COOH") != std::string::npos || formula.find("O2") != std::string::npos)) {
+        grupos["O-(CO)(H)"] = 1;
+        grupos["CO-(C)(O)"] = 1;
+        if (nC == 2) {
+            grupos["C-(C)(H)3"] = 1;
+        } else if (nC > 2) {
+            grupos["C-(C)(H)3"] = 1;
+            grupos["C-(C)2(H)2"] = static_cast<int>(nC - 2);
+        }
+        benson_identificado = true;
+    } else if (nO == 1 && nN == 0 && nCl == 0 && nH == 2 * nC) {
+        if (formula.find("CHO") != std::string::npos) {
+            grupos["CO-(C)(H)"] = 1;
+            if (nC > 1) {
+                grupos["C-(C)(H)3"] = 1;
+                if (nC > 2) grupos["C-(C)2(H)2"] = static_cast<int>(nC - 2);
+            }
+        } else {
+            grupos["CO-(C)2"] = 1;
+            grupos["C-(C)(H)3"] = 2;
+            if (nC > 3) grupos["C-(C)2(H)2"] = static_cast<int>(nC - 3);
+        }
+        benson_identificado = true;
+    } else if (nO == 0 && nN == 1 && nCl == 0 && nH == 2 * nC + 3 &&
+               (formula.find("NH2") != std::string::npos || formula.find("N") != std::string::npos)) {
+        grupos["N-(C)(H)2"] = 1;
+        grupos["C-(C)(N)(H)2"] = 1;
+        if (nC == 2) {
+            grupos["C-(C)(H)3"] = 1;
+        } else if (nC > 2) {
+            grupos["C-(C)(H)3"] = 1;
+            grupos["C-(C)2(H)2"] = static_cast<int>(nC - 2);
+        }
+        benson_identificado = true;
+    }
+
+    if (!benson_identificado) {
+        auto res = estimar_joback(formula, tipo);
+        res.mensaje += " (Joback-Reid aplicado; grupos Benson de 2do orden no disponibles para la conectividad de esta fórmula)";
+        return res;
+    }
+
+    PropiedadesEstimadas res;
+    res.h_formacion = 0.0;
+    res.s_formacion = 0.0;
+    double cp300 = 0.0;
+
+    std::string msg = "Benson (1976/1993): ";
+    for (const auto& [g_name, count] : grupos) {
+        if (count <= 0) continue;
+        auto it = db_benson.find(g_name);
+        if (it != db_benson.end()) {
+            res.h_formacion += count * it->second.dHf;
+            res.s_formacion += count * it->second.Sf;
+            cp300 += count * it->second.cp300;
+            msg += std::to_string(count) + "x[" + g_name + "] ";
+        }
+    }
+
+    // Corrección de simetría rotacional para benceno sigma = 12 (D6h): -R*ln(12) = -20.66 J/(mol*K)
+    if (nC == 6 && nH == 6 && nO == 0 && nN == 0) {
+        res.s_formacion -= 8.314462618 * std::log(12.0);
+    }
+
+    res.masa_molar = nC * 12.011 + nH * 1.008 + nO * 15.999 + nN * 14.007 + nCl * 35.45;
+    res.cp_a = cp300;
+    res.cp_b = 0.0;
+    res.cp_c = 0.0;
+    res.cp_d = 0.0;
+    res.T_ebullicion = 0.0;
+    res.T_fusion = 0.0;
+    res.ok = true;
+    msg += "· Estado: gas ideal a 298.15 K, 1 bar. Incertidumbre típica: ±4 kJ/mol.";
+    res.mensaje = msg;
+    return res;
 }
 
-double EstimadorPropiedades::estimar_cp_gas(double M, double T, int tipo) {
+double EstimadorPropiedades::estimar_cp_gas(double /*M*/, double T, int /*tipo*/) {
     // Correlación de Rowlinson-Bondi
     double R = 8.314;
     return R * (3.5 + 2.0 * std::exp(-T / 500.0)); // aproximación
@@ -243,11 +441,9 @@ double EstimadorPropiedades::estimar_Hf_benson(
     return Hf + correccion;
 }
 
-double EstimadorPropiedades::estimar_S_benson(const std::string& formula, double M) {
+double EstimadorPropiedades::estimar_S_benson(const std::string& /*formula*/, double M) {
     // Estimación simple basada en masa molar
     return 100.0 + 50.0 * std::log(M / 16.0);
 }
 
 }} // namespace
-
-#include "estimador_hsc_impl.cpp"

@@ -1,5 +1,4 @@
 #include "pourbaix.hpp"
-#include "../base_datos/gestor_db.hpp"
 #include "../nucleo/tabla_periodica.hpp"
 #include <cmath>
 #include <algorithm>
@@ -139,7 +138,7 @@ void CalculadorPourbaix::buscar_especies() {
     especies_activas_.clear();
     if (elemento_.empty()) return;
 
-    auto& db = base_datos::GestorDB::instancia();
+    const auto& db = repository_;
     auto& tp = nucleo::TablaPeriodica::instancia();
     auto todas = db.todas_especies();
 
@@ -226,7 +225,7 @@ void CalculadorPourbaix::generar_lineas() {
     // ΔGf° de H2O(l) a T_K_: aproximar usando la especie de la DB
     dGf_H2O_l_ = -237.13; // valor estándar a 298.15 K
     {
-        auto* h2o_l = base_datos::GestorDB::instancia().especie_por_nombre("Agua (líquida)");
+        auto* h2o_l = repository_.especie_por_nombre("Agua (líquida)");
         if (h2o_l) {
             dGf_H2O_l_ = h2o_l->h_formacion - T_K_ * (h2o_l->s_formacion / 1000.0);
         }

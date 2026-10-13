@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <optional>
+#include "domain/ports/ThermoRepository.hpp"
 
 namespace cma { namespace motores {
 
@@ -18,9 +19,10 @@ struct ResultadoBalanceMasa {
 
 class BalanceMasa {
 public:
-    BalanceMasa() = default;
+    explicit BalanceMasa(const domain::ThermoRepository& repository) : repository_(repository) {}
 
-    ResultadoBalanceMasa resolver(const diagrama_flujo::Flowsheet& fs);
+    ResultadoBalanceMasa resolver(const diagrama_flujo::Flowsheet& fs,
+        int max_iter = 1000, double tolerancia = 1e-9);
 
     // Operaciones unitarias individuales
     nucleo::Flujo mezclar(const std::vector<nucleo::Flujo>& entradas, int64_t id_salida = -1) const;
@@ -32,6 +34,7 @@ public:
     nucleo::Flujo valvula(const nucleo::Flujo& entrada, double P_salida, int64_t id_salida = -1) const;
 
 private:
+    const domain::ThermoRepository& repository_;
     Eigen::VectorXd resolver_sistema_lineal(const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b) const;
     nucleo::Flujo combinar_entradas(const std::vector<nucleo::Flujo>& entradas) const;
     // Procesa un nodo y actualiza el mapa de flujos de trabajo (lanza std::exception en errores)
@@ -48,6 +51,11 @@ private:
     void procesar_reactor_generico(const nucleo::Nodo& nodo,
                                    const std::vector<nucleo::Flujo>& entradas,
                                    std::map<int64_t, nucleo::Flujo>& flujos_trabajo) const;
+    // Unidades de conminución (trituradoras y molinos): reduce tamaño de partículas
+    // según índice de Bond o CSS con conservación estricta de sólidos y agua.
+    void procesar_conminucion(const nucleo::Nodo& nodo,
+                              const std::vector<nucleo::Flujo>& entradas,
+                              std::map<int64_t, nucleo::Flujo>& flujos_trabajo) const;
 };
 
 }} // namespace

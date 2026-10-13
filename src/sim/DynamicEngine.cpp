@@ -1,6 +1,6 @@
 #include "DynamicEngine.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 ResultadoDinamico DynamicEngine::simular(
     double t0, double tf, double dt,
@@ -17,4 +17,4 @@ ResultadoDinamico DynamicEngine::simular(
     return r;
 }
 
-} // namespace hsc_clone
+} // namespace cma::application::modules

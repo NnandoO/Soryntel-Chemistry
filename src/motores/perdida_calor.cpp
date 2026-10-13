@@ -4,6 +4,17 @@
 #include <sstream>
 
 namespace cma { namespace motores {
+namespace {
+bool valid_layers(const std::vector<CapaAislante>& layers) {
+    return std::all_of(layers.begin(), layers.end(), [](const auto& layer) {
+        return std::isfinite(layer.k) && layer.k > 0 && std::isfinite(layer.espesor) && layer.espesor > 0;
+    });
+}
+bool valid_boundary(double ti, double te, double hi, double he) {
+    return std::isfinite(ti) && std::isfinite(te) && ti > 0 && te > 0 &&
+        ti < 10000 && te < 10000 && std::isfinite(hi) && std::isfinite(he) && hi > 0 && he > 0;
+}
+}
 
 double PerdidaCalor::calcular_resistencia_conduccion(double k, double espesor, double area) {
     if (k <= 0 || area <= 0) return 1e12;
@@ -21,6 +32,10 @@ ResultadoPerdidaCalor PerdidaCalor::pared_plana(
     double h_int, double h_ext)
 {
     ResultadoPerdidaCalor res;
+    error_.clear();
+    if (!valid_boundary(T_int, T_ext, h_int, h_ext) || !valid_layers(capas) || !std::isfinite(area) || area <= 0) {
+        error_ = res.mensaje = "Temperaturas requieren Kelvin positivo y geometría/materiales válidos"; return res;
+    }
     double R_total = 0;
 
     // Resistencia convectiva interior
@@ -33,8 +48,9 @@ ResultadoPerdidaCalor PerdidaCalor::pared_plana(
     // Resistencia convectiva exterior
     R_total += calcular_resistencia_conveccion(h_ext, area);
 
-    if (R_total > 1e10) {
+    if (!std::isfinite(R_total) || R_total <= 0 || R_total > 1e10) {
         error_ = "Resistencia infinita";
+        res.mensaje = error_;
         return res;
     }
 
@@ -47,12 +63,22 @@ ResultadoPerdidaCalor PerdidaCalor::pared_plana(
     res.T_pared_int = T_int - res.flujo_calor / (h_int_safe * area);
     res.T_pared_ext = T_ext + res.flujo_calor / (h_ext_safe * area);
 
-    // Radiación exterior (asumiendo emisividad 0.9)
-    double emisividad = 0.9;
-    double sigma = 5.670374419e-8;
-    double Q_rad = emisividad * sigma * area * (std::pow(res.T_pared_ext, 4) - std::pow(T_ext, 4));
-    res.flujo_calor += Q_rad;
-    res.perfil_T = perfil_temperatura(T_int, T_ext, capas, area);
+    // Convection and radiation act in parallel at the outer surface. Solve
+    // the same heat rate through the wall and the outer boundary (Kelvin).
+    const double resistance_wall = R_total - 1 / (h_ext * area);
+    double lo = std::min(T_int, T_ext), hi = std::max(T_int, T_ext);
+    for (int i = 0; i < 100; ++i) {
+        const double surface = (lo + hi) / 2;
+        const double inward = (T_int - surface) / resistance_wall;
+        const double outward = h_ext * area * (surface - T_ext) +
+            0.9 * 5.670374419e-8 * area * (std::pow(surface, 4) - std::pow(T_ext, 4));
+        if (inward > outward) lo = surface; else hi = surface;
+    }
+    res.T_pared_ext = (lo + hi) / 2;
+    res.flujo_calor = (T_int - res.T_pared_ext) / resistance_wall;
+    res.T_pared_int = T_int - res.flujo_calor / (h_int * area);
+    res.resistencia_total = std::abs(res.flujo_calor) > 1e-15 ? (T_int - T_ext) / res.flujo_calor : R_total;
+    res.perfil_T = perfil_temperatura(res.T_pared_int, res.T_pared_ext, capas, area);
     res.ok = true;
     res.mensaje = "Flujo de calor: " + std::to_string(res.flujo_calor) + " W";
 
@@ -65,6 +91,11 @@ ResultadoPerdidaCalor PerdidaCalor::tuberia(
     double h_int, double h_ext)
 {
     ResultadoPerdidaCalor res;
+    error_.clear();
+    if (!valid_boundary(T_int, T_ext, h_int, h_ext) || !valid_layers(capas) ||
+        !std::isfinite(r_int) || r_int <= 0 || !std::isfinite(largo) || largo <= 0) {
+        error_ = res.mensaje = "Geometría o temperaturas inválidas"; return res;
+    }
     double R_total = 0;
 
     // Convección interior
@@ -84,13 +115,16 @@ ResultadoPerdidaCalor PerdidaCalor::tuberia(
     double A_ext = 2 * M_PI * r * largo;
     R_total += calcular_resistencia_conveccion(h_ext, A_ext);
 
-    if (R_total > 1e10 || std::abs(R_total) < 1e-15) {
+    if (!std::isfinite(R_total) || R_total > 1e10 || R_total <= 0) {
         error_ = "Resistencia infinita o nula";
+        res.mensaje = error_;
         return res;
     }
 
     res.resistencia_total = R_total;
     res.flujo_calor = (T_int - T_ext) / R_total;
+    res.T_pared_int = T_int - res.flujo_calor / (h_int * A_int);
+    res.T_pared_ext = T_ext + res.flujo_calor / (h_ext * A_ext);
     res.ok = true;
     res.mensaje = "Flujo de calor en tubería: " + std::to_string(res.flujo_calor) + " W";
 
@@ -103,6 +137,10 @@ ResultadoPerdidaCalor PerdidaCalor::tanque_esferico(
     double h_int, double h_ext)
 {
     ResultadoPerdidaCalor res;
+    error_.clear();
+    if (!valid_boundary(T_int, T_ext, h_int, h_ext) || !valid_layers(capas) || !std::isfinite(r_int) || r_int <= 0) {
+        error_ = res.mensaje = "Geometría o temperaturas inválidas"; return res;
+    }
     double R_total = 0;
 
     double A_int = 4 * M_PI * r_int * r_int;
@@ -119,12 +157,16 @@ ResultadoPerdidaCalor PerdidaCalor::tanque_esferico(
     double A_ext = 4 * M_PI * r * r;
     R_total += calcular_resistencia_conveccion(h_ext, A_ext);
 
-    if (R_total > 1e10 || std::abs(R_total) < 1e-15) {
+    if (!std::isfinite(R_total) || R_total > 1e10 || R_total <= 0) {
         error_ = "Resistencia infinita o nula";
+        res.mensaje = error_;
         return res;
     }
 
+    res.resistencia_total = R_total;
     res.flujo_calor = (T_int - T_ext) / R_total;
+    res.T_pared_int = T_int - res.flujo_calor / (h_int * A_int);
+    res.T_pared_ext = T_ext + res.flujo_calor / (h_ext * A_ext);
     res.ok = true;
     res.mensaje = "Flujo de calor en tanque: " + std::to_string(res.flujo_calor) + " W";
     return res;
@@ -135,6 +177,8 @@ std::vector<double> PerdidaCalor::perfil_temperatura(
     const std::vector<CapaAislante>& capas,
     double area, int puntos_por_capa)
 {
+    if (!std::isfinite(T_int) || !std::isfinite(T_ext) || !std::isfinite(area) ||
+        area <= 0 || puntos_por_capa < 1 || puntos_por_capa > 10000 || !valid_layers(capas)) return {};
     std::vector<double> perfil = { T_int };
     double R_total = 0;
     double R_acum = 0;

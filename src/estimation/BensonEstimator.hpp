@@ -1,7 +1,8 @@
 #pragma once
+#include "application/modules.hpp"
 #include "StatisticalEstimator.hpp"
 
-namespace hsc_clone {
+namespace cma::application::modules {
 
 class BensonEstimator {
 public:
@@ -11,4 +12,4 @@ private:
     cma::motores::EstimadorPropiedades motor_;
 };
 
-} // namespace hsc_clone
+} // namespace cma::application::modules
