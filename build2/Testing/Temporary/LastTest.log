@@ -1,0 +1,70 @@
+Start testing: Oct 14 22:18 -05
+----------------------------------------------------------
+5/7 Testing: architecture_boundaries
+5/7 Test: architecture_boundaries
+Command: "/usr/bin/python3.14" "/home/nando/Documentos/CMA CHEMISTRY/tests/check_architecture.py" "/home/nando/Documentos/CMA CHEMISTRY"
+Directory: /home/nando/Documentos/CMA CHEMISTRY/build
+"architecture_boundaries" start time: Oct 14 22:18 -05
+Output:
+----------------------------------------------------------
+Domain/application boundary rules passed
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"architecture_boundaries" end time: Oct 14 22:18 -05
+"architecture_boundaries" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/7 Testing: source_structure
+6/7 Test: source_structure
+Command: "/usr/bin/python3.14" "/home/nando/Documentos/CMA CHEMISTRY/tools/check_structure.py"
+Directory: /home/nando/Documentos/CMA CHEMISTRY/build
+"source_structure" start time: Oct 14 22:18 -05
+Output:
+----------------------------------------------------------
+Largest authored source files (excluding bundled JSON and species data):
+ 1130  src/interfaz/paneles.hpp
+ 1091  src/interfaz/panels/reaction.cpp
+  909  src/motores/balance_masa.cpp
+  900  src/interfaz/panels/properties.cpp
+  855  src/interfaz/panels/heat_material_balance.cpp
+  700  src/interfaz/panels/lca.cpp
+  646  src/interfaz/panels/species_converter.cpp
+  611  src/interfaz/panels/heat_loss.cpp
+  606  src/interfaz/panels/equilibrium.cpp
+  591  src/interfaz/panels/dynamic_reconciliation.cpp
+  590  src/diagrama_flujo/flowsheet.cpp
+  578  src/interfaz/application/layout.cpp
+  524  src/nucleo/tipos.hpp
+  516  src/sim/SimOptimization.cpp
+  510  src/interfaz/application/modules.cpp
+Also run tests/check_architecture.py: file length alone cannot prove architecture.
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"source_structure" end time: Oct 14 22:18 -05
+"source_structure" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/7 Testing: external_reference_integrity
+7/7 Test: external_reference_integrity
+Command: "/usr/bin/python3.14" "/home/nando/Documentos/CMA CHEMISTRY/tests/reference_data.py"
+Directory: /home/nando/Documentos/CMA CHEMISTRY/build
+"external_reference_integrity" start time: Oct 14 22:18 -05
+Output:
+----------------------------------------------------------
+geomet/comminution.csv: 60 records; original checksum verified
+LCT: 52 available, 1 missing; no imputation
+geomet/flotation.csv: 53 records; original checksum verified
+Reference inputs verified; no assertion of experimental model equivalence
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"external_reference_integrity" end time: Oct 14 22:18 -05
+"external_reference_integrity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 14 22:18 -05

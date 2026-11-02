@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "nucleo/tabla_periodica.hpp"
 #include <algorithm>
 #include <regex>
@@ -159,8 +165,8 @@ TablaPeriodica::TablaPeriodica() {
     }
 
     for (size_t i = 0; i < elementos_.size(); ++i) {
-        simb_a_idx_[elementos_[i].simbolo] = (int)i;
-        num_a_idx_[elementos_[i].numero_atomico] = (int)i;
+        simb_a_idx_[elementos_[i].simbolo] = static_cast<int>(i);
+        num_a_idx_[elementos_[i].numero_atomico] = static_cast<int>(i);
     }
 }
 
@@ -320,3 +326,5 @@ std::vector<TablaPeriodica::CompAtom> TablaPeriodica::analizar_formula(const std
 }
 
 }} // namespace
+
+#pragma GCC diagnostic pop

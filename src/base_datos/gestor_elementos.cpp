@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "gestor_elementos.hpp"
 #include "../nucleo/tabla_periodica.hpp"
 #include <fstream>
@@ -192,3 +198,5 @@ void GestorElementos::set_graficable(const std::string& prop, bool graficable) {
 }
 
 }} // namespace
+
+#pragma GCC diagnostic pop

@@ -33,6 +33,7 @@ void GestorDB::poblar_elementos() {
 }
 
 void GestorDB::poblar_especies() {
+    const auto& tp = nucleo::TablaPeriodica::instancia();
     for (auto& d : semilla_especies()) {
         nucleo::Especie e;
         e.id = prox_id_especie_++;
@@ -52,6 +53,10 @@ void GestorDB::poblar_especies() {
         e.antoine_c = d.AntC;
         e.temp_min_antoine = d.AntTmin;
         e.temp_max_antoine = d.AntTmax;
+        for (const auto& ca : tp.analizar_formula(e.formula)) {
+            if (!ca.elem.empty() && ca.cuenta > 0)
+                e.composicion_elemental[ca.elem] += ca.cuenta;
+        }
         // La tabla semilla codifica 0=Gas, 1=Líquido, 2=Sólido, 3=Acuoso/Mixto;
         // el enum Fase es {Liquido=0, Gas=1, Solido=2, Mixto=3,...}. Mapear bien.
         switch (d.fase_std) {
@@ -75,74 +80,86 @@ void GestorDB::poblar_reacciones() {
     };
 
     std::vector<DatosReaccion> datos = {
-        // Reformado con vapor (SMR): CH4 + H2O -> CO + 3H2
+        // 1. Reformado con vapor (SMR): CH4 + H2O -> CO + 3H2
         {"Reformado de metano con vapor", 206.130, 214.420, 240.0, 1, {{"Metano",-1},{"Agua",-1},{"Monóxido de carbono",1},{"Hidrógeno",3}}},
-        // Water-Gas Shift: CO + H2O -> CO2 + H2
+        // 2. Water-Gas Shift: CO + H2O -> CO2 + H2
         {"Water-Gas Shift (WGS)", -41.166, -42.382, 70.0, 1, {{"Monóxido de carbono",-1},{"Agua",-1},{"Dióxido de carbono",1},{"Hidrógeno",1}}},
-        // Metanación: CO2 + 4H2 -> CH4 + 2H2O
+        // 3. Metanación: CO2 + 4H2 -> CH4 + 2H2O
         {"Metanación de CO₂", -165.000, -90.730, 100.0, 1, {{"Dióxido de carbono",-1},{"Hidrógeno",-4},{"Metano",1},{"Agua",2}}},
-        // Haber-Bosch: N2 + 3H2 -> 2NH3
+        // 4. Haber-Bosch: N2 + 3H2 -> 2NH3
         {"Haber-Bosch (síntesis de amoníaco)", -91.880, -174.460, 200.0, 1, {{"Nitrógeno",-1},{"Hidrógeno",-3},{"Amoníaco",2}}},
-        // Oxidación de SO2: SO2 + 0.5O2 -> SO3
+        // 5. Oxidación de SO2: SO2 + 0.5O2 -> SO3
         {"Oxidación de dióxido de azufre", -98.920, -93.600, 80.0, 1, {{"Dióxido de azufre",-1},{"Oxígeno",-0.5},{"Trióxido de azufre",1}}},
-        // Combustión completa CH4: CH4 + 2O2 -> CO2 + 2H2O
+        // 6. Combustión completa CH4: CH4 + 2O2 -> CO2 + 2H2O
         {"Combustión de metano", -802.300, -5.160, 125.0, 1, {{"Metano",-1},{"Oxígeno",-2},{"Dióxido de carbono",1},{"Agua",2}}},
-        // Combustión H2: H2 + 0.5O2 -> H2O
+        // 7. Combustión H2: H2 + 0.5O2 -> H2O
         {"Combustión de hidrógeno", -241.826, -44.420, 80.0, 1, {{"Hidrógeno",-1},{"Oxígeno",-0.5},{"Agua",1}}},
-        // Oxidación de CO: CO + 0.5O2 -> CO2
+        // 8. Oxidación de CO: CO + 0.5O2 -> CO2
         {"Oxidación de monóxido de carbono", -282.985, -86.580, 90.0, 1, {{"Monóxido de carbono",-1},{"Oxígeno",-0.5},{"Dióxido de carbono",1}}},
-        // Formación de amoníaco a partir de elementos (otra vista)
+        // 9. Formación de urea
         {"Síntesis de urea: 2NH3 + CO2 -> (NH2)2CO + H2O", -101.500, 24.300, 150.0, 1, {{"Amoníaco",-2},{"Dióxido de carbono",-1},{"Urea",1},{"Agua",1}}},
-        // Oxidación de amoníaco: 4NH3 + 5O2 -> 4NO + 6H2O
+        // 10. Oxidación de amoníaco: 4NH3 + 5O2 -> 4NO + 6H2O
         {"Oxidación de amoníaco (proceso Ostwald)", -905.500, -180.000, 180.0, 1, {{"Amoníaco",-4},{"Oxígeno",-5},{"Monóxido de nitrógeno",4},{"Agua",6}}},
-        // Formación de NO2: 2NO + O2 -> 2NO2
+        // 11. Formación de NO2: 2NO + O2 -> 2NO2
         {"Oxidación de NO", -114.200, -146.500, 60.0, 1, {{"Monóxido de nitrógeno",-2},{"Oxígeno",-1},{"Dióxido de nitrógeno",2}}},
-        // Formación de HNO3: 3NO2 + H2O -> 2HNO3 + NO
+        // 12. Formación de HNO3: 3NO2 + H2O -> 2HNO3 + NO
         {"Formación de ácido nítrico", -117.000, -100.000, 100.0, 1, {{"Dióxido de nitrógeno",-3},{"Agua",-1},{"Ácido nítrico",2},{"Monóxido de nitrógeno",1}}},
-        // Calcinación: CaCO3 -> CaO + CO2
+        // 13. Calcinación: CaCO3 -> CaO + CO2
         {"Calcinación de carbonato de calcio", 178.300, 160.400, 200.0, 1, {{"Carbonato de calcio",-1},{"Óxido de calcio",1},{"Dióxido de carbono",1}}},
-        // Cloro-álcali: 2NaCl + 2H2O -> 2NaOH + Cl2 + H2
+        // 14. Cloro-álcali: 2NaCl + 2H2O -> 2NaOH + Cl2 + H2
         {"Proceso cloro-álcali", 472.000, 100.000, 150.0, 1, {{"Cloruro de sodio",-2},{"Agua",-2},{"Hidróxido de sodio",2},{"Cloro",1},{"Hidrógeno",1}}},
-        // Oxidación de Fe: 4Fe + 3O2 -> 2Fe2O3
+        // 15. Oxidación de Fe: 4Fe + 3O2 -> 2Fe2O3
         {"Oxidación del hierro", -1648.400, -549.400, 100.0, 1, {{"Hierro (α)",-4},{"Oxígeno",-3},{"Óxido de hierro(III)",2}}},
-        // Reducción de Fe2O3 con CO: Fe2O3 + 3CO -> 2Fe + 3CO2
+        // 16. Reducción de Fe2O3 con CO: Fe2O3 + 3CO -> 2Fe + 3CO2
         {"Reducción de hematita con CO", -24.800, 15.000, 120.0, 1, {{"Óxido de hierro(III)",-1},{"Monóxido de carbono",-3},{"Hierro (α)",2},{"Dióxido de carbono",3}}},
-        // Producción de H2SO4: SO3 + H2O -> H2SO4
+        // 17. Producción de H2SO4: SO3 + H2O -> H2SO4
         {"Formación de ácido sulfúrico", -101.540, -180.000, 60.0, 1, {{"Trióxido de azufre",-1},{"Agua",-1},{"Ácido sulfúrico",1}}},
-        // Síntesis de metanol: CO + 2H2 -> CH3OH
+        // 18. Síntesis de metanol: CO + 2H2 -> CH3OH
         {"Síntesis de metanol", -90.550, -220.000, 90.0, 1, {{"Monóxido de carbono",-1},{"Hidrógeno",-2},{"Metanol",1}}},
-        // Craqueo de etano: C2H6 -> C2H4 + H2
+        // 19. Craqueo de etano: C2H6 -> C2H4 + H2
         {"Craqueo de etano", 137.000, 120.000, 250.0, 1, {{"Etano",-1},{"Eteno (Etileno)",1},{"Hidrógeno",1}}},
-        // Esterificación: CH3COOH + C2H5OH -> CH3COOC2H5 + H2O
+        // 20. Esterificación: CH3COOH + C2H5OH -> CH3COOC2H5 + H2O
         {"Esterificación de ácido acético", -5.000, 10.000, 70.0, 1, {{"Ácido acético",-1},{"Etanol",-1},{"Acetato de etilo",1},{"Agua",1}}},
-        // Combustión de C2H6: 2C2H6 + 7O2 -> 4CO2 + 6H2O
+        // 21. Combustión de C2H6: 2C2H6 + 7O2 -> 4CO2 + 6H2O
         {"Combustión de etano", -1560.000, -20.000, 130.0, 1, {{"Etano",-2},{"Oxígeno",-7},{"Dióxido de carbono",4},{"Agua",6}}},
-        // Oxidación de H2S: 2H2S + 3O2 -> 2SO2 + 2H2O
+        // 22. Oxidación de H2S: 2H2S + 3O2 -> 2SO2 + 2H2O
         {"Oxidación de sulfuro de hidrógeno", -1036.000, -150.000, 100.0, 1, {{"Sulfuro de hidrógeno",-2},{"Oxígeno",-3},{"Dióxido de azufre",2},{"Agua",2}}},
-        // Descomposición de NH3: 2NH3 -> N2 + 3H2
+        // 23. Descomposición de NH3: 2NH3 -> N2 + 3H2
         {"Descomposición de amoníaco", 91.880, 174.460, 180.0, 1, {{"Amoníaco",-2},{"Nitrógeno",1},{"Hidrógeno",3}}},
-        // Oxidación parcial de CH4: CH4 + 0.5O2 -> CO + 2H2
+        // 24. Oxidación parcial de CH4: CH4 + 0.5O2 -> CO + 2H2
         {"Oxidación parcial de metano", -36.000, 80.000, 110.0, 1, {{"Metano",-1},{"Oxígeno",-0.5},{"Monóxido de carbono",1},{"Hidrógeno",2}}},
-        // Síntesis de cloruro de vinilo: C2H2 + HCl -> C2H3Cl
+        // 25. Síntesis de cloruro de vinilo: C2H2 + HCl -> C2H3Cl
         {"Hidrocloración de acetileno", -100.000, -120.000, 80.0, 1, {{"Acetileno",-1},{"Cloruro de hidrógeno",-1},{"Cloruro de vinilo",1}}},
-        // Formación de ácido nítrico directa
+        // 26. Formación de ácido nítrico directa
         {"Oxidación de NO a NO₂", -114.200, -146.500, 60.0, 1, {{"Monóxido de nitrógeno",-2},{"Oxígeno",-1},{"Dióxido de nitrógeno",2}}},
-        // Reacción de Boudouard: C + CO2 -> 2CO
+        // 27. Reacción de Boudouard: C + CO2 -> 2CO
         {"Reacción de Boudouard", 172.500, 175.600, 200.0, 1, {{"Carbono",-1},{"Dióxido de carbono",-1},{"Monóxido de carbono",2}}},
-        // Síntesis de aminas: CH3OH + NH3 -> CH3NH2 + H2O
+        // 28. Síntesis de aminas: CH3OH + NH3 -> CH3NH2 + H2O
         {"Aminación de metanol", -30.000, -50.000, 100.0, 1, {{"Metanol",-1},{"Amoníaco",-1},{"Metilamina",1},{"Agua",1}}},
-        // Hidrogenación de CO2 a metanol: CO2 + 3H2 -> CH3OH + H2O
+        // 29. Hidrogenación de CO2 a metanol: CO2 + 3H2 -> CH3OH + H2O
         {"Hidrogenación de CO₂ a metanol", -49.430, -177.000, 85.0, 1, {{"Dióxido de carbono",-1},{"Hidrógeno",-3},{"Metanol",1},{"Agua",1}}},
-        // Reacción de cloro con NaOH: Cl2 + 2NaOH -> NaCl + NaOCl + H2O
+        // 30. Reacción de cloro con NaOH: Cl2 + 2NaOH -> NaCl + NaOCl + H2O
         {"Reacción de cloro con hidróxido", -200.000, -50.000, 40.0, 1, {{"Cloro",-1},{"Hidróxido de sodio",-2},{"Cloruro de sodio",1},{"Agua",1}}},
-        // Formación de NO a partir de N2 y O2
+        // 31. Formación de NO a partir de N2 y O2
         {"Formación de NO (combustión)", 180.580, 24.770, 350.0, 1, {{"Nitrógeno",-1},{"Oxígeno",-1},{"Monóxido de nitrógeno",2}}},
-        // Combustión completa de C3H8: C3H8 + 5O2 -> 3CO2 + 4H2O
+        // 32. Combustión completa de C3H8: C3H8 + 5O2 -> 3CO2 + 4H2O
         {"Combustión de propano", -2043.000, -100.000, 140.0, 1, {{"Propano",-1},{"Oxígeno",-5},{"Dióxido de carbono",3},{"Agua",4}}},
-        // Fermentación: C6H12O6 -> 2C2H5OH + 2CO2
+        // 33. Fermentación: C6H12O6 -> 2C2H5OH + 2CO2
         {"Fermentación alcohólica", -68.000, 300.000, 60.0, 1, {{"Glucosa",-1},{"Etanol",2},{"Dióxido de carbono",2}}},
-        // Fotosíntesis: 6CO2 + 6H2O -> C6H12O6 + 6O2
+        // 34. Fotosíntesis: 6CO2 + 6H2O -> C6H12O6 + 6O2
         {"Fotosíntesis (simplificada)", 2803.000, -200.000, 0.0, 1, {{"Dióxido de carbono",-6},{"Agua",-6},{"Glucosa",1},{"Oxígeno",6}}},
+        // 35. Digestión Bayer (Pressure Leaching): Al(OH)3 + NaOH(aq) -> NaAlO2(a) + 2 H2O(l)
+        {"Digestión Bayer: Al(OH)3 + NaOH(aq) -> NaAlO2(a) + 2H2O", 32.0, 45.0, 85.0, 1, {{"Hidróxido de aluminio",-1},{"Hidróxido de sodio (aq)",-1},{"Aluminato de sodio (a)",1},{"Agua (líquida)",2}}},
+        // 36. Cristalización Bayer: NaAlO2(a) + 2 H2O(l) -> Al(OH)3 + NaOH(aq)
+        {"Cristalización Bayer: NaAlO2(a) + 2H2O -> Al(OH)3 + NaOH(aq)", -32.0, -45.0, 65.0, 1, {{"Aluminato de sodio (a)",-1},{"Agua (líquida)",-2},{"Hidróxido de aluminio",1},{"Hidróxido de sodio (aq)",1}}},
+        // 37. Calcinación Bayer: 2 Al(OH)3 -> Al2O3 + 3 H2O(g)
+        {"Calcinación Bayer: 2Al(OH)3 -> Al2O3 + 3H2O(g)", 185.0, 290.0, 140.0, 1, {{"Hidróxido de aluminio",-2},{"Óxido de aluminio",1},{"Agua",3}}},
+        // 38. Cloración de TiO2: TiO2 + 2C + 2Cl2 -> TiCl4(g) + 2CO
+        {"Cloración carbotérmica de TiO2", -125.0, 180.0, 150.0, 1, {{"Dióxido de titanio",-1},{"Negro de carbón",-2},{"Cloro",-2},{"Cloruro de titanio (g)",1},{"Monóxido de carbono",2}}},
+        // 39. Oxidación de TiCl4: TiCl4(g) + O2 -> TiO2 + 2Cl2
+        {"Oxidación de TiCl4 a TiO2", -180.0, -60.0, 110.0, 1, {{"Cloruro de titanio (g)",-1},{"Oxígeno",-1},{"Dióxido de titanio",1},{"Cloro",2}}},
+        // 40. Reducción de hematita en Alto Horno: Fe2O3 + 1.5C + 0.75O2 -> 2Fe + 1.5CO2
+        {"Reducción carbotérmica en Alto Horno", -165.0, 120.0, 130.0, 1, {{"Hematita",-1},{"Negro de carbón",-1.5},{"Oxígeno",-0.75},{"Hierro (α)",2},{"Dióxido de carbono",1.5}}},
     };
 
     for (auto& d : datos) {

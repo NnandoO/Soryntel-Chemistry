@@ -9,13 +9,13 @@
 #include "base_datos/gestor_db.hpp"
 #include "motores/balance_masa.hpp"
 #include "motores/balance_energia.hpp"
+#include "motores/balance_hoja.hpp"
 #include "motores/equilibrio_fases.hpp"
 #include "motores/electroquimica.hpp"
 #include "motores/cinetica.hpp"
 #include "motores/destilacion.hpp"
 #include "motores/minimizador_gibbs.hpp"
 #include "motores/simulacion_dinamica.hpp"
-#include "motores/reconciliacion_datos.hpp"
 #include "motores/exergia.hpp"
 #include "../diagrams/PropertyDiagrams.hpp"
 #include "../diagrams/StabilityDiagrams.hpp"
@@ -25,11 +25,17 @@
 #include "motores/perdida_calor.hpp"
 #include "motores/estimador_propiedades.hpp"
 #include "motores/lca.hpp"
+#include "motores/red_neuronal.hpp"
 #include "thermo/ReactionSolver.hpp"
 #include "tools/SpeciesConverter.hpp"
 #include "tools/DataFitter.hpp"
 #include "tools/ExternalAPI.hpp"
 #include "motores/pourbaix.hpp"
+#include "panels/panel_balance_hoja.hpp"
+#include "panels/panel_lca.hpp"
+#include "panels/panel_balance_metalurgico.hpp"
+#include "panels/panel_material_db.hpp"
+#include "db/MineralDB.hpp"
 #include <imgui.h>
 #include <functional>
 
@@ -93,19 +99,25 @@ public:
     void seleccionar_nodo(int64_t id);
     void seleccionar_flujo(int64_t id);
     void seleccionar_anotacion(int64_t id);
+    void abrir_editor_unidad(int64_t id);
     void renderizar();
+    void renderizar_editor_unidad();
     std::function<void()> al_cambio_flowsheet;
     std::function<void()> al_antes_de_modificar;  // hook para guardar estado antes de undo
+    std::function<void()> al_ejecutar_simulacion;
 
 private:
     diagrama_flujo::Flowsheet* flowsheet_ = nullptr;
     int64_t id_nodo_   = -1;
     int64_t id_flujo_  = -1;
     int64_t id_anotacion_ = -1;
+    int64_t id_nodo_editor_ = -1;
+    bool mostrar_editor_unidad_ = false;
     bool forzar_seleccion_proceso_ = false;
     bool forzar_seleccion_dibujos_ = false;
 
     void renderizar_contenido_proceso();
+    void renderizar_stream_viewer();
     void renderizar_contenido_dibujos();
     void propiedades_nodo(nucleo::Nodo& nodo);
     void propiedades_flujo(nucleo::Flujo& flujo);
@@ -255,15 +267,29 @@ private:
         std::string formula;
         std::string phase;
         double initial_amount = 0.0;
+        int phase_num = 1;           // 1 = gas, 2..n = fases condensadas
+        double activity_coeff = 1.0; // γ_i (coeficiente de actividad)
     };
     std::vector<EqSpecies> species_list_;
     char add_species_buf_[64] = "";
+    double add_species_amt_ = 0.0;
+    int modelo_actividad_ = 0; // 0 = Ideal (γ=1), 1 = Manual, 2 = Raoult/Davies auto
 
     // Selección por elementos (HSC) y modo celda
-    char elementos_buf_[128] = "";          // p.ej. "Na, S, O, C"
+    char elementos_buf_[128] = "";          // p.ej. "Na, S, O, C, N"
     bool todos_elementos_ = false;          // "All elements must exist"
     bool modo_celda_ = false;               // Cell equilibrium (carga neta 0)
     char titulo_chart_[128] = "GEM System"; // título del gráfico (como el nombre de archivo en HSC)
+
+    // Ventana de gráfico estilo HSC
+    bool mostrar_parametros_ = true;        // panel "Chart parameters" (menú Show)
+    bool mostrar_acerca_ = false;           // popup Help > About
+    int  modo_vista_chart_ = 0;             // 0 = 3D Surface (T×P), 1 = 2D Curves (corte)
+
+    // Genera las especies candidatas a partir de elementos_buf_ (botón Generate / preset)
+    void generar_especies_por_elementos(const std::map<int64_t, nucleo::Especie>& db);
+    // Precarga el ejemplo Na2SO4 de la imagen HSC (elementos Na,S,O,C,N + barrido T×P)
+    void cargar_ejemplo_na2so4(const std::map<int64_t, nucleo::Especie>& db);
 
     // For 3D Plot we sweep both T and P (entradas en °C y bar, estilo HSC)
     double t_start_ = 200.0;   // °C
@@ -285,13 +311,14 @@ private:
         int fase_num = 1;      // nº de fase (1 = gas, 2..n condensadas)
         std::vector<double> z_data;
         bool visible = true;
+        ImVec4 color = ImVec4(0.2f, 0.7f, 0.3f, 1.0f);
     };
     std::vector<ChartSurface> chart_surfaces_;
 
     bool calculado_ = false;
     bool show_chart_window_ = false;
     bool show_table_window_ = false;
-    int  table_p_index_ = 0;   // fila de presión mostrada en la tabla 2D
+    int  table_p_index_ = 0;   // fila de presión mostrada en la tabla 2D / gráfico 2D
     std::string error_msg_;
 
     // Energía de Gibbs total por punto del grid (para la tabla)
@@ -308,6 +335,25 @@ private:
     int plot_p_steps_ = 0;
     int temp_plot_t_steps_ = 0;
     int temp_plot_p_steps_ = 0;
+
+    // ── Mejoras estilo HSC (imagen de referencia GEM) ──
+    // Variables barridas en X e Y (por defecto: X=Temperatura, Y=Presión)
+    enum class VarBarrido { Temperatura, Presion, CantidadEspecie };
+    VarBarrido var_x_ = VarBarrido::Temperatura;   // eje X
+    VarBarrido var_y_ = VarBarrido::Presion;       // eje Y
+    int especie_barrida_ = 0;                       // índice en species_list_ cuando CantidadEspecie
+    double t_fijo_ = 500.0;                         // °C si Temperatura no se barre
+    double p_fijo_ = 1.0;                           // bar si Presión no se barre
+    double feed_start_ = 0.1, feed_end_ = 2.0;      // kmol, si CantidadEspecie se barre
+    int feed_steps_ = 10;
+
+    // Ejes del gráfico: escala logarítmica y límites manuales
+    bool eje_x_log_ = false, eje_y_log_ = false, eje_z_log_ = false;
+    bool eje_x_manual_ = false, eje_y_manual_ = false, eje_z_manual_ = false;
+    double x_min_user_ = 0.0, x_max_user_ = 1000.0;
+    double y_min_user_ = 0.0, y_max_user_ = 10.0;
+    double z_min_user_ = 0.0, z_max_user_ = 1.0;
+    int filtro_fase_ = -1;                          // -1 = all phases, 0..n = fase_num (0=todas)
     
     // Temp storage for async thread results
     std::vector<double> temp_x_values_;
@@ -318,117 +364,40 @@ private:
     std::thread calc_thread_;
 };
 
-// ── Panel de Simulación Dinámica ────────────────────────────────────────
+// ── Panel de Simulación Dinámica (HSC-Sim Dynamic Dialog) ───────────────────
+struct EventoDinamicoTanques {
+    double tiempo_s = 0.0;
+    double feed_kg_h = 36000.0;
+    double valvula1_pct = 100.0;
+    double valvula2_pct = 100.0;
+    double valvula3_pct = 100.0;
+};
+
+struct ConfigTanqueCascada {
+    std::string nombre;
+    double area_m2 = 2.0;
+    double altura_max_m = 3.0;
+    double area_orificio_m2 = 0.008;
+    double nivel_inicial_pct = 50.0;
+};
+
 class PanelSimulacionDinamica {
 public:
+    PanelSimulacionDinamica();
     void renderizar();
 private:
-    double t_inicial_ = 0, t_final_ = 100, paso_ = 0.1;
+    double t_inicial_ = 0, t_final_ = 120, paso_ = 0.5;
     double A_tanque_ = 1.0, A_orificio_ = 0.01, h0_ = 2.0;
     double T0_horno_ = 300, T_amb_ = 298, masa_ = 100, cp_ = 500, hA_ = 50;
     double C0_ = 1.0, k0_ = 0.1, Ea_ = 50000, T_react_ = 500;
-    int modo_ = 0; // 0=vaciado, 1=horno, 2=batch
+    int modo_ = 0; // 0=Cascada 3 Tanques (HSC-Sim), 1=Vaciado Torricelli, 2=Horno, 3=Reactor Batch
     bool calculado_ = false;
+    double cursor_tiempo_ = 30.0;
+    std::vector<ConfigTanqueCascada> tanques_;
+    std::vector<EventoDinamicoTanques> agenda_;
     motores::ResultadoODEs resultado_;
     motores::SimulacionDinamica motor_;
-};
-
-// ── Panel de Reconciliación de Datos (Mass Balance) ──────────────────────
-struct ReconciliacionUnit {
-    std::string name;
-    bool selected = true;
-    bool psd_changing = false;
-};
-
-struct ReconciliacionStream {
-    int64_t id = -1;
-    std::string name;
-    bool selected = true;
-    bool assayed = true;
-    double measured_flow = 100.0;
-    double sd = 5.0;
-    double reconciled_flow = 0.0;
-    double reconciled_error = 0.0;
-};
-
-class PanelReconciliacion {
-public:
-    void renderizar(diagrama_flujo::Flowsheet* flowsheet = nullptr);
-    void reset() { cargado_inicial_ = false; unidades_.clear(); corrientes_.clear(); calculado_ = false; }
-private:
-    enum class SeccionNavegacion {
-        Units, Streams, Variables, SizeFractions, DataSets, MeasurementData,
-        StreamView, VariableView, SDStream, SDVariable, Balancing, Reporting
-    };
-    
-    SeccionNavegacion seccion_ = SeccionNavegacion::Units;
-    std::vector<ReconciliacionUnit> unidades_;
-    std::vector<ReconciliacionStream> corrientes_;
-    int fila_seleccionada_ = -1;
-    int tipo_problema_ = 0; // 0: Solids, 1: Assays Only, 2: Solids & Water Independently
-    bool calculado_ = false;
-    bool cargado_inicial_ = false;
-    
-    motores::ReconciliacionDatos motor_;
-    motores::ResultadoReconciliacion resultado_;
-
-    void inicializar_datos(diagrama_flujo::Flowsheet* fs);
-    void ejecutar_balance();
-};
-
-// ── Panel de Balance Hoja de Cálculo ─────────────────────────────────────
-class PanelBalanceHoja {
-public:
-    PanelBalanceHoja();
-    void renderizar(diagrama_flujo::Flowsheet* flowsheet = nullptr);
-    void inicializar_valores_defecto();
-
-private:
-    struct SpeciesRow {
-        char formula[64] = "";
-        double temper = 25.0;     // in selected temperature unit
-        double pressure = 1.0;    // bar
-        double amount_kmol = 0.0;
-        double amount_kg = 0.0;
-        double amount_nm3 = 0.0;
-        double heat_content = 0.0; // selected energy unit / kmol
-        double total_h = 0.0;      // selected energy unit
-    };
-
-    struct StreamGroup {
-        char nombre[64] = "";
-        std::vector<SpeciesRow> filas;
-        double heat_loss = 0.0;   // in selected energy unit
-    };
-
-    std::vector<StreamGroup> entradas_;
-    std::vector<StreamGroup> salidas_;
-
-    int tab_actual_ = 1; // 0: BALANCE, 1: IN1, 2: OUT1, 3: Target
-    int temp_unit_ = 0;  // 0: °C, 1: K
-    int energy_unit_ = 2; // 0: Mcal, 1: MJ, 2: kWh
-    bool enable_predictive_typing_ = true;
-    
-    int modal_target_stream_ = -1;
-    int modal_target_row_ = -1;
-    bool show_diagram_ = false;
-
-    // Active sheet selection
-    int selected_stream_idx_ = 0;
-    int selected_row_idx_ = 0;
-
-    void reciclar_calculos();
-    double calcular_entalpia_corrientes(const std::vector<StreamGroup>& grupos, double t_out_forced = -9999.0);
-    void Temp_Balance();
-
-    struct ElementBal {
-        std::string element;
-        double in_val = 0.0;
-        double out_val = 0.0;
-        double balance = 0.0;
-    };
-    std::vector<ElementBal> elem_balance_;
-    void calcular_balance_elemental();
+    void ejecutar_cascada_tanques();
 };
 
 // ── Panel de Exergía ────────────────────────────────────────────────────
@@ -578,42 +547,85 @@ private:
     void calcular_hoja();
 };
 
-// ── Panel Geo-Mineralogical Calculations ─────────────────────────────────
+// ── Panel Geo-Mineralogical Calculations (HSC Geo 8.0) ───────────────────
 class PanelGeoMineralogical {
 public:
+    PanelGeoMineralogical();
     void renderizar();
     void establecer_flowsheet(diagrama_flujo::Flowsheet* fs) { flowsheet_ = fs; }
 private:
     diagrama_flujo::Flowsheet* flowsheet_ = nullptr;
-    int tab_activo_ = 0; // 0 = Calculation, 1 = Error Estimation, 2 = Database
-    
-    // UI State for Modal Calculations
+    cma::application::modules::MineralDB mineral_db_;
+
+    // Feature activa en la columna izquierda "Features" (0..5):
+    // 0 = Mineral database, 1 = Find mineral, 2 = Minerals (Formula Calculator),
+    // 3 = Identify mineral (Petrology CIPW), 4 = Modal calculations (por defecto), 5 = Mineral liberation
+    int feature_activa_ = 4;
+    int tab_modal_ = 0; // 0 = Calculation, 1 = Error Estimation
+
+    // Estado de Modal Calculations (imagen HSC Geo 8.0)
+    int idx_data_source_ = 0;
     char data_source_[128] = "Bruvann.xls - XRF";
     int current_method_ = 0; // 0=LS, 1=WLS, 2=NNLS, 3=WNNLS
-    
-    // UI State for Periodic Table
+    std::string elemento_activo_pt_ = "Cu";
     bool element_selected_[118] = {false};
-    
-    // UI State for Database
+
+    // Lista de minerales candidatos y rondas de cálculo
+    std::vector<std::string> minerales_candidatos_;
+    int idx_mineral_cand_ = 1; // "Chalcopyrite (Erora, Portugal)"
+    std::vector<cma::application::modules::RondaModal> rondas_;
+    int idx_ronda_activa_ = 0;
+    int idx_fase_ronda_sel_ = 0;
+    int idx_elem_ronda_sel_ = 0;
+    std::map<std::string, double> ensayo_actual_;
+    cma::application::modules::ResultadoCalculoModal ultimo_resultado_modal_;
+    bool modal_calculado_ = false;
+
+    // Panel derecho "Identify" (Sources & Thesaurus)
+    bool sources_checked_[7] = {true, true, true, true, true, true, true};
+    bool use_thesaurus_ = true;
+    bool unidentified_to_ = true;
+    char unidentified_label_[64] = "USERX";
+    bool only_unidentified_ = false;
+    bool source_name_eq_method_ = true;
+
+    // Estado para Mineral Database & Find Mineral
     char filter_query_[256] = "[Cu %] Is greater than 10 AND [Specific Gravity] Is between 2.2 and 4.4";
+    int idx_clase_filtro_ = 0;
+    float sg_min_ = 1.0f, sg_max_ = 12.0f;
+    float mohs_min_ = 1.0f, mohs_max_ = 10.0f;
+    int idx_mineral_db_sel_ = 1;
+
+    // Estado para Cálculo de Fórmula Mineral desde Análisis (Feature 2: Minerals)
+    std::vector<cma::application::modules::EntradaAnalisisMineral> entradas_formula_;
+    char elem_base_norm_[16] = "S";
+    double num_atomos_norm_ = 2.0;
+    cma::application::modules::ResultadoFormulaMineral res_formula_;
+
+    // Estado para Cálculos Petrológicos CIPW Norm (Feature 3: Identify / Petrology)
+    cma::application::modules::AnalisisRocaOxidos roca_oxidos_;
+    cma::application::modules::ResultadoPetrologiaCIPW res_cipw_;
 
     // Popups funcionales
     bool mostrar_datos_ = false;
     bool mostrar_wizard_ = false;
+    bool mostrar_ecuaciones_ = false;
     bool mostrar_resultado_ = false;
+    bool mostrar_thesaurus_ = false;
+    bool mostrar_about_ = false;
     std::string resultado_geo_;
 
-    // Dynamic Database
-    struct GeoMineral {
-        std::string name;
-        std::string symbol;
-        std::string formula;
-        std::string location;
-        std::string ref;
-    };
-    std::vector<GeoMineral> db_;
-    
+    void inicializar_rondas_bruvann();
+    void cargar_fuente_datos(int idx);
+    void ejecutar_calculo_modal();
     void refrescar_datos();
+
+    void dibujar_ribbon_superior();
+    void dibujar_vista_modal();
+    void dibujar_vista_base_datos(bool modo_busqueda_avanzada);
+    void dibujar_vista_formula_mineral();
+    void dibujar_vista_petrologia_cipw();
+    void dibujar_vista_liberacion();
 };
 
 // Struct for GPS Module items
@@ -843,63 +855,71 @@ private:
     void recalcular();
 };
 
-// ── Panel de LCA ────────────────────────────────────────────────────────
-struct MapeoLcaFlujo {
-    int64_t stream_id = -1;
-    std::string unit_name;
-    std::string stream_name;
-    double flow_value = 0.0;
-    std::string unit = "kg";
-    std::string lca_equivalent = "No Mapping";
-    std::string lca_group = "Not defined";
-    bool es_entrada = true;
-};
-
-class PanelLCA {
-public:
-    void renderizar(diagrama_flujo::Flowsheet* flowsheet = nullptr);
-    void reset() { cargado_inicial_ = false; mapeos_.clear(); normalizado_ = false; factor_normalizacion_ = 1.0; fila_seleccionada_ = -1; }
-private:
-    std::vector<MapeoLcaFlujo> mapeos_;
-    int fila_seleccionada_ = -1;
-    std::string nodo_arbol_seleccionado_;
-    
-    // Metadatos de la categoría seleccionada
-    std::string cat_nombre_ = "None";
-    std::string cat_path_ = "None";
-    std::string cat_unit_ = "kg";
-    std::string cat_ref_q_ = "1 kg";
-    double cat_conv_f_ = 1.0;
-
-    double factor_normalizacion_ = 1.0;
-    bool normalizado_ = false;
-
-    // Consumos manuales auxiliares
-    double manual_electricidad_ = 120.0; // kWh
-    double manual_combustible_ = 45.0;   // kg
-    double manual_agua_ = 15.0;          // m3
-
-    // Resultados calculados
-    double resultado_huella_ = 0.0;
-    double resultado_energia_ = 0.0;
-    double resultado_residuos_ = 0.0;
-    bool calculado_ = false;
-    bool cargado_inicial_ = false;
-
-    void inicializar_flujos(diagrama_flujo::Flowsheet* flowsheet);
-    void calcular_impacto();
-};
-
-// ── Panel de Datos / DataFitter ─────────────────────────────────────────
+// ── Panel Dat - Data (Redes Neuronales FFNN estilo HSC) ────────────────
 class PanelDatosANN {
 public:
+    PanelDatosANN() = default;
+    ~PanelDatosANN();
     void renderizar();
+
 private:
-    char entrada_1_[64] = "1,2,3,4,5";
-    char entrada_2_[64] = "2.1,4.3,6.5,8.7,10.9";
-    bool entrenado_ = false;
-    cma::application::modules::ResultadoFit res_fit_;
-    std::vector<double> datos_x_, datos_y_;
+    friend struct PanelDatosANNTestAcceso;  // acceso para el harness de pruebas headless
+    // ── Hoja de datos ──
+    std::vector<std::vector<double>> datos_;  // filas × columnas
+    std::vector<int> regla_;                  // por columna: 0=X, 1=Y
+    std::vector<std::vector<double>> ynn_;    // predicciones (fila × n_sal) tras entrenar
+
+    // ── Hiperparámetros (panel Properties) ──
+    double tasa_ = 0.02;
+    double decaimiento_ = 1e-6;
+    double momento_ = 0.1;
+    int act_oculta_ = 0;      // 0=TanH 1=Sigmoid 2=ReLU 3=Linear
+    int act_salida_ = 3;      // Linear
+    char capas_buf_[64] = "16;16";
+    int particion_val_ = 20;  // % validación (100-val = entrenamiento)
+    int batch_size_ = 1;      // Batch Size (HSC default = 1)
+    double rmse_objetivo_ = 1e-5; // Stopping MSE
+    int max_epocas_ = 2500;
+    int tipo_entrenamiento_ = 0; // 0=FFNN 1=PSO 2=RNN aleatoria
+    int particulas_pso_ = 40;
+
+    // ── Motor y hilo de entrenamiento ──
+    motores::RedNeuronal red_;
+    motores::ResultadoANN resultado_;    // escrito por el hilo, leído solo al consumir
+    motores::ResultadoANN resultado_ui_; // copia estable que lee la UI cada frame
+    std::thread hilo_;
+    std::atomic<bool> calculando_{false};
+    std::atomic<bool> listo_{false};
+    std::atomic<bool> cancelar_{false};
+    std::atomic<float> progreso_{0.0f};
+    bool ejemplo_cargado_ = false;       // el ejemplo inicial se carga una sola vez
+
+    // ── UI ──
+    bool ver_propiedades_ = true;
+    bool ver_red_ = false;
+    bool ver_xml_ = false;
+    bool ver_paridad_ = true, ver_rendimiento_ = true, ver_comparar_ = true;
+    bool mostrar_validacion_ = true, mostrar_entrenamiento_ = true;
+    bool mostrar_nn_comp_ = true, mostrar_orig_comp_ = true;
+    int  tab_hoja_ = 0;                  // 0 = Data, 1 = Info
+    int  prop_activa_ = 4;               // índice de propiedad para caja de ayuda inferior
+    std::string error_;
+
+    // ── Hoja estilo Excel: celda activa, foco teclado y barra de nombre/fórmula ──
+    int celda_fila_ = 0;        // fila activa (índice en datos_)
+    int celda_colo_ = 0;        // columna activa (índice de columna RULE)
+    int foco_fila_ = -1;         // objetivo de foco teclado pendiente (Enter/Tab)
+    int foco_colo_ = -1;
+    char nombre_celda_buf_[12] = "A1";
+    int nombre_fila_prev_ = -1, nombre_colo_prev_ = -1;
+
+    void cargar_ejemplo_hsc();
+    void aplicar_datos();
+    void importar_csv(const std::string& ruta);
+    void exportar_csv(const std::string& ruta);
+    void lanzar_entrenamiento();
+    void calcular_ynn();
+    void dibujar_red(const ImVec2& tam);
 };
 
 // ── Panel de ReactionSolver ─────────────────────────────────────────────

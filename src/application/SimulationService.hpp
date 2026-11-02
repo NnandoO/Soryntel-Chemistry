@@ -17,9 +17,11 @@ public:
     }
     motores::ResultadoGibbs run_equilibrium(const std::map<int64_t,double>& feed, double kelvin,
         double atm, const std::vector<int64_t>& candidates = {},
-        std::map<int64_t,double>* warm_start = nullptr, bool electrochemical = false) const {
+        std::map<int64_t,double>* warm_start = nullptr, bool electrochemical = false,
+        const std::map<int64_t,double>& activity_coeffs = {},
+        const std::map<int64_t,int>& species_phases = {}) const {
         motores::MinimizadorGibbs engine;
-        return engine.minimizar(feed,kelvin,atm,repository_.mapa_especies(),candidates,warm_start,electrochemical);
+        return engine.minimizar(feed,kelvin,atm,repository_.mapa_especies(),candidates,warm_start,electrochemical,activity_coeffs,species_phases);
     }
 private:
     const domain::ThermoRepository& repository_;

@@ -98,6 +98,8 @@ private:
     void cargar_ejemplo_2();
     void cargar_ejemplo_3();
     void cargar_ejemplo_4();
+    void cargar_ejemplo_5();
+    void cargar_ejemplo_6();
     void agregar_anotacion();
     void agregar_tabla_flujo();
     void guardar_proyecto();
@@ -159,6 +161,7 @@ private:
     PanelGeoMineralogical panel_geo_;
     PanelMapGPS panel_map_gps_;
     PanelPourbaix panel_pourbaix_;
+    PanelMaterialDB panel_material_db_;
 
     // Portapapeles y deshacer
     struct NodoClipboard {
@@ -221,6 +224,7 @@ private:
     bool mostrar_geo_mineralogical_ = false;
     bool mostrar_map_gps_ = false;
     bool mostrar_pourbaix_ = false;
+    bool mostrar_material_db_ = false;
     bool mostrar_data_fit_ = false;
     bool mostrar_statistical_analysis_ = false;
     bool mostrar_process_simulation_status_ = false;
@@ -230,6 +234,7 @@ private:
     // Estado del panel Sim
     bool sim_resuelto_ = false;
     diagrama_flujo::Flowsheet::ResultadoConvergencia sim_ultimo_resultado_;
+    std::vector<std::string> logs_simulacion_;
 
     // Cambios sin guardar
     bool hay_cambios_sin_guardar_ = false;

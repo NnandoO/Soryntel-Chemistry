@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "diagrama_flujo/flowsheet.hpp"
 #include "motores/balance_masa.hpp"
 #include <nlohmann/json.hpp>
@@ -374,10 +380,22 @@ std::string Flowsheet::a_json() const {
         j_flujo["pagina"] = f.pagina;
         j_flujo["lca_equivalent"] = f.lca_equivalent;
         j_flujo["lca_group"] = f.lca_group;
+        json j_lca_esp = json::object();
+        for (const auto& [especie, equivalente] : f.lca_especies) {
+            j_lca_esp[especie] = equivalente;
+        }
+        j_flujo["lca_especies"] = j_lca_esp;
         j_flujo["measured_flow"] = f.measured_flow;
         j_flujo["sd"] = f.sd;
+        j_flujo["measured_water"] = f.measured_water;
+        j_flujo["sd_water"] = f.sd_water;
         j_flujo["mb_selected"] = f.mb_selected;
         j_flujo["mb_assayed"] = f.mb_assayed;
+        json j_assays = json::object();
+        for (const auto& [elemento, fraccion] : f.mb_assays) {
+            j_assays[elemento] = fraccion;
+        }
+        j_flujo["mb_assays"] = j_assays;
         json j_mol = json::object();
         for (const auto& [sid, val] : f.flujo_molar) {
             j_mol[std::to_string(sid)] = val;
@@ -427,6 +445,8 @@ std::string Flowsheet::a_json() const {
         root["tablas_flujo"].push_back(j_t);
     }
 
+    root["mb_modo"] = mb_modo;
+
     return root.dump(4);
 }
 
@@ -441,6 +461,7 @@ bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
         if (root["nodos"].size() > 10000 || root["flujos"].size() > 100000)
             throw std::invalid_argument("Proyecto excede límites de tamaño");
         limpiar();
+        mb_modo = root.value("mb_modo", 0);
         std::set<int64_t> node_ids, flow_ids;
 
         if (root.contains("nodos") && root["nodos"].is_array()) {
@@ -486,10 +507,27 @@ bool Flowsheet::desde_json(const std::string& json_str, std::string& error) {
                 f.pagina = jf.value("pagina", 0);
                 f.lca_equivalent = jf.value("lca_equivalent", "");
                 f.lca_group = jf.value("lca_group", "");
-                f.measured_flow = jf.value("measured_flow", 0.0);
-                f.sd = jf.value("sd", 0.0);
-                f.mb_selected = jf.value("mb_selected", false);
-                f.mb_assayed = jf.value("mb_assayed", false);
+                if (jf.contains("lca_especies") && jf["lca_especies"].is_object()) {
+                    for (auto it = jf["lca_especies"].begin();
+                         it != jf["lca_especies"].end(); ++it) {
+                        if (it.value().is_string()) {
+                            f.lca_especies[it.key()] = it.value().get<std::string>();
+                        }
+                    }
+                }
+                f.measured_flow = jf.value("measured_flow", -1.0);
+                f.sd = jf.value("sd", -1.0);
+                f.measured_water = jf.value("measured_water", -1.0);
+                f.sd_water = jf.value("sd_water", -1.0);
+                f.mb_selected = jf.value("mb_selected", true);
+                f.mb_assayed = jf.value("mb_assayed", true);
+                if (jf.contains("mb_assays") && jf["mb_assays"].is_object()) {
+                    for (auto it = jf["mb_assays"].begin(); it != jf["mb_assays"].end(); ++it) {
+                        if (it.value().is_number()) {
+                            f.mb_assays[it.key()] = it.value().get<double>();
+                        }
+                    }
+                }
 
                 if (jf.contains("flujo_molar") && jf["flujo_molar"].is_object()) {
                     for (auto it = jf["flujo_molar"].begin(); it != jf["flujo_molar"].end(); ++it) {
@@ -577,6 +615,9 @@ void Flowsheet::limpiar() {
     prox_id_flujo_ = 1;
     prox_id_anotacion_ = 1;
     prox_id_tabla_ = 1;
+    mb_modo = 0;
 }
 
 }} // namespace
+
+#pragma GCC diagnostic pop

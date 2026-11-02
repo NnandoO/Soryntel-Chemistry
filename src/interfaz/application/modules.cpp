@@ -1,4 +1,5 @@
 #include "interfaz/aplicacion.hpp"
+#include "interfaz/ui_css_style.hpp"
 #include "utils/i18n.h"
 
 #include <GLFW/glfw3.h>
@@ -26,6 +27,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Tabla Periódica"), &mostrar_tabla_);
+        css::draw_module_banner("PT", "Periodic Table & Element Properties", "Atomic weights, oxidation states, and IUPAC thermodynamic reference data", IM_COL32(36, 98, 178, 255));
         panel_tabla_.renderizar();
         ImGui::End();
     }
@@ -34,6 +36,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Calculadora Termodinámica"), &mostrar_calculadora_);
+        css::draw_module_banner("H/S", "H, S, C and G Thermodynamic Calculator", "Shomate / NASA / Maier-Kelley polynomial evaluation across temperature ranges", IM_COL32(42, 128, 76, 255));
         auto& gestor = base_datos::GestorDB::instancia();
         auto db = gestor.mapa_especies();
         panel_calculadora_.renderizar(db);
@@ -44,6 +47,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Electroquímica"), &mostrar_electroquimica_);
+        css::draw_module_banner("CELL", "Electrochemical Cell Equilibria", "Nernst potentials, half-cell reactions, and Faraday electrolysis balances", IM_COL32(142, 68, 173, 255));
         panel_electroquimica_.renderizar();
         ImGui::End();
     }
@@ -52,14 +56,16 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Cinética"), &mostrar_cinetica_);
+        css::draw_module_banner("KIN", "Chemical Reaction Kinetics", "Arrhenius rate laws, batch/CSTR/PFR integration, and conversion profiles", IM_COL32(204, 102, 24, 255));
         panel_cinetica_.renderizar();
         ImGui::End();
     }
 
     if (mostrar_equilibrio_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Equilibrio de Fases"), &mostrar_equilibrio_);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600,500), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(1100,750), ImGuiCond_FirstUseEver);
+        ImGui::Begin(tr("7. Cálculos de Equilibrio (GEM)"), &mostrar_equilibrio_);
+        css::draw_module_banner("GEM", "Gibbs Energy Minimization (Equilibrium)", "Multiphase constrained Gibbs free energy solver with elemental conservation", IM_COL32(36, 98, 178, 255));
         auto& gestor = base_datos::GestorDB::instancia();
         const auto& db = gestor.mapa_especies();
         panel_equilibrio_.renderizar(db);
@@ -70,13 +76,16 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Simulación Dinámica"), &mostrar_sim_dinamica_);
+        css::draw_module_banner("DYN", "Dynamic Process Simulation", "Time-dependent holdup integration, PID control loops, and transient response", IM_COL32(42, 128, 76, 255));
         panel_sim_dinamica_.renderizar();
         ImGui::End();
     }
 
     if (mostrar_estabilidad_) {
+        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Diagrama de Estabilidad"), &mostrar_estabilidad_);
+        css::draw_module_banner(" T-P", "Phase Stability Diagrams", "Thermodynamic predominance domains as a function of T and chemical potential", IM_COL32(186, 52, 46, 255));
         panel_estabilidad_.renderizar();
         ImGui::End();
     }
@@ -84,6 +93,7 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_lpp_) {
         ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Lpp Diagram - Stability Diagrams"), &mostrar_lpp_);
+        css::draw_module_banner("Lpp", "Lpp Partial Pressure Stability Diagrams", "Isothermal log(p_X) vs log(p_Y) phase predominance boundaries (Kellogg)", IM_COL32(36, 98, 178, 255));
         panel_lpp_.renderizar();
         ImGui::End();
     }
@@ -92,14 +102,20 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(500,400), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(850,550), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("HSC Sim 8 - Mass Balance"), &mostrar_reconciliacion_);
+        css::draw_module_banner("MAS", "HSC Sim Mass Balance & Data Reconciliation", "Weighted least-squares mineral and elemental mass balance reconciliation", IM_COL32(42, 128, 76, 255));
         panel_reconciliacion_.renderizar(flowsheet_.get());
         ImGui::End();
     }
 
     if (mostrar_balance_hoja_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Balance (Hoja de Cálculo)"), &mostrar_balance_hoja_);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(760,420), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(1360,820), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "balance") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 600.0f), std::max(vp.y - 50.0f, 400.0f)), ImGuiCond_Always);
+        }
+        ImGui::Begin(tr("5. Balances de Calor y Materiales (HSC)"), &mostrar_balance_hoja_);
         panel_balance_hoja_.renderizar(flowsheet_.get());
         ImGui::End();
     }
@@ -108,6 +124,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Análisis Exergético"), &mostrar_exergia_);
+        css::draw_module_banner("EXG", "Exergy & Second-Law Analysis", "Physical and chemical exergy, Szargut reference environment, and irreversibility", IM_COL32(204, 102, 24, 255));
         panel_exergia_.renderizar();
         ImGui::End();
     }
@@ -116,6 +133,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
         if (ImGui::Begin(tr("Diagramas Eh-pH (Pourbaix)"), &mostrar_pourbaix_)) {
+            css::draw_module_banner("Eh", "Eh-pH Pourbaix Diagrams", "Aqueous electrochemical predominance domains with water stability lines", IM_COL32(36, 98, 178, 255));
             panel_pourbaix_.renderizar();
         }
         ImGui::End();
@@ -125,17 +143,8 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Diagramas H, S, Cp, G"), &mostrar_diagramas_termo_);
+        css::draw_module_banner("DIA", "Ellingham & Thermodynamic Diagrams (H, S, Cp, G)", "Comparative species & reaction property plots as a function of temperature", IM_COL32(186, 52, 46, 255));
         panel_diagramas_termo_.renderizar();
-        ImGui::End();
-    }
-
-
-
-    if (mostrar_estabilidad_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Diagrama de Estabilidad"), &mostrar_estabilidad_);
-        panel_estabilidad_.renderizar();
         ImGui::End();
     }
 
@@ -144,6 +153,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         if (review_panel_=="water") { ImGui::SetNextWindowPos(ImVec2(15,60),ImGuiCond_Always); ImGui::SetNextWindowSize(ImVec2(1100,700),ImGuiCond_Always); }
         ImGui::Begin(tr("Tablas de Vapor (Agua)"), &mostrar_agua_);
+        css::draw_module_banner("H2O", "IAPWS-IF97 Steam & Water Tables", "High-precision thermodynamic and transport properties of water and steam", IM_COL32(36, 98, 178, 255));
         panel_agua_.renderizar();
         ImGui::End();
     }
@@ -153,6 +163,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSize(ImVec2(800,650), ImGuiCond_FirstUseEver);
         if (review_panel_=="aqueous") { ImGui::SetNextWindowPos(ImVec2(15,60),ImGuiCond_Always); ImGui::SetNextWindowSize(ImVec2(950,700),ImGuiCond_Always); }
         ImGui::Begin(tr("Soluciones Acuosas"), &mostrar_soluciones_);
+        css::draw_module_banner("AQU", "Aqueous Electrolyte Solutions", "Debye-Hückel, Davies, B-dot, and Pitzer activity models for hydrometallurgy", IM_COL32(42, 128, 76, 255));
         if (ImGui::BeginTabBar("aqueous_models")) {
             if (ImGui::BeginTabItem("Avanzado USGS / Pitzer")) { panel_advanced_aqueous_.render(); ImGui::EndTabItem(); }
             if (ImGui::BeginTabItem("Equilibrio MINTEQ")) { panel_native_aqueous_.render(); ImGui::EndTabItem(); }
@@ -164,13 +175,19 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_mineral_processing_) {
         ImGui::SetNextWindowSize(ImVec2(900,680),ImGuiCond_FirstUseEver);
         if (review_panel_=="mineral") { ImGui::SetNextWindowPos(ImVec2(15,60),ImGuiCond_Always); ImGui::SetNextWindowSize(ImVec2(1100,700),ImGuiCond_Always); }
-        if (ImGui::Begin("Procesamiento mineral",&mostrar_mineral_processing_)) panel_mineral_processing_.render();
+        if (ImGui::Begin("Procesamiento mineral",&mostrar_mineral_processing_)) {
+            css::draw_module_banner("MIN", "Mineral Processing & Comminution", "Bond work index, Rosin-Rammler PSD, Tromp partition curves, and flotation recovery", IM_COL32(118, 146, 60, 255));
+            panel_mineral_processing_.render();
+        }
         ImGui::End();
     }
     if (mostrar_catalog_audit_) {
         ImGui::SetNextWindowSize(ImVec2(900,520),ImGuiCond_FirstUseEver);
         if (review_panel_=="catalog") { ImGui::SetNextWindowPos(ImVec2(15,60),ImGuiCond_Always); ImGui::SetNextWindowSize(ImVec2(1100,700),ImGuiCond_Always); }
-        if (ImGui::Begin("Auditoría del catálogo",&mostrar_catalog_audit_)) panel_catalog_audit_.render();
+        if (ImGui::Begin("Auditoría del catálogo",&mostrar_catalog_audit_)) {
+            css::draw_module_banner("DB", "Thermodynamic Catalog Audit", "Database integrity verification, temperature range coverage, and source provenance", IM_COL32(36, 98, 178, 255));
+            panel_catalog_audit_.render();
+        }
         ImGui::End();
     }
 
@@ -178,6 +195,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(600,450), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(950,620), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Pérdida de Calor"), &mostrar_perdida_calor_);
+        css::draw_module_banner("HLI", "Heat Loss & Refractory Insulation Calculator", "Multilayer conduction, convection, and thermal radiation heat transfer", IM_COL32(186, 52, 46, 255));
         panel_perdida_calor_.renderizar();
         ImGui::End();
     }
@@ -186,6 +204,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Convertidor de Especies"), &mostrar_convertidor_);
+        css::draw_module_banner("CON", "Species <-> Elemental Assay Converter", "Stoichiometric mineralogy reconstruction from elemental XRF/ICP assays", IM_COL32(118, 146, 60, 255));
         panel_convertidor_.renderizar();
         ImGui::End();
     }
@@ -194,6 +213,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Conversor de Unidades"), &mostrar_unidades_);
+        css::draw_module_banner("MEA", "Engineering Unit Converter (Measure)", "Dimensional analysis and conversion across SI, Imperial, and metallurgical units", IM_COL32(36, 98, 178, 255));
         panel_unidades_.renderizar();
         ImGui::End();
     }
@@ -202,6 +222,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Estimación Joback-Reid"), &mostrar_estimacion_);
+        css::draw_module_banner("JOB", "Joback-Reid Group Contribution Estimator", "Critical properties, normal boiling point, Hf, Gf, and Cp ideal gas estimation", IM_COL32(142, 68, 173, 255));
         panel_estimacion_.renderizar();
         ImGui::End();
     }
@@ -210,22 +231,28 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Estimación Benson"), &mostrar_benson_);
+        css::draw_module_banner("BEN", "Benson Thermochemical Group Additivity", "Second-order group additivity for gas-phase enthalpy, entropy, and heat capacity", IM_COL32(142, 68, 173, 255));
         panel_benson_.renderizar();
         ImGui::End();
     }
 
     if (mostrar_lca_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(500,400), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(850,550), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Análisis de Ciclo de Vida (LCA Evaluation)"), &mostrar_lca_);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(900,600), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(1280,800), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "lca") {
+            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
+        }
+        ImGui::Begin(tr("LCA Evaluation"), &mostrar_lca_);
         panel_lca_.renderizar(flowsheet_.get());
         ImGui::End();
     }
 
     if (mostrar_datos_ann_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Datos / ANN"), &mostrar_datos_ann_);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(700,500), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(1250,800), ImGuiCond_FirstUseEver);
+        ImGui::Begin(tr("Dat - Data (Redes Neuronales)"), &mostrar_datos_ann_);
+        css::draw_module_banner("DAT", "HSC Data & Neural Network Modeling", "Multilayer perceptron training, response surfaces, and multivariate process modeling", IM_COL32(36, 98, 178, 255));
         panel_datos_ann_.renderizar();
         ImGui::End();
     }
@@ -234,6 +261,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(600,450), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Gráfico 3D"), &mostrar_grafico3d_);
+        css::draw_module_banner("3D", "3D Thermodynamic Surface Visualization", "Interactive 3D surfaces for G(T,P), phase stability, and response landscapes", IM_COL32(42, 128, 76, 255));
         panel_grafico3d_.renderizar();
         ImGui::End();
     }
@@ -242,15 +270,8 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(500,400), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(900,600), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("4. Ecuaciones de Reacción"), &mostrar_reaction_solver_);
+        css::draw_module_banner("REA", "Reaction Equations (H, S, G, K, log K, E)", "Automatic stoichiometric matrix balancing and temperature-tabulated reaction properties", IM_COL32(36, 98, 178, 255));
         panel_reaction_solver_.renderizar();
-        ImGui::End();
-    }
-
-    if (mostrar_equilibrium_calc_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600,500), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(1000,700), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("7. Cálculos de Equilibrio"), &mostrar_equilibrium_calc_);
-        panel_equilibrium_calc_.renderizar();
         ImGui::End();
     }
 
@@ -274,6 +295,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(350,200), ImVec2(3000,3000));
         ImGui::SetNextWindowSize(ImVec2(500,350), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("API Externa"), &mostrar_api_externa_);
+        css::draw_module_banner("API", "External Thermodynamic Database Connector", "NIST WebBook, Materials Project, and custom JSON/CSV species import", IM_COL32(36, 98, 178, 255));
         panel_api_externa_.renderizar();
         ImGui::End();
     }
@@ -281,6 +303,7 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_statistical_analysis_) {
         ImGui::SetNextWindowSize(ImVec2(1200, 800), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("24. Análisis Estadístico de Datos"), &mostrar_statistical_analysis_);
+        css::draw_module_banner("STA", "Multivariate Statistical Analysis & PCA", "Correlation matrices, Principal Component Analysis, and regression diagnostics", IM_COL32(204, 102, 24, 255));
         panel_stat_.renderizar();
         ImGui::End();
     }
@@ -289,6 +312,7 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_lpp_diagrams_) {
         ImGui::SetNextWindowSize(ImVec2(400,300), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("12. Diagramas Lpp-Estabilidad"), &mostrar_lpp_diagrams_);
+        css::draw_module_banner("Lpp", "Lpp Partial Pressure Diagrams", "Kellogg predominance diagrams", IM_COL32(36, 98, 178, 255));
         ImGui::Text(tr("Módulo Lpp Diagrams - En desarrollo"));
         ImGui::Separator();
         ImGui::TextWrapped(tr("Este módulo calculará y graficará los diagramas de estabilidad Lpp de presión parcial para sistemas multicomponentes."));
@@ -297,25 +321,41 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_add_in_functions_) {
         ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("19. Funciones AddIn"), &mostrar_add_in_functions_);
+        css::draw_module_banner("XLS", "Spreadsheet Add-In Functions", "Direct formula evaluation (=H_T, =G_T, =Cp_T, =MW, =logK) for process sheets", IM_COL32(42, 128, 76, 255));
         panel_addin_.renderizar();
         ImGui::End();
     }
     if (mostrar_geo_mineralogical_) {
-        ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("21. Cálculos Geo-Mineralógicos"), &mostrar_geo_mineralogical_);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(900, 580), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1240, 740), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "geo") {
+            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
+        }
+        ImGui::Begin(tr("Modal Calculations - HSC Geo 8.0"), &mostrar_geo_mineralogical_);
         panel_geo_.renderizar();
         ImGui::End();
     }
     if (mostrar_map_gps_) {
         ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("22. Stock de Materiales Map-GPS"), &mostrar_map_gps_);
+        css::draw_module_banner("MAP", "Geospatial Material Stock & Deposit Tracker", "GPS coordinates, tonnage inventory, and ore grade distribution", IM_COL32(36, 98, 178, 255));
         panel_map_gps_.renderizar();
         ImGui::End();
+    }
+
+    if (mostrar_material_db_) {
+        if (review_panel_ == "material") {
+            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
+        }
+        panel_material_db_.renderizar(&mostrar_material_db_);
     }
     
     if (mostrar_data_fit_) {
         ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("23. FIT - Ajuste Numérico de Datos"), &mostrar_data_fit_);
+        css::draw_module_banner("FIT", "Non-Linear Curve & Cp Polynomial Fitting", "Least-squares fitting of Shomate/Maier-Kelley thermodynamic coefficients", IM_COL32(142, 68, 173, 255));
         panel_fit_.renderizar();
         ImGui::End();
     }
@@ -323,6 +363,7 @@ void Aplicacion::renderizar_modulos() {
     if (mostrar_process_simulation_status_) {
         ImGui::SetNextWindowSize(ImVec2(600, 450), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("1. Sim - Simulación de Procesos"), &mostrar_process_simulation_status_);
+        css::draw_module_banner("SIM", "HSC Sim Flowsheet Convergence & Diagnostics", "Topological tear-stream analysis and Wegstein recycle acceleration", IM_COL32(42, 128, 76, 255));
 
         auto& fs = flowsheet_;
         int total_nodos = (int)fs->conteo_nodos();

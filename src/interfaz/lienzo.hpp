@@ -28,6 +28,7 @@ public:
 
     // Callbacks
     std::function<void(int64_t)> al_seleccionar_nodo;
+    std::function<void(int64_t)> al_doble_clic_nodo;
     std::function<void(int64_t)> al_seleccionar_flujo;
     std::function<void(int64_t)> al_seleccionar_anotacion;
     std::function<void(int64_t)> al_crear_anotacion;
@@ -48,6 +49,18 @@ public:
     ImVec2  coord_raton            = ImVec2(0, 0);
     bool    activo_crear_rect      = false;
     bool    activo_crear_elipse    = false;
+
+    // Configuración de visualización de corrientes y Diagrama de Sankey (HSC-Sim)
+    // 0=None [Value], 1=Amount (t/h), 2=Molar Flow (kmol/s), 3=Mass Flow (kg/s),
+    // 4=Temperature (°C), 5=Pressure (bar), 6=Enthalpy (kW)
+    int     modo_visualizacion_flujos = 1;
+    bool    sankey_activo             = false;
+    bool    sankey_usar_max_ancho     = true;
+    bool    sankey_usar_color         = true;
+    float   sankey_max_ancho_px       = 14.0f;
+    float   sankey_color_pos[3]       = {0.20f, 0.82f, 0.25f};
+    float   sankey_color_neg[3]       = {0.90f, 0.22f, 0.22f};
+    bool    ruteo_ortogonal           = false;
 
     enum class ModoDibujo { Seleccion, DibujarFlujo, Texto, Rectangulo, Elipse };
     ModoDibujo modo_dibujo = ModoDibujo::Seleccion;

@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <set>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+
 namespace cma { namespace motores {
 
 // Carga formal a partir del tag de la fórmula: "(+3a)"→+3, "(-a)"→-1, "e-"→-1
@@ -30,7 +35,9 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     const std::map<int64_t, nucleo::Especie>& db,
     const std::vector<int64_t>& especies_posibles,
     std::map<int64_t, double>* n_inout,
-    bool modo_celda)
+    bool modo_celda,
+    const std::map<int64_t, double>& coef_actividad,
+    const std::map<int64_t, int>& fases_especie)
 {
     ResultadoGibbs res;
     if (!std::isfinite(T_K) || !std::isfinite(P_atm) || T_K <= 0 || P_atm <= 0) {
@@ -193,16 +200,37 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     const double amount_scale = std::max(1.0, b.head(static_cast<int>(NE)).sum());
     const double N_FLOOR = 1e-30;
     std::vector<bool> es_gas(NS);
+    std::vector<int> fase_id(NS, 0); // 0 = pura condensada, 1 = gas, >=2 = fase de solución condensada
     Eigen::VectorXd cvec(static_cast<int>(NS));
     for (size_t j = 0; j < NS; ++j) {
-        const auto& species = db.at(activas[j]);
+        int64_t sid = activas[j];
+        const auto& species = db.at(sid);
         es_gas[j] = species.fase_std == nucleo::Fase::Gas || species.fase_std == nucleo::Fase::Mixto;
+        if (es_gas[j]) {
+            fase_id[j] = 1;
+        } else {
+            auto it_f = fases_especie.find(sid);
+            if (it_f != fases_especie.end() && it_f->second >= 2) {
+                fase_id[j] = it_f->second;
+            } else {
+                fase_id[j] = 0;
+            }
+        }
         cvec(static_cast<int>(j)) = species.energia_gibbs(T_K) / RT;
         if (es_gas[j]) cvec(static_cast<int>(j)) += std::log(P_atm);
+        auto it_g = coef_actividad.find(sid);
+        if (it_g != coef_actividad.end() && std::isfinite(it_g->second) && it_g->second > 0.0) {
+            cvec(static_cast<int>(j)) += std::log(it_g->second);
+        }
     }
+    // Si una fase >= 2 tiene solo 1 especie, se comporta como fase pura (fase_id = 0)
+    std::map<int, int> conteo_fase;
+    for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) conteo_fase[fase_id[j]]++;
+    for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 2 && conteo_fase[fase_id[j]] <= 1) fase_id[j] = 0;
+
     if (!cvec.allFinite()) { res.mensaje = "Datos termodinámicos no finitos"; return res; }
     // Positive, infeasible-start primal-dual barrier method for the convex
-    // ideal-mixture Gibbs objective. Condensed species have unit activity.
+    // ideal/non-ideal mixture Gibbs objective.
     Eigen::VectorXd n = Eigen::VectorXd::Constant(static_cast<int>(NS), amount_scale / static_cast<double>(NS));
     if (n_inout) for (size_t j = 0; j < NS; ++j) {
         const auto it = n_inout->find(activas[j]);
@@ -213,10 +241,12 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     Eigen::VectorXd pi = Eigen::VectorXd::Zero(rank);
     auto gradient = [&](const Eigen::VectorXd& amounts) {
         Eigen::VectorXd grad = cvec;
-        double gas_total = 0;
-        for (size_t j = 0; j < NS; ++j) if (es_gas[j]) gas_total += amounts(static_cast<int>(j));
-        for (size_t j = 0; j < NS; ++j) if (es_gas[j])
-            grad(static_cast<int>(j)) += std::log(std::max(amounts(static_cast<int>(j)), N_FLOOR) / std::max(gas_total, N_FLOOR));
+        std::map<int, double> phase_totals;
+        for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) phase_totals[fase_id[j]] += amounts(static_cast<int>(j));
+        for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) {
+            double ptot = phase_totals[fase_id[j]];
+            grad(static_cast<int>(j)) += std::log(std::max(amounts(static_cast<int>(j)), N_FLOOR) / std::max(ptot, N_FLOOR));
+        }
         return Eigen::VectorXd(grad / cost_scale);
     };
     double mu = 0.1;
@@ -232,15 +262,17 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
             if (dual_norm < 1e-8 && primal_norm < 1e-10) { solved = true; break; }
             solved = false;
             Eigen::MatrixXd H = Eigen::MatrixXd::Zero(static_cast<int>(NS), static_cast<int>(NS));
-            double gas_total = 0;
-            for (size_t j = 0; j < NS; ++j) if (es_gas[j]) gas_total += n(static_cast<int>(j));
+            std::map<int, double> phase_totals;
+            for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) phase_totals[fase_id[j]] += n(static_cast<int>(j));
             for (size_t j = 0; j < NS; ++j) {
                 const int jj = static_cast<int>(j);
                 H(jj,jj) = mu / (n(jj) * n(jj));
-                if (es_gas[j]) {
+                if (fase_id[j] >= 1) {
+                    int f = fase_id[j];
+                    double ptot = std::max(phase_totals[f], N_FLOOR);
                     H(jj,jj) += 1 / (cost_scale * n(jj));
-                    for (size_t k = 0; k < NS; ++k) if (es_gas[k])
-                        H(jj,static_cast<int>(k)) -= 1 / (cost_scale * gas_total);
+                    for (size_t k = 0; k < NS; ++k) if (fase_id[k] == f)
+                        H(jj,static_cast<int>(k)) -= 1 / (cost_scale * ptot);
                 }
             }
             // Eliminate dn using a positive definite Hessian. Row equilibration
@@ -294,7 +326,7 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
         // A previous optimum can be too close to a face of the feasible region
         // for the initial barrier. Restart independently, retaining the same
         // thermodynamic model and convergence criteria.
-        auto restarted = minimizar(alimentacion, T_K, P_atm, db, especies_posibles, nullptr, modo_celda);
+        auto restarted = minimizar(alimentacion, T_K, P_atm, db, especies_posibles, nullptr, modo_celda, coef_actividad, fases_especie);
         restarted.iteraciones += res.iteraciones;
         if (restarted.convergio) {
             *n_inout = restarted.flujo_molar;
@@ -304,11 +336,10 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     }
 
     double total_G = 0;
-    double total_gas = 0.0;
+    std::map<int, double> phase_totals;
     for (size_t j = 0; j < NS; ++j) {
-        if (es_gas[j] && n((int)j) > 1e-15) total_gas += n((int)j);
+        if (fase_id[j] >= 1 && n((int)j) > 1e-15) phase_totals[fase_id[j]] += n((int)j);
     }
-    total_gas = std::max(total_gas, (double)NS * N_FLOOR + 1e-30);
     for (size_t j = 0; j < NS; ++j) {
         if (n((int)j) > 1e-12) {
             int64_t sid = activas[j];
@@ -316,11 +347,19 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
             auto it = db.find(sid);
             if (it != db.end()) {
                 double G0 = it->second.energia_gibbs(T_K);
+                double gamma = 1.0;
+                auto it_g = coef_actividad.find(sid);
+                if (it_g != coef_actividad.end() && std::isfinite(it_g->second) && it_g->second > 0.0) gamma = it_g->second;
                 if (es_gas[j]) {
-                    double yjP = std::max(n((int)j) / total_gas * P_atm, 1e-30);
+                    double tgas = std::max(phase_totals[1], (double)NS * N_FLOOR + 1e-30);
+                    double yjP = std::max(gamma * (n((int)j) / tgas) * P_atm, 1e-30);
                     total_G += n((int)j) * (G0 + RT * std::log(yjP));
+                } else if (fase_id[j] >= 2) {
+                    double tsol = std::max(phase_totals[fase_id[j]], (double)NS * N_FLOOR + 1e-30);
+                    double aj = std::max(gamma * (n((int)j) / tsol), 1e-30);
+                    total_G += n((int)j) * (G0 + RT * std::log(aj));
                 } else {
-                    total_G += n((int)j) * G0;
+                    total_G += n((int)j) * (G0 + RT * std::log(std::max(gamma, 1e-30)));
                 }
             }
         }
@@ -341,4 +380,5 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     return res;
 }
 
+#pragma GCC diagnostic pop
 }} // namespace

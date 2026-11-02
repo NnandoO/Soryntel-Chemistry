@@ -12,6 +12,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include "motores/perdida_calor.hpp"
 #include "base_datos/gestor_db.hpp"
 #include "base_datos/gestor_elementos.hpp"
@@ -43,6 +44,11 @@ inline std::string trim_str(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
+inline void copiar_texto(char* destino, size_t tamano, const std::string& texto) {
+    if (tamano == 0) return;
+    std::snprintf(destino, tamano, "%s", texto.c_str());
+}
+
 inline std::string convert_to_subscript(const std::string& s) {
     std::string res;
     for (size_t i = 0; i < s.length(); ++i) {
@@ -67,6 +73,7 @@ inline const cma::nucleo::Especie* buscar_especie_por_nombre_o_formula(const std
 
     // Strip state tags like (g), (s), (l), (a), (+a), (-a), (+3a), etc.
     std::string formula_clean;
+    std::string phase_tag;
     size_t len = query.length();
     for (size_t k = 0; k < len; ++k) {
         if (query[k] == '(') {
@@ -74,6 +81,7 @@ inline const cma::nucleo::Especie* buscar_especie_por_nombre_o_formula(const std
             if (close != std::string::npos) {
                 std::string tag = query.substr(k + 1, close - k - 1);
                 if (tag == "g" || tag == "s" || tag == "l" || tag == "a" || tag == "aq" || tag == "α" || tag == "+a" || tag == "-a" || tag.find("a") != std::string::npos || tag.find("+") != std::string::npos || tag.find("-") != std::string::npos) {
+                    phase_tag = tag;
                     k = close;
                     continue;
                 }
@@ -90,9 +98,27 @@ inline const cma::nucleo::Especie* buscar_especie_por_nombre_o_formula(const std
         if (e->formula == query || e->formula == q_sub_full) return e;
     }
 
-    // 2) Nombre con/sin tag y fórmula sin tag (fallback genérico)
-    if (const auto* esp = gestor.especie_por_nombre(formula_clean)) return esp;
+    // 2) Si se especificó fase explícita (g/l/s/aq), priorizar especie con fase_std coincidente
     std::string q_sub = convert_to_subscript(formula_clean);
+    if (!phase_tag.empty()) {
+        cma::nucleo::Fase wanted = cma::nucleo::Fase::Desconocido;
+        if (phase_tag == "g") wanted = cma::nucleo::Fase::Gas;
+        else if (phase_tag == "l" || phase_tag == "a" || phase_tag == "aq" || phase_tag.find("a") != std::string::npos)
+            wanted = cma::nucleo::Fase::Liquido;
+        else if (phase_tag == "s" || phase_tag == "α")
+            wanted = cma::nucleo::Fase::Solido;
+
+        if (wanted != cma::nucleo::Fase::Desconocido) {
+            for (const auto* e : gestor.todas_especies()) {
+                if ((e->formula == q_sub || e->formula == formula_clean) && e->fase_std == wanted) {
+                    return e;
+                }
+            }
+        }
+    }
+
+    // 3) Nombre con/sin tag y fórmula sin tag (fallback genérico)
+    if (const auto* esp = gestor.especie_por_nombre(formula_clean)) return esp;
     for (const auto* e : gestor.todas_especies()) {
         if (e->formula == q_sub || e->formula == formula_clean) {
             return e;

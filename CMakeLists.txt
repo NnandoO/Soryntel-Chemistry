@@ -43,9 +43,16 @@ find_package(Threads REQUIRED)
 add_library(cma_options INTERFACE)
 target_compile_definitions(cma_options INTERFACE _USE_MATH_DEFINES)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(cma_options INTERFACE -Wall -Wextra -Wpedantic -Wno-format-security)
+    target_compile_options(cma_options INTERFACE -Wall -Wextra -Wpedantic -Wno-format-security
+        -Wconversion -Wsign-conversion -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual)
     if(CMA_WARNINGS_AS_ERRORS)
-        target_compile_options(cma_options INTERFACE -Werror)
+        target_compile_options(cma_options INTERFACE -Werror
+            -Wno-old-style-cast
+            -Wno-sign-conversion
+            -Wno-float-conversion
+            -Wno-shadow
+            -Wno-conversion
+        )
     endif()
     if(CMA_SANITIZERS)
         target_compile_options(cma_options INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -107,7 +114,7 @@ if(BUILD_TESTING)
     target_link_libraries(cma_reference_tests PRIVATE cma_domain cma_persistence)
     add_test(NAME scientific_reference_models COMMAND cma_reference_tests ${CMAKE_SOURCE_DIR}/data)
     add_executable(cma_regression_tests tests/regression.cpp)
-    target_link_libraries(cma_regression_tests PRIVATE cma_domain cma_persistence cma_platform cma_sim cma_thermo cma_tools cma_diagrams cma_estimation ${CMA_SQLITE_TARGET})
+    target_link_libraries(cma_regression_tests PRIVATE cma_domain cma_persistence cma_platform cma_sim cma_thermo cma_tools cma_diagrams cma_estimation cma_db ${CMA_SQLITE_TARGET})
     add_test(NAME scientific_regressions COMMAND cma_regression_tests)
     add_executable(cma_gibbs_tests tests/test_hsc_gem_debug.cpp)
     target_link_libraries(cma_gibbs_tests PRIVATE cma_domain cma_persistence)
@@ -126,13 +133,17 @@ if(CMA_BUILD_GUI)
     FetchContent_Declare(glfw GIT_REPOSITORY https://github.com/glfw/glfw.git GIT_TAG 3.4 GIT_SHALLOW TRUE)
     FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git GIT_TAG v1.91.8 GIT_SHALLOW TRUE)
     FetchContent_Declare(implot GIT_REPOSITORY https://github.com/epezent/implot.git GIT_TAG v0.17 GIT_SHALLOW TRUE)
-    FetchContent_Declare(implot3d GIT_REPOSITORY https://github.com/brenocq/implot3d.git
-        GIT_TAG 7913cf11684730119bd284fd8e7052d140e72f61)
+    FetchContent_Declare(implot3d
+        GIT_REPOSITORY https://github.com/brenocq/implot3d.git
+        GIT_TAG 7913cf11684730119bd284fd8e7052d140e72f61
+        GIT_SHALLOW TRUE
+    )
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(glfw imgui implot implot3d)
+    set(FETCHCONTENT_FULLY_DISCONNECTED ON)
     find_package(OpenGL REQUIRED)
     add_library(cma_graphics STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp
@@ -142,8 +153,8 @@ if(CMA_BUILD_GUI)
         ${implot_SOURCE_DIR}/implot.cpp ${implot_SOURCE_DIR}/implot_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d.cpp ${implot3d_SOURCE_DIR}/implot3d_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp)
-    target_include_directories(cma_graphics PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
-        ${implot_SOURCE_DIR} ${implot3d_SOURCE_DIR})
+    target_include_directories(cma_graphics PUBLIC SYSTEM ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+        SYSTEM ${implot_SOURCE_DIR} SYSTEM ${implot3d_SOURCE_DIR})
     target_link_libraries(cma_graphics PUBLIC glfw OpenGL::GL ${CMAKE_DL_LIBS})
     file(GLOB CMA_PANEL_SOURCES CONFIGURE_DEPENDS src/interfaz/panels/*.cpp
         src/interfaz/application/*.cpp src/interfaz/canvas/*.cpp)
@@ -151,6 +162,13 @@ if(CMA_BUILD_GUI)
         src/interfaz/paneles.cpp src/interfaz/lienzo.cpp src/utils/i18n.cpp ${CMA_PANEL_SOURCES})
     target_link_libraries(cma_chemistry PRIVATE cma_graphics cma_domain cma_persistence cma_platform
         cma_sim cma_thermo cma_diagrams cma_aqueous cma_db cma_estimation cma_tools cma_advanced_aqueous Threads::Threads)
+    target_compile_options(cma_chemistry PRIVATE
+        -Wno-old-style-cast
+        -Wno-sign-conversion
+        -Wno-float-conversion
+        -Wno-shadow
+        -Wno-conversion
+    )
     include(GNUInstallDirs)
     target_compile_definitions(cma_chemistry PRIVATE CMA_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/cma-chemistry")
     install(TARGETS cma_chemistry DESTINATION ${CMAKE_INSTALL_BINDIR})

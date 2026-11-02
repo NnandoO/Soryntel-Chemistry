@@ -39,6 +39,20 @@ void Aplicacion::ejecutar_simulacion() {
     auto db = gestor.mapa_especies();
 
     panel_resultados_.limpiar();
+    auto add_log = [this](const std::string& entry) {
+        std::time_t now = std::time(nullptr);
+        char tbuf[32];
+        if (std::tm* tm_ptr = std::localtime(&now))
+            std::strftime(tbuf, sizeof(tbuf), "[%H:%M:%S] ", tm_ptr);
+        else
+            std::snprintf(tbuf, sizeof(tbuf), "[SIM] ");
+        logs_simulacion_.push_back(std::string(tbuf) + entry);
+        if (logs_simulacion_.size() > 200)
+            logs_simulacion_.erase(logs_simulacion_.begin());
+    };
+
+    add_log("Iniciando simulación de flowsheet (" + std::to_string(flowsheet_->conteo_nodos()) +
+            " unidades, " + std::to_string(flowsheet_->conteo_flujos()) + " corrientes)...");
 
     // ── Validación previa ──
     bool tiene_fuente = false;
@@ -56,6 +70,7 @@ void Aplicacion::ejecutar_simulacion() {
         sim_resuelto_ = true;
         sim_ultimo_resultado_.convergio = false;
         sim_ultimo_resultado_.mensaje = err;
+        add_log("[ERROR] " + err);
         return;
     }
     if (flowsheet_->conteo_flujos() == 0) {
@@ -64,6 +79,7 @@ void Aplicacion::ejecutar_simulacion() {
         sim_resuelto_ = true;
         sim_ultimo_resultado_.convergio = false;
         sim_ultimo_resultado_.mensaje = err;
+        add_log("[ERROR] " + err);
         return;
     }
 
@@ -76,12 +92,14 @@ void Aplicacion::ejecutar_simulacion() {
         masa_ok = res_masa.convergio;
         masa_msg = res_masa.mensaje;
 
-        // Write solved stream properties back to flowsheet
+        // Write solved stream properties back to flowsheet (including MineralProcessing particles & water)
         if (res_masa.convergio) {
             for (auto& f_res : res_masa.flujos_salida) {
                 auto* f_orig = flowsheet_->flujo_por_id(f_res.id);
                 if (f_orig) {
                     f_orig->flujo_molar = f_res.flujo_molar;
+                    f_orig->particulas = f_res.particulas;
+                    f_orig->agua_kg_h = f_res.agua_kg_h;
                     f_orig->temperatura = f_res.temperatura;
                     f_orig->presion = f_res.presion;
                     f_orig->entalpia = f_res.entalpia;
@@ -98,8 +116,11 @@ void Aplicacion::ejecutar_simulacion() {
             }
         }
 
+        add_log((res_masa.convergio ? "[OK] " : "[WARN] ") + res_masa.mensaje +
+                " (iter=" + std::to_string(res_masa.iteraciones) + ")");
+
         std::string msg = res_masa.convergio
-            ? "[OK] Balance de masa convergido."
+            ? "[OK] Balance de masa convergido (" + std::to_string(res_masa.iteraciones) + " iter)."
             : "[ERROR] " + res_masa.mensaje;
 
         // Resumen de flujos
@@ -108,39 +129,44 @@ void Aplicacion::ejecutar_simulacion() {
         for (auto& [fid, flujo] : flowsheet_->mapa_flujos()) {
             if (flujo.es_energia) continue;
             nflujo++;
-            double total_kmol = 0.0;
-            for (auto& [_, n] : flujo.flujo_molar) total_kmol += n;
+            double total_kmol = flujo.flujo_molar_total();
+            double total_th = flujo.masa_total_t_h(db);
             char buf[256];
-            snprintf(buf, sizeof(buf), "  #%d: %s -> %s  (%.3f kmol/s  T=%.0fK)",
+            snprintf(buf, sizeof(buf), "  #%d: %s -> %s  (%.3f kmol/s | %.2f t/h | T=%.1f °C)",
                      nflujo,
                      origen_del_flujo(*flowsheet_, fid).c_str(),
                      destino_del_flujo(*flowsheet_, fid).c_str(),
-                     total_kmol, flujo.temperatura);
+                     total_kmol, total_th, flujo.temperatura - 273.15);
             msg += buf;
             msg += "\n";
         }
 
-        // Tabla de especies por flujo (hasta 4 flujos, máx 4 especies)
+        // Tabla de especies por flujo (hasta 6 flujos, máx 4 especies)
         msg += "\n-- Especies por flujo (kmol/s) --\n";
         int cnt = 0;
         for (auto& [fid, flujo] : flowsheet_->mapa_flujos()) {
             if (flujo.es_energia) continue;
-            if (++cnt > 4) { msg += "  ...\n"; break; }
+            if (++cnt > 6) { msg += "  ...\n"; break; }
             char buf[256];
             snprintf(buf, sizeof(buf), "  #%d (%s):", cnt, origen_del_flujo(*flowsheet_, fid).c_str());
             msg += buf;
             int sp_cnt = 0;
-            double total = 0.0;
-            for (auto& [sid, n] : flujo.flujo_molar) total += n;
+            double total = flujo.flujo_molar_total();
             for (auto& [sid, n] : flujo.flujo_molar) {
+                if (n < 1e-4) continue;
                 if (++sp_cnt > 4) { msg += " ..."; break; }
                 auto* sp = gestor.especie_por_id(sid);
                 char buf2[128];
                 double fracc = total > 0 ? n / total : 0.0;
-                if (n < 1e-4) continue;
                 snprintf(buf2, sizeof(buf2), " %s=%.4f(%d%%)",
                          sp ? sp->nombre.c_str() : "?", n, (int)(fracc * 100 + 0.5));
                 msg += buf2;
+            }
+            if (!flujo.particulas.empty()) {
+                char pbuf[128];
+                snprintf(pbuf, sizeof(pbuf), " [PSD: %zu clases, %.1f t/h sólidos, %.1f t/h H2O]",
+                         flujo.particulas.size(), flujo.masa_particulas_kg_h() / 1000.0, flujo.agua_kg_h / 1000.0);
+                msg += pbuf;
             }
             msg += "\n";
         }
@@ -150,6 +176,7 @@ void Aplicacion::ejecutar_simulacion() {
         panel_resultados_.poner_resultado_masa(msg, res_masa.convergio);
     } catch (const std::exception& e) {
         panel_resultados_.poner_resultado_masa(std::string("Error (masa): ") + e.what(), false);
+        add_log(std::string("[ERROR] Balance de masa: ") + e.what());
     }
 
     // ── Balance de energía (HeatMaterialBalance) ──
@@ -205,12 +232,20 @@ void Aplicacion::ejecutar_simulacion() {
         en_msg = sum + en_msg;
 
         panel_resultados_.poner_resultado_energia(en_msg, true);
+        char lbuf[160];
+        std::snprintf(lbuf, sizeof(lbuf), "[OK] Balance térmico: H_in=%+.1f kW, H_out=%+.1f kW, Q_neto=%+.1f kW",
+                      H_fuentes, H_sumideros, Q_neto_equipos);
+        add_log(lbuf);
         
         // ── BALANCE DE EXERGÍA ──
         try {
             motores::BalanceExergia motor_exergia;
             auto res_ex = motor_exergia.calcular_flowsheet(*flowsheet_, db);
             panel_resultados_.poner_resultado_exergia(res_ex, true, "Balance exergético calculado exitosamente.");
+            char xbuf[160];
+            std::snprintf(xbuf, sizeof(xbuf), "[OK] Balance exergético: Ex_destruida=%.1f kW, Eficiencia=%.1f%%",
+                          res_ex.exergia_destruida, res_ex.eficiencia_exergetica);
+            add_log(xbuf);
         } catch (const std::exception& e) {
             motores::ResultadoBalanceExergia res_vacio;
             panel_resultados_.poner_resultado_exergia(res_vacio, false, std::string("Error (exergía): ") + e.what());

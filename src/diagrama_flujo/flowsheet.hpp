@@ -100,6 +100,9 @@ public:
     int64_t prox_id_nodo()   const { return prox_id_nodo_; }
     int64_t prox_id_flujo()  const { return prox_id_flujo_; }
 
+    // Modo del balance metalúrgico (0 = Solids, 1 = Assays Only, 2 = Solids & Water)
+    int mb_modo = 0;
+
 private:
     std::vector<nucleo::Nodo> nodos_;
     std::map<int64_t, nucleo::Flujo> flujos_;

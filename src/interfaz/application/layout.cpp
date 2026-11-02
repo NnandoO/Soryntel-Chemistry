@@ -1,4 +1,11 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "interfaz/aplicacion.hpp"
+#include "interfaz/ui_css_style.hpp"
 #include "utils/i18n.h"
 
 #include <GLFW/glfw3.h>
@@ -55,6 +62,62 @@ void Aplicacion::renderizar() {
     ImGui::SetNextWindowPos(ImVec2(izq_w, menu_h));
     ImGui::SetNextWindowSize(ImVec2(tam_vp.x - izq_w - der_w, disp_h));
     ImGui::Begin(tr("Lienzo"), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    {
+        // Barra superior HSC-Sim con píldoras de acceso rápido estilo CSS
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("Visualization:");
+        ImGui::SameLine(0.0f, 4.0f);
+        ImGui::SetNextItemWidth(150.0f);
+        const char* vis_modes[] = {
+            "None (Standard)",
+            "Amount (t/h)",
+            "Molar Flow (kmol/s)",
+            "Mass Flow (kg/s)",
+            "Temperature (°C)",
+            "Pressure (bar)",
+            "Enthalpy (kW)"
+        };
+        if (ImGui::Combo("##hsc_vis_mode", &lienzo_.modo_visualizacion_flujos, vis_modes, 7)) {
+            if (lienzo_.modo_visualizacion_flujos > 0) lienzo_.sankey_activo = true;
+        }
+        ImGui::SameLine(0.0f, 6.0f);
+        if (ImGui::Checkbox("Sankey", &lienzo_.sankey_activo)) {
+            if (lienzo_.sankey_activo && lienzo_.modo_visualizacion_flujos == 0)
+                lienzo_.modo_visualizacion_flujos = 1;
+        }
+        ImGui::SameLine(0.0f, 8.0f);
+        if (css::category_pill("Calculate (F5)", false, IM_COL32(46, 128, 72, 255))) {
+            ejecutar_simulacion();
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Dynamic", mostrar_sim_dinamica_, IM_COL32(55, 112, 178, 255))) {
+            mostrar_sim_dinamica_ = !mostrar_sim_dinamica_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Mat DB", mostrar_material_db_, IM_COL32(107, 123, 55, 255))) {
+            mostrar_material_db_ = !mostrar_material_db_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("HSC Geo", mostrar_geo_mineralogical_, IM_COL32(198, 56, 52, 255))) {
+            mostrar_geo_mineralogical_ = !mostrar_geo_mineralogical_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Heat Bal", mostrar_balance_hoja_, IM_COL32(185, 105, 42, 255))) {
+            mostrar_balance_hoja_ = !mostrar_balance_hoja_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("LCA Eval", mostrar_lca_, IM_COL32(52, 138, 118, 255))) {
+            mostrar_lca_ = !mostrar_lca_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Mass Bal", mostrar_reconciliacion_, IM_COL32(124, 82, 168, 255))) {
+            mostrar_reconciliacion_ = !mostrar_reconciliacion_;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill(modo_oscuro_ ? "Theme: Dark" : "Theme: HSC Light", !modo_oscuro_, IM_COL32(72, 108, 158, 255))) {
+            alternar_modo();
+        }
+    }
     ImVec2 lienzo_tam = ImGui::GetContentRegionAvail();
     lienzo_.persistir_herramienta = persist_tool_;
     lienzo_.renderizar(lienzo_tam);
@@ -436,25 +499,120 @@ void Aplicacion::renderizar() {
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem(tr("Árbol de proceso"))) {
-                ImGui::TextUnformatted(tr("Elementos del Proceso:"));
+            if (ImGui::BeginTabItem("Stream Visualization")) {
+                ImGui::TextColored(ImVec4(0.25f, 0.55f, 0.90f, 1.0f), "Stream Visualization Settings (HSC-Sim)");
                 ImGui::Separator();
-                if (ImGui::TreeNode(tr("Unidades (Nodos)"))) {
+
+                const char* vis_modes[] = {
+                    "None (Standard)",
+                    "Amount (t/h)",
+                    "Molar Flow (kmol/s)",
+                    "Mass Flow (kg/s)",
+                    "Temperature (°C)",
+                    "Pressure (bar)",
+                    "Enthalpy (kW)"
+                };
+                if (ImGui::Combo("Variable", &lienzo_.modo_visualizacion_flujos, vis_modes, 7)) {
+                    if (lienzo_.modo_visualizacion_flujos > 0) lienzo_.sankey_activo = true;
+                }
+                ImGui::Checkbox("Use sankey diagram", &lienzo_.sankey_activo);
+                ImGui::Checkbox("Use max line-width", &lienzo_.sankey_usar_max_ancho);
+                ImGui::Checkbox("Use visualization color", &lienzo_.sankey_usar_color);
+                ImGui::SliderFloat("Max line-width (px)", &lienzo_.sankey_max_ancho_px, 4.0f, 36.0f, "%.1f px");
+
+                ImGui::ColorEdit3("Positive color", lienzo_.sankey_color_pos, ImGuiColorEditFlags_NoInputs);
+                ImGui::SameLine();
+                ImGui::ColorEdit3("Negative color", lienzo_.sankey_color_neg, ImGuiColorEditFlags_NoInputs);
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Reset Options to Default")) {
+                    lienzo_.sankey_activo = true;
+                    lienzo_.sankey_usar_max_ancho = true;
+                    lienzo_.sankey_usar_color = true;
+                    lienzo_.sankey_max_ancho_px = 14.0f;
+                    lienzo_.sankey_color_pos[0] = 0.20f; lienzo_.sankey_color_pos[1] = 0.82f; lienzo_.sankey_color_pos[2] = 0.25f;
+                    lienzo_.sankey_color_neg[0] = 0.90f; lienzo_.sankey_color_neg[1] = 0.22f; lienzo_.sankey_color_neg[2] = 0.22f;
+                }
+
+                // Gráfico de barras: Points within range (Distribución de corrientes)
+                auto& db = base_datos::GestorDB::instancia();
+                std::vector<double> vals;
+                for (const auto& [fid, fl] : flowsheet_->mapa_flujos()) {
+                    if (fl.pagina != lienzo_.pagina_actual) continue;
+                    double v = 0.0;
+                    switch (lienzo_.modo_visualizacion_flujos) {
+                        case 1: v = fl.masa_total_t_h(db); break;
+                        case 2: v = fl.flujo_molar_total(); break;
+                        case 3: v = fl.masa_total(db); break;
+                        case 4: v = fl.temperatura - 273.15; break;
+                        case 5: v = fl.presion * 1.01325; break;
+                        case 6: v = (fl.entalpia != 0.0) ? fl.entalpia : fl.calcular_entalpia(db); break;
+                        default: v = fl.masa_total_t_h(db); break;
+                    }
+                    vals.push_back(v);
+                }
+
+                if (!vals.empty() && ImPlot::BeginPlot("Points within range", ImVec2(-1, 135), ImPlotFlags_NoLegend)) {
+                    ImPlot::SetupAxes("Range Bin", "Streams", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+                    double vmin = *std::min_element(vals.begin(), vals.end());
+                    double vmax = *std::max_element(vals.begin(), vals.end());
+                    if (std::abs(vmax - vmin) < 1e-9) vmax = vmin + 1.0;
+                    const int NBINS = 5;
+                    double bins_x[NBINS] = {1, 2, 3, 4, 5};
+                    double counts[NBINS] = {0, 0, 0, 0, 0};
+                    for (double v : vals) {
+                        int b = (int)((v - vmin) / (vmax - vmin) * NBINS);
+                        b = std::clamp(b, 0, NBINS - 1);
+                        counts[b] += 1.0;
+                    }
+                    ImPlot::SetNextFillStyle(ImVec4(0.20f, 0.52f, 0.88f, 0.85f));
+                    ImPlot::PlotBars("Streams", bins_x, counts, NBINS, 0.55);
+                    ImPlot::EndPlot();
+                }
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem(tr("Árbol de proceso"))) {
+                ImGui::TextUnformatted(tr("Elementos del Proceso (HSC-Sim):"));
+                ImGui::Separator();
+                if (ImGui::TreeNodeEx(tr("Unidades (Nodos)"), ImGuiTreeNodeFlags_DefaultOpen)) {
                     for (auto& n : flowsheet_->nodos()) {
+                        int m_unit = 1;
+                        if (n.params.count("hsc_mode")) m_unit = (int)n.params.at("hsc_mode");
+                        else if (n.tipo == nucleo::TipoNodo::TrituradoraMandibula || n.tipo == nucleo::TipoNodo::TrituradoraCono ||
+                                 n.tipo == nucleo::TipoNodo::TrituradoraGiratoria || n.tipo == nucleo::TipoNodo::MolinoSAG ||
+                                 n.tipo == nucleo::TipoNodo::MolinoBolas || n.tipo == nucleo::TipoNodo::Zaranda ||
+                                 n.tipo == nucleo::TipoNodo::Hidrociclon || n.tipo == nucleo::TipoNodo::CeldaFlotacion) m_unit = 0;
+                        else if (n.tipo == nucleo::TipoNodo::Divisor || n.tipo == nucleo::TipoNodo::Separador ||
+                                 n.tipo == nucleo::TipoNodo::Espesador || n.tipo == nucleo::TipoNodo::Filtro) m_unit = 2;
+
+                        const char* badge = (m_unit == 0) ? "[P]" : (m_unit == 1) ? "[R]" : "[D]";
+                        ImVec4 bcol = (m_unit == 0) ? ImVec4(0.25f, 0.65f, 0.95f, 1.0f)
+                                    : (m_unit == 1) ? ImVec4(0.95f, 0.45f, 0.25f, 1.0f)
+                                                    : ImVec4(0.30f, 0.80f, 0.45f, 1.0f);
+                        ImGui::TextColored(bcol, "%s", badge);
+                        ImGui::SameLine();
                         bool sel = (lienzo_.id_nodo_seleccionado == n.id);
-                        if (ImGui::Selectable((n.nombre + "##node").c_str(), sel)) {
+                        if (ImGui::Selectable((n.nombre + "##node_" + std::to_string(n.id)).c_str(), sel)) {
                             panel_propiedades_.seleccionar_nodo(n.id);
                             lienzo_.id_nodo_seleccionado = n.id;
                             lienzo_.id_flujo_seleccionado = -1;
                         }
+                        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+                            panel_propiedades_.abrir_editor_unidad(n.id);
+                        }
                     }
                     ImGui::TreePop();
                 }
-                if (ImGui::TreeNode(tr("Corrientes (Flujos)"))) {
+                if (ImGui::TreeNodeEx(tr("Corrientes (Flujos)"), ImGuiTreeNodeFlags_DefaultOpen)) {
+                    auto& db = base_datos::GestorDB::instancia();
                     for (auto& [fid, f] : flowsheet_->mapa_flujos()) {
                         bool sel = (lienzo_.id_flujo_seleccionado == fid);
                         std::string name = f.nombre.empty() ? ("Flujo " + std::to_string(fid)) : f.nombre;
-                        if (ImGui::Selectable((name + "##stream").c_str(), sel)) {
+                        char label_buf[196];
+                        snprintf(label_buf, sizeof(label_buf), "%s  (%.1f t/h, %.0f °C)##stream_%lld",
+                                 name.c_str(), f.masa_total_t_h(db), f.temperatura - 273.15, (long long)fid);
+                        if (ImGui::Selectable(label_buf, sel)) {
                             panel_propiedades_.seleccionar_flujo(fid);
                             lienzo_.id_flujo_seleccionado = fid;
                             lienzo_.id_nodo_seleccionado = -1;
@@ -466,10 +624,26 @@ void Aplicacion::renderizar() {
             }
 
             if (ImGui::BeginTabItem(tr("Log Viewer"))) {
-                ImGui::TextUnformatted(tr("Registro de Simulación:"));
+                ImGui::TextUnformatted(tr("Registro de Simulación (HSC-Sim Solver Log):"));
+                ImGui::SameLine(ImGui::GetWindowWidth() - 95.0f);
+                if (ImGui::SmallButton("Clear")) {
+                    logs_simulacion_.clear();
+                }
                 ImGui::Separator();
-                ImGui::TextDisabled("%s", tr("Simulación lista."));
-                ImGui::TextDisabled("%s", tr("Haga clic en 'Play' en la barra superior."));
+                ImGui::BeginChild("SimLogScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+                if (logs_simulacion_.empty()) {
+                    ImGui::TextDisabled("%s", tr("Simulación lista. Presione 'Calculate (F5)' o 'RUN' para ver trazas."));
+                } else {
+                    for (const auto& line : logs_simulacion_) {
+                        ImVec4 col(0.85f, 0.86f, 0.88f, 1.0f);
+                        if (line.find("[OK]") != std::string::npos) col = ImVec4(0.35f, 0.90f, 0.45f, 1.0f);
+                        else if (line.find("[WARN]") != std::string::npos) col = ImVec4(0.95f, 0.80f, 0.25f, 1.0f);
+                        else if (line.find("[ERROR]") != std::string::npos) col = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
+                        else if (line.find("[INFO]") != std::string::npos) col = ImVec4(0.45f, 0.78f, 0.98f, 1.0f);
+                        ImGui::TextColored(col, "%s", line.c_str());
+                    }
+                }
+                ImGui::EndChild();
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -540,8 +714,12 @@ void Aplicacion::renderizar() {
         }
 
         ImGui::SameLine();
-        ImGui::SetCursorPosX(tam_vp.x - 520);
+        ImGui::SetCursorPosX(tam_vp.x - 620);
         ImGui::TextColored(ImVec4(0.8f,0.8f,0.8f,1), "Mouse: %d, %d", (int)lienzo_.coord_raton.x, (int)lienzo_.coord_raton.y);
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(tam_vp.x - 495);
+        ImGui::Checkbox("Orthogonal", &lienzo_.ruteo_ortogonal);
 
         ImGui::SameLine();
         ImGui::SetCursorPosX(tam_vp.x - 390);
@@ -568,3 +746,5 @@ void Aplicacion::renderizar() {
 
 
 }} // namespace
+
+#pragma GCC diagnostic pop

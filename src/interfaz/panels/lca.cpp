@@ -1,700 +1,883 @@
 #include "shared.hpp"
+#include "panel_lca.hpp"
+#include "interfaz/ui_css_style.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <map>
+#include <set>
+#include <sstream>
+
 namespace cma { namespace interfaz {
-// Panel de LCA
-// ═══════════════════════════════════════════════════════════════════════════
-void PanelLCA::inicializar_flujos(diagrama_flujo::Flowsheet* flowsheet) {
-    if (!flowsheet || cargado_inicial_) return;
-    mapeos_.clear();
 
-    for (auto& [fid, flujo] : flowsheet->mapa_flujos()) {
-        MapeoLcaFlujo m;
-        m.stream_id = fid;
-        m.stream_name = flujo.nombre.empty() ? ("Stream " + std::to_string(fid)) : flujo.nombre;
-        // Calcular flujo masico real: sum(ni * Mi) en lugar de flujo molar
-        double flujo_masa = 0.0;
-        auto& gestor_lca = base_datos::GestorDB::instancia();
-        for (auto& [sp_id, n_moles] : flujo.flujo_molar) {
-            auto* esp = gestor_lca.especie_por_id(sp_id);
-            if (esp && esp->masa_molar > 0.0) {
-                flujo_masa += n_moles * esp->masa_molar; // kmol/s * g/mol = kg/s (numéricamente)
-            } else {
-                flujo_masa += n_moles * 18.015; // Fallback: masa molar del agua
-            }
-        }
-        m.flow_value = flujo_masa;
-        m.unit = "kg/s";
+namespace {
 
-        std::string unit_name = "System";
-        bool es_entrada = true;
-        
-        for (auto& nodo : flowsheet->nodos()) {
-            for (int64_t sid : nodo.ids_flujos_salida) {
-                if (sid == fid) {
-                    unit_name = nodo.nombre;
-                    if (nodo.tipo == nucleo::TipoNodo::Fuente) {
-                        es_entrada = true;
-                    } else {
-                        es_entrada = false;
-                    }
-                }
-            }
-            for (int64_t sid : nodo.ids_flujos_entrada) {
-                if (sid == fid) {
-                    if (nodo.tipo == nucleo::TipoNodo::Sumidero) {
-                        es_entrada = false;
-                    }
-                }
-            }
-        }
-        
-        m.unit_name = unit_name;
-        m.es_entrada = es_entrada;
-        m.lca_equivalent = flujo.lca_equivalent;
-        m.lca_group = flujo.lca_group;
-        
-        if (m.lca_equivalent == "No Mapping" || m.lca_equivalent.empty()) {
-            std::string lower_name = m.stream_name;
-            std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
-            
-            if (lower_name.find("gas") != std::string::npos || lower_name.find("fuel") != std::string::npos || lower_name.find("co2") != std::string::npos) {
-                m.lca_group = "Emissions to air";
-                m.lca_equivalent = "CO2 (fossil) - ecoinvent";
-            } else if (lower_name.find("slag") != std::string::npos || lower_name.find("relave") != std::string::npos || lower_name.find("escoria") != std::string::npos) {
-                m.lca_group = "Deposited goods";
-                m.lca_equivalent = "Slag landfill - GaBi";
-            } else if (lower_name.find("concentrado") != std::string::npos || lower_name.find("cu") != std::string::npos || lower_name.find("mineral") != std::string::npos) {
-                m.lca_group = "Resources";
-                m.lca_equivalent = "Copper ore resource - GaBi";
-            } else if (lower_name.find("agua") != std::string::npos || lower_name.find("water") != std::string::npos) {
-                m.lca_group = "Resources";
-                m.lca_equivalent = "Water intake - ecoinvent";
-            } else {
-                m.lca_group = "Not defined";
-                m.lca_equivalent = "No Mapping";
-            }
-        }
-        
-        mapeos_.push_back(m);
+const char* kNoMapeado = "no-mapeado";
+
+ImVec4 color_ok()   { return AdaptiveColor(0.30f, 0.85f, 0.40f, 1.0f); }
+ImVec4 color_malo() { return AdaptiveColor(0.90f, 0.40f, 0.30f, 1.0f); }
+ImVec4 color_aviso(){ return AdaptiveColor(0.95f, 0.75f, 0.25f, 1.0f); }
+
+std::string minusculas(std::string s) {
+    for (char& c : s) {
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
     }
-    cargado_inicial_ = true;
+    return s;
 }
 
-void PanelLCA::calcular_impacto() {
-    double co2 = 0.0;
-    double energia = 0.0;
-    double residuos = 0.0;
-    
-    cma::motores::LCA lca_motor;
-    co2 += lca_motor.factor_emision_electricidad(manual_electricidad_, "global");
-    energia += manual_electricidad_ * 3.6;
-    
-    co2 += lca_motor.factor_emision_combustible(manual_combustible_, "diésel");
-    energia += manual_combustible_ * 42.6;
-    
-    for (auto& m : mapeos_) {
-        double flow_kg = m.flow_value * factor_normalizacion_;
-        if (m.lca_equivalent == "No Mapping") continue;
-        
-        if (m.lca_group == "Emissions to air") {
-            if (m.lca_equivalent.find("CO2") != std::string::npos) {
-                co2 += flow_kg * 1.0;
-            } else if (m.lca_equivalent.find("CH4") != std::string::npos) {
-                co2 += flow_kg * 28.0;
-            } else if (m.lca_equivalent.find("N2O") != std::string::npos) {
-                co2 += flow_kg * 265.0;
-            } else if (m.lca_equivalent.find("SO2") != std::string::npos) {
-                co2 += flow_kg * 0.5;
+bool coincide(const std::string& texto, const std::string& consulta_min) {
+    if (consulta_min.empty()) return true;
+    return minusculas(texto).find(consulta_min) != std::string::npos;
+}
+
+const char* nombre_equivalente(const motores::LCA& motor, const std::string& id) {
+    const auto* e = motor.buscar_equivalente(id);
+    return e != nullptr ? e->nombre.c_str() : "Sin mapear";
+}
+
+const char* grupo_equivalente(const motores::LCA& motor, const std::string& id) {
+    const auto* e = motor.buscar_equivalente(id);
+    return e != nullptr ? e->grupo.c_str() : "Not defined";
+}
+
+} // namespace
+
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelLCA::reset() {
+    filas_.clear();
+    fila_sel_ = -1;
+    equivalente_sel_.clear();
+    grupo_sel_.clear();
+    unidad_funcional_kg_ = 0.0;
+    resultado_ = motores::ResultadoLCA{};
+    fs_actual_ = nullptr;
+    calculado_ = false;
+    cargado_ = false;
+    mostrar_validacion_ = false;
+    mostrar_ayuda_ = false;
+    export_pendiente_ = 0;
+    mensaje_estado_.clear();
+    busqueda_[0] = '\0';
+    busqueda_catalogo_[0] = '\0';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Extracción del dataset de frontera (una fila por especie)
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelLCA::cargar_flujos(diagrama_flujo::Flowsheet* flowsheet) {
+    filas_.clear();
+    fila_sel_ = -1;
+    if (flowsheet == nullptr) {
+        fs_actual_ = nullptr;
+        cargado_ = false;
+        calcular();
+        return;
+    }
+
+    auto& gestor = base_datos::GestorDB::instancia();
+
+    for (auto& [fid, flujo] : flowsheet->mapa_flujos()) {
+        if (flujo.es_energia) continue;  // la energía se declara en Manuales
+
+        bool tiene_origen = false;
+        bool origen_fuente = false;
+        bool tiene_destino = false;
+        bool destino_sumidero = false;
+        std::string nombre_origen;
+        std::string nombre_destino;
+
+        for (const auto& nodo : flowsheet->nodos()) {
+            for (int64_t sid : nodo.ids_flujos_salida) {
+                if (sid != fid) continue;
+                tiene_origen = true;
+                nombre_origen = nodo.nombre;
+                if (nodo.tipo == nucleo::TipoNodo::Fuente) origen_fuente = true;
             }
-        } else if (m.lca_group == "Deposited goods") {
-            residuos += flow_kg;
-            co2 += flow_kg * 0.05;
-        } else if (m.lca_group == "Resources") {
-            if (m.lca_equivalent.find("ore") != std::string::npos) {
-                energia += flow_kg * 1.2;
-                co2 += flow_kg * 0.15;
-            } else if (m.lca_equivalent.find("Water") != std::string::npos) {
-                energia += flow_kg * 0.02;
+            for (int64_t sid : nodo.ids_flujos_entrada) {
+                if (sid != fid) continue;
+                tiene_destino = true;
+                nombre_destino = nodo.nombre;
+                if (nodo.tipo == nucleo::TipoNodo::Sumidero) destino_sumidero = true;
             }
         }
+
+        // Frontera del sistema: solo entradas desde fuentes/sin origen y
+        // salidas hacia sumideros/sin destino. Las corrientes internas
+        // (proceso→proceso) no forman parte del inventario.
+        const bool entrada = !tiene_origen || origen_fuente;
+        const bool salida = (!tiene_destino || destino_sumidero) && !entrada;
+        if (!entrada && !salida) continue;
+
+        const std::string equipo = entrada
+            ? (tiene_destino ? nombre_destino : nombre_origen)
+            : (tiene_origen ? nombre_origen : nombre_destino);
+        const std::string corriente = flujo.nombre.empty()
+            ? ("Corriente " + std::to_string(fid))
+            : flujo.nombre;
+
+        struct Componente {
+            std::string etiqueta;
+            double kg_h = 0.0;
+        };
+        std::vector<Componente> componentes;
+        double total_kg_h = 0.0;
+
+        for (const auto& [sid, n_moles] : flujo.flujo_molar) {
+            if (!std::isfinite(n_moles) || n_moles <= 0.0) continue;
+            const auto* esp = gestor.especie_por_id(sid);
+            const std::string etiqueta =
+                esp != nullptr ? esp->formula : ("Especie #" + std::to_string(sid));
+            const double masa_molar =
+                (esp != nullptr && esp->masa_molar > 0.0) ? esp->masa_molar : 18.015;
+            const double kg_h = n_moles * 3600.0 * masa_molar;
+            componentes.push_back({etiqueta, kg_h});
+            total_kg_h += kg_h;
+        }
+        if (flujo.agua_kg_h > 0.0) {
+            componentes.push_back({"H2O(l)", flujo.agua_kg_h});
+            total_kg_h += flujo.agua_kg_h;
+        }
+        for (const auto& p : flujo.particulas) {
+            if (!std::isfinite(p.mass_kg_h) || p.mass_kg_h <= 0.0) continue;
+            componentes.push_back({p.mineral.empty() ? "Sólido" : p.mineral, p.mass_kg_h});
+            total_kg_h += p.mass_kg_h;
+        }
+        if (componentes.empty() || total_kg_h <= 0.0) continue;
+
+        for (const auto& comp : componentes) {
+            FilaUI fila;
+            fila.stream_id = fid;
+            fila.equipo = equipo;
+            fila.corriente = corriente;
+            fila.especie = comp.etiqueta;
+            fila.kg_h = comp.kg_h;
+            fila.fraccion = comp.kg_h / total_kg_h * 100.0;
+            fila.entrada = entrada;
+
+            const auto it = flujo.lca_especies.find(comp.etiqueta);
+            if (it != flujo.lca_especies.end() && it->second == kNoMapeado) {
+                fila.equivalente = kNoMapeado;
+            } else if (it != flujo.lca_especies.end() &&
+                       motor_.buscar_equivalente(it->second) != nullptr) {
+                fila.equivalente = it->second;
+            } else if (componentes.size() == 1 && !flujo.lca_equivalent.empty() &&
+                       flujo.lca_equivalent != "No Mapping" &&
+                       motor_.buscar_equivalente(flujo.lca_equivalent) != nullptr) {
+                // Proyectos antiguos: mapeo por corriente sobre una sola especie.
+                fila.equivalente = flujo.lca_equivalent;
+            } else {
+                fila.equivalente = motor_.sugerir_equivalente(comp.etiqueta, corriente, entrada);
+            }
+            filas_.push_back(std::move(fila));
+        }
     }
-    
-    resultado_huella_ = co2;
-    resultado_energia_ = energia;
-    resultado_residuos_ = residuos;
+
+    fs_actual_ = flowsheet;
+    cargado_ = true;
+    calcular();
+}
+
+void PanelLCA::calcular() {
+    std::vector<motores::FilaLCA> entradas;
+    entradas.reserve(filas_.size());
+    for (const auto& f : filas_) {
+        motores::FilaLCA m;
+        m.equipo = f.equipo;
+        m.corriente = f.corriente;
+        m.especie = f.especie;
+        m.cantidad = f.kg_h;
+        m.entrada = f.entrada;
+        m.equivalente = f.equivalente;
+        entradas.push_back(std::move(m));
+    }
+    resultado_ = motor_.evaluar(entradas, manual_electricidad_, manual_gas_,
+                                manual_combustible_, manual_agua_, manual_residuo_,
+                                unidad_funcional_kg_);
     calculado_ = true;
 }
 
+void PanelLCA::auto_mapear() {
+    for (auto& f : filas_) {
+        if (f.mapeada()) continue;
+        f.equivalente = motor_.sugerir_equivalente(f.especie, f.corriente, f.entrada);
+    }
+    calcular();
+    mensaje_estado_ = "Auto-mapeo aplicado.";
+}
+
+void PanelLCA::aplicar_mapeo() {
+    if (fila_sel_ < 0 || fila_sel_ >= static_cast<int>(filas_.size())) return;
+    if (equivalente_sel_.empty() || motor_.buscar_equivalente(equivalente_sel_) == nullptr) return;
+
+    auto& fila = filas_[static_cast<size_t>(fila_sel_)];
+    fila.equivalente = equivalente_sel_;
+
+    if (aplicar_a_especie_) {
+        for (auto& f : filas_) {
+            if (f.especie == fila.especie) f.equivalente = equivalente_sel_;
+        }
+    }
+
+    calcular();
+    mensaje_estado_ = "Mapeo aplicado. Usa Guardar mapeos para persistirlo.";
+}
+
+void PanelLCA::guardar_mapeos(diagrama_flujo::Flowsheet* flowsheet) {
+    if (flowsheet == nullptr) return;
+
+    std::map<int64_t, std::map<std::string, std::string>> por_flujo;
+    for (const auto& f : filas_) {
+        if (f.stream_id >= 0) por_flujo[f.stream_id][f.especie] = f.equivalente;
+    }
+
+    for (const auto& [fid, mapa] : por_flujo) {
+        auto* flujo = flowsheet->flujo_por_id(fid);
+        if (flujo == nullptr) continue;
+        flujo->lca_especies = mapa;
+
+        std::set<std::string> distintos;
+        for (const auto& [especie, eq] : mapa) {
+            (void)especie;
+            distintos.insert(eq);
+        }
+        if (distintos.size() == 1) {
+            const auto* eq = motor_.buscar_equivalente(*distintos.begin());
+            flujo->lca_equivalent = eq != nullptr ? eq->nombre : "No Mapping";
+            flujo->lca_group = eq != nullptr ? eq->grupo : "Not defined";
+        } else {
+            flujo->lca_equivalent = "Mezcla de especies";
+            flujo->lca_group = "Not defined";
+        }
+    }
+    mensaje_estado_ = "Mapeos guardados en el flowsheet.";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Interfaz
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelLCA::dibujar_toolbar(diagrama_flujo::Flowsheet* flowsheet) {
+    auto solicitar_export = [&](int tipo) {
+        if (resultado_.filas_sin_mapear > 0 || !resultado_.balance_masa_ok) {
+            export_pendiente_ = tipo;
+            mostrar_validacion_ = true;
+        } else if (tipo == 1) {
+            exportar_gabi(false);
+        } else if (tipo == 2) {
+            exportar_gabi(true);
+        } else {
+            exportar_json();
+        }
+    };
+
+    css::begin_ribbon_bar("##LCARibbonToolbar", 78.0f);
+    const float bar_bottom_y = ImGui::GetWindowPos().y + ImGui::GetWindowHeight();
+
+    // ── GRUPO 1: Model ──
+    float g1_start = ImGui::GetCursorScreenPos().x;
+    if (css::ribbon_button("lca_save", "Save", "", css::RibbonIcon::Save, 52.0f, 54.0f)) {
+        guardar_mapeos(flowsheet);
+    }
+    float g1_end = ImGui::GetItemRectMax().x;
+    css::draw_ribbon_group_footer(g1_start, g1_end, bar_bottom_y, "Model");
+
+    ImGui::SameLine(0.0f, 10.0f);
+
+    // ── GRUPO 2: Streams ──
+    float g2_start = ImGui::GetCursorScreenPos().x;
+    if (css::ribbon_button("lca_in", "Input", "", css::RibbonIcon::InputArrow, 50.0f, 54.0f)) {
+        cargar_flujos(flowsheet);
+        pestana_forzada_ = 0;
+        mensaje_estado_ = "Input streams reloaded.";
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_out", "Output", "", css::RibbonIcon::OutputArrow, 50.0f, 54.0f)) {
+        cargar_flujos(flowsheet);
+        pestana_forzada_ = 1;
+        mensaje_estado_ = "Output streams reloaded.";
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_min", "Manual", "Input", css::RibbonIcon::ManualInput, 54.0f, 54.0f)) {
+        pestana_forzada_ = 2;
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_mout", "Manual", "Output", css::RibbonIcon::ManualOutput, 54.0f, 54.0f)) {
+        pestana_forzada_ = 3;
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_ind", "Indicator", "", css::RibbonIcon::Indicator, 58.0f, 54.0f)) {
+        pestana_forzada_ = 4;
+    }
+    float g2_end = ImGui::GetItemRectMax().x;
+    css::draw_ribbon_group_footer(g2_start, g2_end, bar_bottom_y, "Streams");
+
+    ImGui::SameLine(0.0f, 10.0f);
+
+    // ── GRUPO 3: Tools ──
+    float g3_start = ImGui::GetCursorScreenPos().x;
+    if (css::ribbon_button("lca_map", "Mapping", "", css::RibbonIcon::Mapping, 58.0f, 54.0f)) {
+        auto_mapear();
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_norm", "Normalize", "", css::RibbonIcon::Normalize, 62.0f, 54.0f)) {
+        if (fila_sel_ >= 0 && fila_sel_ < static_cast<int>(filas_.size()) &&
+            filas_[static_cast<size_t>(fila_sel_)].kg_h > 0.0) {
+            unidad_funcional_kg_ = filas_[static_cast<size_t>(fila_sel_)].kg_h;
+        } else if (unidad_funcional_kg_ <= 0.0) {
+            unidad_funcional_kg_ = 1000.0;
+        }
+        calcular();
+        mensaje_estado_ = "Normalized to Functional Unit.";
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_help", "Help", "", css::RibbonIcon::Help, 48.0f, 54.0f)) {
+        mostrar_ayuda_ = !mostrar_ayuda_;
+    }
+    float g3_end = ImGui::GetItemRectMax().x;
+    css::draw_ribbon_group_footer(g3_start, g3_end, bar_bottom_y, "Tools");
+
+    ImGui::SameLine(0.0f, 10.0f);
+
+    // ── GRUPO 4: Export ──
+    float g4_start = ImGui::GetCursorScreenPos().x;
+    if (css::ribbon_button("lca_gabi", "To GaBi", "", css::RibbonIcon::ToGaBi, 56.0f, 54.0f)) {
+        solicitar_export(1);
+    }
+    ImGui::SameLine(0.0f, 2.0f);
+    if (css::ribbon_button("lca_excel", "To Excel", "", css::RibbonIcon::ToExcel, 56.0f, 54.0f)) {
+        solicitar_export(2);
+    }
+    float g4_end = ImGui::GetItemRectMax().x;
+    css::draw_ribbon_group_footer(g4_start, g4_end, bar_bottom_y, "Export");
+
+    ImGui::SameLine(0.0f, 14.0f);
+    ImGui::BeginGroup();
+    if (resultado_.balance_masa_ok)
+        ImGui::TextColored(ImVec4(0.16f, 0.54f, 0.22f, 1.0f), "Mass Balance: OK");
+    else
+        ImGui::TextColored(ImVec4(0.76f, 0.22f, 0.18f, 1.0f), "Mass Balance: dM = %.4g kg/h",
+                           resultado_.masa_entrada_kg - resultado_.masa_salida_kg);
+    ImGui::TextDisabled("%d rows | %d mapped | %d unmapped",
+                        resultado_.filas_totales, resultado_.filas_mapeadas, resultado_.filas_sin_mapear);
+    if (!mensaje_estado_.empty()) {
+        ImGui::TextColored(ImVec4(0.18f, 0.45f, 0.72f, 1.0f), "%s", mensaje_estado_.c_str());
+    }
+    ImGui::EndGroup();
+
+    css::end_ribbon_bar();
+}
+
+void PanelLCA::dibujar_tabla(bool entradas) {
+    const std::string consulta = minusculas(busqueda_);
+
+    // Franja superior de título estilo HSC LCA Evaluation ("Input Streams" / "Output Streams")
+    const auto tk = css::tokens();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, tk.header_bg);
+    ImGui::BeginChild(entradas ? "##HdrInStreams" : "##HdrOutStreams", ImVec2(0, 24), true, ImGuiWindowFlags_NoScrollbar);
+    const char* titulo_banda = entradas ? "Input Streams" : "Output Streams";
+    float avail_w = ImGui::GetContentRegionAvail().x;
+    float tw = ImGui::CalcTextSize(titulo_banda).x;
+    if (avail_w > tw) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (avail_w - tw) * 0.5f);
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.text_primary), "%s", titulo_banda);
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+
+    if (ImGui::BeginTable(entradas ? "lca_tabla_in" : "lca_tabla_out", 7,
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable,
+                          ImVec2(0, -56.0f))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("Unit Name", ImGuiTableColumnFlags_WidthFixed, 115.0f);
+        ImGui::TableSetupColumn("Stream Name", ImGuiTableColumnFlags_WidthFixed, 125.0f);
+        ImGui::TableSetupColumn("Species", ImGuiTableColumnFlags_WidthFixed, 82.0f);
+        ImGui::TableSetupColumn("Amount", ImGuiTableColumnFlags_WidthFixed, 76.0f);
+        ImGui::TableSetupColumn("Unit", ImGuiTableColumnFlags_WidthFixed, 42.0f);
+        ImGui::TableSetupColumn("LCA Equivalent", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("LCA Group", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+        ImGui::TableHeadersRow();
+
+        double total_kg_h = 0.0;
+        double mapeado_kg_h = 0.0;
+        for (int idx = 0; idx < static_cast<int>(filas_.size()); ++idx) {
+            const FilaUI& f = filas_[static_cast<size_t>(idx)];
+            if (f.entrada != entradas) continue;
+            if (!consulta.empty() &&
+                !coincide(f.equipo, consulta) && !coincide(f.corriente, consulta) &&
+                !coincide(f.especie, consulta) && !coincide(f.equivalente, consulta)) {
+                continue;
+            }
+
+            total_kg_h += f.kg_h;
+            if (f.mapeada()) mapeado_kg_h += f.kg_h;
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::PushID(idx);
+            const bool seleccionada = (fila_sel_ == idx);
+            std::string unit_lbl = (seleccionada ? "* " : "  ") + f.equipo;
+            if (ImGui::Selectable(unit_lbl.c_str(), seleccionada,
+                                  ImGuiSelectableFlags_SpanAllColumns |
+                                  ImGuiSelectableFlags_AllowOverlap)) {
+                fila_sel_ = idx;
+            }
+            ImGui::PopID();
+
+            ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(f.corriente.c_str());
+            ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(f.especie.c_str());
+            ImGui::TableSetColumnIndex(3); ImGui::Text("%.4g", f.kg_h);
+            ImGui::TableSetColumnIndex(4); ImGui::TextUnformatted("kg");
+            ImGui::TableSetColumnIndex(5);
+            if (f.mapeada()) {
+                ImGui::TextColored(ImVec4(0.14f, 0.46f, 0.22f, 1.0f), "%s", nombre_equivalente(motor_, f.equivalente));
+            } else {
+                ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.52f, 1.0f), "No Mapping");
+            }
+            ImGui::TableSetColumnIndex(6);
+            ImGui::TextUnformatted(grupo_equivalente(motor_, f.equivalente));
+        }
+        ImGui::EndTable();
+
+        ImGui::TextDisabled("Total: %.5g kg/h · Mapped: %.5g kg/h · Unmapped: %.5g kg/h",
+                            total_kg_h, mapeado_kg_h, total_kg_h - mapeado_kg_h);
+    }
+
+    const bool puede_aplicar =
+        fila_sel_ >= 0 && fila_sel_ < static_cast<int>(filas_.size()) &&
+        !equivalente_sel_.empty();
+    ImGui::BeginDisabled(!puede_aplicar);
+    if (ImGui::Button("Apply Mapping", ImVec2(-1.0f, 26.0f))) {
+        aplicar_mapeo();
+    }
+    ImGui::EndDisabled();
+}
+
+void PanelLCA::dibujar_manuales() {
+    ImGui::TextColored(AdaptiveColor(0.6f, 0.75f, 0.95f, 1.0f),
+                       tr("Consumos auxiliares y unidad funcional"));
+    ImGui::TextWrapped(tr("Los consumos manuales están en base horaria y se normalizan con la misma unidad funcional que los flujos."));
+    ImGui::Separator();
+
+    ImGui::SetNextItemWidth(240.0f);
+    bool cambio = false;
+    cambio |= ImGui::InputDouble(tr("Electricidad (kWh/h)"), &manual_electricidad_, 1.0, 10.0, "%.4f");
+    if (manual_electricidad_ < 0.0) manual_electricidad_ = 0.0;
+    ImGui::SetNextItemWidth(240.0f);
+    cambio |= ImGui::InputDouble(tr("Gas natural (Nm³/h)"), &manual_gas_, 1.0, 10.0, "%.4f");
+    if (manual_gas_ < 0.0) manual_gas_ = 0.0;
+    ImGui::SetNextItemWidth(240.0f);
+    cambio |= ImGui::InputDouble(tr("Combustible diésel (kg/h)"), &manual_combustible_, 1.0, 10.0, "%.4f");
+    if (manual_combustible_ < 0.0) manual_combustible_ = 0.0;
+    ImGui::SetNextItemWidth(240.0f);
+    cambio |= ImGui::InputDouble(tr("Agua de proceso (m³/h)"), &manual_agua_, 0.5, 5.0, "%.4f");
+    if (manual_agua_ < 0.0) manual_agua_ = 0.0;
+    ImGui::SetNextItemWidth(240.0f);
+    cambio |= ImGui::InputDouble(tr("Residuo declarado (kg/h)"), &manual_residuo_, 0.5, 5.0, "%.4f");
+    if (manual_residuo_ < 0.0) manual_residuo_ = 0.0;
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::TextColored(AdaptiveColor(0.6f, 0.75f, 0.95f, 1.0f), tr("Unidad funcional"));
+    ImGui::SetNextItemWidth(240.0f);
+    cambio |= ImGui::InputDouble(tr("Producto (kg/h)"), &unidad_funcional_kg_, 1.0, 10.0, "%.4f");
+    if (unidad_funcional_kg_ < 0.0) unidad_funcional_kg_ = 0.0;
+
+    if (ImGui::Button(tr("Usar corriente seleccionada")) && fila_sel_ >= 0 &&
+        fila_sel_ < static_cast<int>(filas_.size())) {
+        const double kg_h = filas_[static_cast<size_t>(fila_sel_)].kg_h;
+        if (kg_h > 0.0) {
+            unidad_funcional_kg_ = kg_h;
+            cambio = true;
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Quitar UF"))) {
+        unidad_funcional_kg_ = 0.0;
+        cambio = true;
+    }
+
+    if (cambio) calcular();
+    if (unidad_funcional_kg_ > 0.0) {
+        ImGui::TextDisabled(tr("Indicadores expresados por 1 kg de producto (base %.5g kg/h)."),
+                            unidad_funcional_kg_);
+    } else {
+        ImGui::TextColored(color_aviso(), tr("Sin unidad funcional: indicadores por hora."));
+    }
+}
+
+void PanelLCA::dibujar_indicadores() {
+    if (!calculado_) calcular();
+
+    const char* sufijo = resultado_.factor_unidad_funcional != 1.0 ? " / kg producto" : "";
+    ImGui::TextColored(AdaptiveColor(0.2f, 0.8f, 0.6f, 1.0f),
+                       tr("GWP100: %.4g kg CO2-eq%s"), resultado_.gwp_kg_co2eq, sufijo);
+    ImGui::TextColored(AdaptiveColor(0.9f, 0.6f, 0.2f, 1.0f),
+                       tr("Acidificación: %.4g kg SO2-eq%s"), resultado_.ap_kg_so2eq, sufijo);
+    ImGui::TextColored(AdaptiveColor(0.8f, 0.5f, 0.8f, 1.0f),
+                       tr("Eutrofización: %.4g kg PO4-eq%s"), resultado_.ep_kg_po4eq, sufijo);
+    ImGui::TextColored(AdaptiveColor(0.4f, 0.7f, 1.0f, 1.0f),
+                       tr("Agua: %.4g m³%s"), resultado_.agua_m3, sufijo);
+    ImGui::TextColored(AdaptiveColor(0.9f, 0.8f, 0.3f, 1.0f),
+                       tr("Energía primaria: %.4g MJ%s"), resultado_.energia_mj, sufijo);
+    ImGui::TextColored(AdaptiveColor(0.7f, 0.7f, 0.7f, 1.0f),
+                       tr("Residuos: %.4g kg%s"), resultado_.residuos_kg, sufijo);
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    if (resultado_.contribuciones.empty()) {
+        ImGui::TextDisabled(tr("Sin contribuciones: mapea flujos para calcular indicadores."));
+        return;
+    }
+
+    std::vector<double> valores;
+    std::vector<double> posiciones;
+    std::vector<const char*> etiquetas;
+    valores.reserve(resultado_.contribuciones.size());
+    posiciones.reserve(resultado_.contribuciones.size());
+    etiquetas.reserve(resultado_.contribuciones.size());
+
+    const size_t maximo = std::min<size_t>(resultado_.contribuciones.size(), 8);
+    for (size_t i = 0; i < maximo; ++i) {
+        valores.push_back(resultado_.contribuciones[i].second);
+        posiciones.push_back(static_cast<double>(i));
+        etiquetas.push_back(resultado_.contribuciones[i].first.c_str());
+    }
+
+    if (ImPlot::BeginPlot("##lca_gwp", ImVec2(-1, 220), ImPlotFlags_NoLegend)) {
+        ImPlot::SetupAxes(tr("Equivalente"), tr("kg CO2-eq"),
+                          ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisTicks(ImAxis_X1, posiciones.data(),
+                               static_cast<int>(posiciones.size()),
+                               etiquetas.data(), false);
+        ImPlot::PlotBars("GWP", posiciones.data(), valores.data(),
+                         static_cast<int>(valores.size()), 0.6);
+        ImPlot::EndPlot();
+    }
+
+    if (ImGui::BeginTable("lca_contribuciones", 3,
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+        ImGui::TableSetupColumn(tr("Equivalente"), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(tr("kg CO2-eq"), ImGuiTableColumnFlags_WidthFixed, 120.0f);
+        ImGui::TableSetupColumn(tr("%"), ImGuiTableColumnFlags_WidthFixed, 70.0f);
+        ImGui::TableHeadersRow();
+        const double total = resultado_.gwp_kg_co2eq > 0.0 ? resultado_.gwp_kg_co2eq : 1.0;
+        for (const auto& [nombre, valor] : resultado_.contribuciones) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(nombre.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.4g", valor);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", valor / total * 100.0);
+        }
+        ImGui::EndTable();
+    }
+}
+
+void PanelLCA::dibujar_validacion() {
+    if (!calculado_) calcular();
+
+    const bool masa_ok = resultado_.balance_masa_ok;
+    ImGui::TextColored(masa_ok ? color_ok() : color_malo(),
+                       masa_ok ? tr("Balance de masa: OK")
+                               : tr("Balance de masa: Δ %.4g kg/h"),
+                       resultado_.masa_entrada_kg - resultado_.masa_salida_kg);
+    ImGui::Text("Entradas: %.5g kg/h · Salidas: %.5g kg/h",
+                resultado_.masa_entrada_kg, resultado_.masa_salida_kg);
+
+    if (unidad_funcional_kg_ > 0.0)
+        ImGui::Text("Unidad funcional: %.5g kg/h (factor %.5g 1/kg)",
+                    unidad_funcional_kg_, resultado_.factor_unidad_funcional);
+    else
+        ImGui::TextColored(color_aviso(), tr("Unidad funcional sin definir."));
+
+    ImGui::Spacing();
+    if (resultado_.filas_sin_mapear > 0) {
+        ImGui::TextColored(color_aviso(), tr("%d fila(s) sin mapear (%.5g kg/h):"),
+                           resultado_.filas_sin_mapear, resultado_.masa_sin_mapear_kg);
+        ImGui::BeginChild("lca_sin_mapear", ImVec2(0, 110), true);
+        int mostradas = 0;
+        for (const auto& f : filas_) {
+            if (f.mapeada()) continue;
+            ImGui::BulletText("%s · %s · %.4g kg/h", f.corriente.c_str(),
+                              f.especie.c_str(), f.kg_h);
+            if (++mostradas >= 12) {
+                ImGui::TextDisabled("…");
+                break;
+            }
+        }
+        ImGui::EndChild();
+    } else {
+        ImGui::TextColored(color_ok(), tr("Todas las filas están mapeadas."));
+    }
+
+    if (!resultado_.avisos.empty()) {
+        ImGui::Spacing();
+        ImGui::TextColored(color_aviso(), tr("Avisos:"));
+        ImGui::BeginChild("lca_avisos", ImVec2(0, 110), true);
+        for (const auto& a : resultado_.avisos) ImGui::BulletText("%s", a.c_str());
+        ImGui::EndChild();
+    }
+}
+
+void PanelLCA::dibujar_ayuda() {
+    ImGui::TextColored(AdaptiveColor(0.6f, 0.8f, 1.0f, 1.0f), tr("Metodología del módulo LCA"));
+    ImGui::Separator();
+    ImGui::TextWrapped(
+        "1. Frontera: el dataset incluye únicamente corrientes que cruzan la frontera "
+        "del sistema (fuente→proceso y proceso→sumidero). Las corrientes internas "
+        "proceso→proceso se excluyen para evitar doble conteo.");
+    ImGui::TextWrapped(
+        "2. Desagregación: cada corriente se separa por especie; la masa de cada "
+        "especie se mapea a un equivalente del catálogo (CO2, CH4, SO2, NOx, agua, "
+        "escoria, menas, etc.).");
+    ImGui::TextWrapped(
+        "3. Factores: GWP100 del IPCC AR6; acidificación y eutrofización CML 2016; "
+        "agua consuntiva y energía primaria con factores genéricos de screening. "
+        "Los consumos manuales (electricidad, gas, diésel, agua y residuo) usan "
+        "factores documentados en el código del motor.");
+    ImGui::TextWrapped(
+        "4. Unidad funcional: si se define una cantidad de producto (kg/h), todos "
+        "los indicadores y masas se expresan por kg de producto. La UF también se "
+        "aplica a los consumos manuales y a las exportaciones.");
+    ImGui::TextWrapped(
+        "5. Exportación: 'To GaBi (CSV)' genera un mapeo de intercambio por especie "
+        "(no un plan nativo de GaBi). 'To Excel (CSV)' añade BOM UTF-8 para Excel y "
+        "'JSON' produce un dataset neutro para otras herramientas LCA.");
+    ImGui::Spacing();
+    ImGui::TextDisabled(tr("Los flujos de energía del flowsheet se ignoran; decláralos en Manuales."));
+}
+
+void PanelLCA::dibujar_catalogo() {
+    // Encabezado doble estilo HSC LCA Evaluation: "Flows" | "Keyword Search"
+    ImGui::Columns(2, "##LCAFlowSearchSplit", true);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() * 0.68f);
+
+    ImGui::TextColored(ImVec4(0.18f, 0.24f, 0.34f, 1.0f), "Flows");
+    ImGui::Separator();
+
+    const std::string consulta = minusculas(busqueda_catalogo_);
+    std::map<std::string, std::vector<const motores::EquivalenteLCA*>> grupos;
+    for (const auto& e : motores::LCA::catalogo()) {
+        if (!consulta.empty() && !coincide(e.nombre, consulta) &&
+            !coincide(e.id, consulta) && !coincide(e.grupo, consulta)) {
+            continue;
+        }
+        grupos[e.grupo].push_back(&e);
+    }
+
+    ImGui::BeginChild("lca_catalogo_arbol", ImVec2(0, -145.0f), false);
+
+    // Árbol jerárquico GaBi / ecoinvent idéntico a la captura de HSC LCA Evaluation
+    if (ImGui::TreeNodeEx("Deposited goods", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        for (const auto& [grupo, entradas] : grupos) {
+            if (grupo.find("Residuo") == std::string::npos && grupo.find("Slag") == std::string::npos) continue;
+            for (const auto* e : entradas) {
+                if (ImGui::Selectable(e->nombre.c_str(), equivalente_sel_ == e->id)) {
+                    equivalente_sel_ = e->id;
+                    grupo_sel_ = e->grupo;
+                }
+            }
+        }
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Emissions to agricultural soil", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        ImGui::TextDisabled("Heavy metals to agricultural soil");
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Emissions to air", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        const char* sub_air[] = {
+            "ecoinvent long-term to air",
+            "Heavy metals to air",
+            "Inorganic emissions to air",
+            "Organic emissions to air (group VOC)",
+            "Other emissions to air",
+            "Particles to air",
+            "Radioactive emissions to air"
+        };
+        for (int s = 0; s < 7; ++s) {
+            if (ImGui::TreeNodeEx(sub_air[s], (s == 2) ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
+                for (const auto& e : motores::LCA::catalogo()) {
+                    if (!consulta.empty() && !coincide(e.nombre, consulta) && !coincide(e.id, consulta)) continue;
+                    if (ImGui::Selectable(e.nombre.c_str(), equivalente_sel_ == e.id)) {
+                        equivalente_sel_ = e.id;
+                        grupo_sel_ = e.grupo;
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Emissions to fresh water", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        for (const auto& e : motores::LCA::catalogo()) {
+            if (ImGui::Selectable(e.nombre.c_str(), equivalente_sel_ == e.id)) {
+                equivalente_sel_ = e.id;
+                grupo_sel_ = e.grupo;
+            }
+        }
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Emissions to industrial soil", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Emissions to sea water", ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        ImGui::TreePop();
+    }
+    if (ImGui::TreeNodeEx("Others", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        for (const auto& [grupo, entradas] : grupos) {
+            if (!ImGui::TreeNodeEx(grupo.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) continue;
+            for (const auto* e : entradas) {
+                const bool seleccionado = equivalente_sel_ == e->id;
+                if (ImGui::Selectable(e->nombre.c_str(), seleccionado)) {
+                    equivalente_sel_ = e->id;
+                    grupo_sel_ = e->grupo;
+                }
+            }
+            ImGui::TreePop();
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::EndChild();
+
+    ImGui::NextColumn();
+    const auto tk_cat = css::tokens();
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk_cat.text_primary), "Keyword Search");
+    ImGui::Separator();
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::InputTextWithHint("##buscar_catalogo", "Keyword...", busqueda_catalogo_, sizeof(busqueda_catalogo_));
+    ImGui::Spacing();
+    ImGui::Checkbox("Apply to species", &aplicar_a_especie_);
+    if (ImGui::Button("Clear row mapping", ImVec2(-1, 0)) &&
+        fila_sel_ >= 0 && fila_sel_ < static_cast<int>(filas_.size())) {
+        filas_[static_cast<size_t>(fila_sel_)].equivalente = kNoMapeado;
+        calcular();
+    }
+    ImGui::Columns(1);
+
+    // Cuadro inferior de metadatos idéntico a la esquina inferior derecha de HSC LCA Evaluation
+    ImGui::Separator();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, tk_cat.card_bg);
+    ImGui::BeginChild("##LCAMetadataBox", ImVec2(0, 0), true);
+    if (const auto* e = motor_.buscar_equivalente(equivalente_sel_)) {
+        ImGui::Text("Name: %s (%s)", e->nombre.c_str(), e->id.c_str());
+        ImGui::TextWrapped("Category: \\Flows\\%s\\%s", e->grupo.c_str(), e->nombre.c_str());
+        ImGui::Text("Unit: %s", e->unidad.c_str());
+        ImGui::Text("Reference Quantity: Mass / Standard Flow (%s)", e->fuente.c_str());
+        ImGui::Text("Energy Quantity: %.4g MJ/%s", e->energia, e->unidad.c_str());
+        ImGui::Text("Conversion Factor: GWP100 = %.4g kg CO2-eq | AP = %.4g kg SO2-eq | EP = %.4g kg PO4-eq",
+                    e->gwp, e->ap, e->ep);
+    } else {
+        ImGui::Text("Name: name");
+        ImGui::TextWrapped("Category: \\Flow hierarchy level 1\\Flow hierarchy level 2\\Flow hierarchy level 3\\Flow hierarchy level 4\\Flow hierarchy level 5");
+        ImGui::Text("Unit: unit");
+        ImGui::Text("Reference Quantity: reference quantity");
+        ImGui::Text("Energy Quantity: energy quantity");
+        ImGui::Text("Conversion Factor: conversion factor");
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 void PanelLCA::renderizar(diagrama_flujo::Flowsheet* flowsheet) {
-    if (!flowsheet) {
+    css::ScopedHSCTheme hsc_theme;
+
+    if (flowsheet == nullptr) {
         ImGui::Text(tr("Cargue una simulación para evaluar LCA."));
         return;
     }
-    
-    inicializar_flujos(flowsheet);
-
-    // ── Barra de menú superior estilo CAD ──
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 6));
-    if (ImGui::Button(tr("Guardar"))) {
-        for (auto& m : mapeos_) {
-            auto* f = flowsheet->flujo_por_id(m.stream_id);
-            if (f) {
-                f->lca_equivalent = m.lca_equivalent;
-                f->lca_group = m.lca_group;
-            }
-        }
-        ImGui::OpenPopup("lca_saved");
-    }
-    if (ImGui::BeginPopup("lca_saved")) {
-        ImGui::Text(tr("Mappings saved to flowsheet streams!"));
-        if (ImGui::Button(tr("Cerrar"))) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
-    }
-    
-    ImGui::SameLine();
-    if (ImGui::Button(tr("Refrescar"))) {
-        cargado_inicial_ = false;
-        inicializar_flujos(flowsheet);
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Reload streams from the flowsheet"));
-
-    ImGui::SameLine();
-    if (ImGui::Button(tr("Normalize"))) {
-        if (fila_seleccionada_ >= 0 && fila_seleccionada_ < (int)mapeos_.size()) {
-            double val = mapeos_[fila_seleccionada_].flow_value;
-            if (val > 0.0) {
-                factor_normalizacion_ = 1.0 / val;
-                normalizado_ = true;
-                calcular_impacto();
-            }
-        }
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Normalizar flujos basándose en la corriente seleccionada (Functional Unit = 1.0)");
-    
-    ImGui::SameLine();
-    if (ImGui::Button(tr("Reset Norm"))) {
-        factor_normalizacion_ = 1.0;
-        normalizado_ = false;
-        calcular_impacto();
+    if (!cargado_ || fs_actual_ != flowsheet) {
+        cargar_flujos(flowsheet);
     }
 
-    ImGui::SameLine();
-    if (ImGui::Button(tr("To GaBi"))) {
-        FILE* zenity = adapters::dialog_pipe("zenity --file-selection --save --confirm-overwrite --file-filter='*.xml' --title='Exportar a GaBi Plan'");
-        if (zenity) {
-            char path[512] = {0};
-            if (fgets(path, sizeof(path), zenity)) {
-                std::string path_str(path);
-                if (!path_str.empty() && path_str.back() == '\n') path_str.pop_back();
-                if (path_str.find(".xml") == std::string::npos) path_str += ".xml";
-                
-                FILE* fp = fopen(path_str.c_str(), "w");
-                if (fp) {
-                    fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-                    fprintf(fp, "<GaBiPlan version=\"8.7\" name=\"HSC Sim Exported Plan\">\n");
-                    fprintf(fp, "  <Flows>\n");
-                    for (auto& m : mapeos_) {
-                        if (m.lca_equivalent != "No Mapping") {
-                            fprintf(fp, "    <Flow name=\"%s\" gabiEquivalent=\"%s\" group=\"%s\" flowValue=\"%.6f\" unit=\"%s\"/>\n",
-                                    m.stream_name.c_str(), m.lca_equivalent.c_str(), m.lca_group.c_str(), m.flow_value * factor_normalizacion_, m.unit.c_str());
-                        }
-                    }
-                    fprintf(fp, "  </Flows>\n");
-                    fprintf(fp, "  <ManualInputs electricity_kWh=\"%.2f\" fuel_kg=\"%.2f\" water_m3=\"%.2f\"/>\n",
-                            manual_electricidad_, manual_combustible_, manual_agua_);
-                    fprintf(fp, "  <Indicators carbonFootprint_kgCO2eq=\"%.2f\" primaryEnergy_MJ=\"%.2f\" solidWaste_kg=\"%.2f\"/>\n",
-                            resultado_huella_, resultado_energia_, resultado_residuos_);
-                    fprintf(fp, "</GaBiPlan>\n");
-                    fclose(fp);
-                }
-            }
-            fclose(zenity);
-        }
-    }
-    
-    ImGui::SameLine();
-    if (ImGui::Button(tr("To Excel"))) {
-        FILE* zenity = adapters::dialog_pipe("zenity --file-selection --save --confirm-overwrite --file-filter='*.csv' --title='Exportar a Excel (CSV)'");
-        if (zenity) {
-            char path[512] = {0};
-            if (fgets(path, sizeof(path), zenity)) {
-                std::string path_str(path);
-                if (!path_str.empty() && path_str.back() == '\n') path_str.pop_back();
-                if (path_str.find(".csv") == std::string::npos) path_str += ".csv";
-                
-                FILE* fp = fopen(path_str.c_str(), "w");
-                if (fp) {
-                    fprintf(fp, "LCA Evaluation Dataset,Normalized,Factor:;%.6f\n", factor_normalizacion_);
-                    fprintf(fp, "Unit Name,Stream Name,Flow Value,Unit,Lca Equivalent,Lca Group,Direction\n");
-                    for (auto& m : mapeos_) {
-                        fprintf(fp, "\"%s\",\"%s\",%.6f,\"%s\",\"%s\",\"%s\",\"%s\"\n",
-                                m.unit_name.c_str(), m.stream_name.c_str(), m.flow_value * factor_normalizacion_, m.unit.c_str(), m.lca_equivalent.c_str(), m.lca_group.c_str(), m.es_entrada ? "Input" : "Output");
-                    }
-                    fprintf(fp, "\nManual Inputs / Outputs\n");
-                    fprintf(fp, "Indicator,Value,Unit\n");
-                    fprintf(fp, "Electricity,%.2f,kWh\n", manual_electricidad_);
-                    fprintf(fp, "Fuel,%.2f,kg\n", manual_combustible_);
-                    fprintf(fp, "Water,%.2f,m3\n", manual_agua_);
-                    fprintf(fp, "\nEnvironmental Impacts Summary\n");
-                    fprintf(fp, "Carbon Footprint,%.2f,kg CO2-equiv\n", resultado_huella_);
-                    fprintf(fp, "Solid Waste,%.2f,kg\n", resultado_residuos_);
-                    fclose(fp);
-                }
-            }
-            fclose(zenity);
-        }
-    }
-    ImGui::PopStyleVar();
-    ImGui::Separator();
-    ImGui::Spacing();
+    dibujar_toolbar(flowsheet);
 
-    // ── Grid split ──
-    ImGui::Columns(2, "lca_panel_split", true);
-    
-    // Ancho inicial de columnas
-    static bool init_w = true;
-    if (init_w) {
-        ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() * 0.65f);
-        init_w = false;
+    const float ancho_split = ImGui::GetContentRegionAvail().x;
+    ImGui::Columns(2, "lca_split", true);
+    static bool lca_columnas_inicializadas = false;
+    if (!lca_columnas_inicializadas && ancho_split > 100.0f) {
+        ImGui::SetColumnWidth(0, ancho_split * 0.62f);
+        ImGui::SetColumnWidth(1, ancho_split * 0.38f);
+        lca_columnas_inicializadas = true;
     }
 
-    // ── Columna Izquierda: Tabla y Pestañas ──
-    ImGui::BeginChild("left_pane_lca");
-    {
-        if (mapeos_.empty()) {
-            ImGui::TextColored(cma::interfaz::AdaptiveColor(0.9f, 0.4f, 0.4f, 1.0f), "Warning: No streams found in active page.");
-            ImGui::TextWrapped(tr("Please draw some streams in the active flowsheet page to allow mapping."));
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-        }
-
-        if (ImGui::BeginTabBar("lca_tabs")) {
-            // Pestaña INPUTS
-            if (ImGui::BeginTabItem(tr("Entradas"))) {
-                if (ImGui::BeginTable("inputs_table", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(0, 240))) {
-                    ImGui::TableSetupColumn("Unidad", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                    ImGui::TableSetupColumn("Corriente", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-                    ImGui::TableSetupColumn("Flujo", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                    ImGui::TableSetupColumn("Unidad", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-                    ImGui::TableSetupColumn("Lca Equivalent", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-                    ImGui::TableSetupColumn("Lca Group", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                    ImGui::TableHeadersRow();
-                    
-                    int idx = 0;
-                    for (auto& m : mapeos_) {
-                        if (m.es_entrada) {
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
-                            
-                            bool sel = (fila_seleccionada_ == idx);
-                            if (ImGui::Selectable(m.unit_name.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns)) {
-                                fila_seleccionada_ = idx;
-                            }
-                            
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.stream_name.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%.4f"), m.flow_value * factor_normalizacion_);
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.unit.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.lca_equivalent.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.lca_group.c_str());
-                        }
-                        idx++;
-                    }
-                    ImGui::EndTable();
-                }
-                ImGui::EndTabItem();
-            }
-
-            // Pestaña OUTPUTS
-            if (ImGui::BeginTabItem(tr("Salidas"))) {
-                if (ImGui::BeginTable("outputs_table", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(0, 240))) {
-                    ImGui::TableSetupColumn("Unidad", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                    ImGui::TableSetupColumn("Corriente", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-                    ImGui::TableSetupColumn("Flujo", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                    ImGui::TableSetupColumn("Unidad", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-                    ImGui::TableSetupColumn("Lca Equivalent", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-                    ImGui::TableSetupColumn("Lca Group", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                    ImGui::TableHeadersRow();
-                    
-                    int idx = 0;
-                    for (auto& m : mapeos_) {
-                        if (!m.es_entrada) {
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
-                            
-                            bool sel = (fila_seleccionada_ == idx);
-                            if (ImGui::Selectable(m.unit_name.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns)) {
-                                fila_seleccionada_ = idx;
-                            }
-                            
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.stream_name.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%.4f"), m.flow_value * factor_normalizacion_);
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.unit.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.lca_equivalent.c_str());
-                            ImGui::TableNextColumn(); ImGui::Text(tr("%s"), m.lca_group.c_str());
-                        }
-                        idx++;
-                    }
-                    ImGui::EndTable();
-                }
-                ImGui::EndTabItem();
-            }
-
-            // Pestaña MANUAL INPUTS
-            if (ImGui::BeginTabItem(tr("Manual Inputs"))) {
-                ImGui::Spacing();
-                ImGui::Text(tr("Consumos auxiliares directos:"));
-                ImGui::Separator();
-                if (ImGui::InputDouble("Electricidad Directa (kWh)", &manual_electricidad_)) calcular_impacto();
-                if (ImGui::InputDouble("Combustible Diésel (kg)", &manual_combustible_)) calcular_impacto();
-                if (ImGui::InputDouble("Consumo Agua de Proceso (m³)", &manual_agua_)) calcular_impacto();
-                ImGui::EndTabItem();
-            }
-
-            // Pestaña INDICATORS (Gráficos)
-            if (ImGui::BeginTabItem(tr("Indicators"))) {
-                calcular_impacto();
-                
-                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.2f,0.8f,0.6f,1), "Carbon Footprint: %.2f kg CO₂-equiv", resultado_huella_);
-                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.9f,0.6f,0.2f,1), "Primary Energy Demand: %.1f MJ", resultado_energia_);
-                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f,0.4f,0.8f,1), "Solid Waste: %.1f kg", resultado_residuos_);
-                
-                double vals[3] = {resultado_huella_, resultado_energia_ * 0.1, resultado_residuos_};
-                const char* labels[3] = {"CO₂eq (kg)", "Energía (MJ×0.1)", "Residuos (kg)"};
-                if (ImPlot::BeginPlot("LCA Indicators", ImVec2(-1, 150), ImPlotFlags_NoTitle)) {
-                    ImPlot::SetupAxes("Impacto", "Escala");
-                    ImPlot::SetupAxesLimits(-0.5, 2.5, 0, std::max({vals[0], vals[1], vals[2]}) * 1.2);
-                    for (int i = 0; i < 3; i++) {
-                        ImPlot::PlotBars(labels[i], &vals[i], 1, 0.4, i - 0.2);
-                    }
-                    ImPlot::EndPlot();
-                }
-                ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
-        
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-        
-        // Botón Apply Mapping
-        if (ImGui::Button(tr("Aplicar Mapeo"), ImVec2(-1, 26))) {
-            if (fila_seleccionada_ >= 0 && fila_seleccionada_ < (int)mapeos_.size() && !nodo_arbol_seleccionado_.empty()) {
-                auto& m = mapeos_[fila_seleccionada_];
-                m.lca_equivalent = nodo_arbol_seleccionado_;
-                m.lca_group = cat_path_;
-                
-                auto* f = flowsheet->flujo_por_id(m.stream_id);
-                if (f) {
-                    f->lca_equivalent = m.lca_equivalent;
-                    f->lca_group = m.lca_group;
-                }
-                calcular_impacto();
-            }
-        }
-    }
-    ImGui::EndChild();
-    
-    ImGui::NextColumn();
-
-    // ── Columna Derecha: Árbol de categorías GaBi ──
-    ImGui::BeginChild("right_pane_lca");
-    {
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.6f,0.7f,0.9f,1), "Flows Database (GaBi)");
-        ImGui::Separator();
-        
-        auto render_leaf = [&](const char* name, const char* path, const char* unit, const char* ref_q, double conv) {
-            bool is_selected = (nodo_arbol_seleccionado_ == name);
-            if (ImGui::Selectable(name, is_selected)) {
-                nodo_arbol_seleccionado_ = name;
-                cat_nombre_ = name;
-                cat_path_ = path;
-                cat_unit_ = unit;
-                cat_ref_q_ = ref_q;
-                cat_conv_f_ = conv;
-            }
+    ImGui::BeginChild("lca_izquierda", ImVec2(0, 0), true);
+    if (ImGui::BeginTabBar("lca_tabs")) {
+        auto tab_flags = [&](int idx) -> ImGuiTabItemFlags {
+            return (pestana_forzada_ == idx) ? ImGuiTabItemFlags_SetSelected : 0;
         };
 
-        if (ImGui::TreeNode(tr("Bienes depositados"))) {
-            render_leaf("Slag landfill - GaBi", "Deposited goods", "kg", "1 kg", 1.0);
-            render_leaf("Fly ash disposal - ecoinvent", "Deposited goods", "kg", "1 kg", 1.0);
-            render_leaf("Tailings deposition - GaBi", "Deposited goods", "kg", "1 kg", 1.0);
-            ImGui::TreePop();
+        if (ImGui::BeginTabItem("Inputs", nullptr, tab_flags(0))) {
+            dibujar_tabla(true);
+            ImGui::EndTabItem();
         }
-
-        if (ImGui::TreeNode(tr("Emisiones al aire"))) {
-            if (ImGui::TreeNode(tr("Greenhouse gases"))) {
-                render_leaf("CO2 (fossil) - ecoinvent", "Emissions to air", "kg", "1 kg", 1.0);
-                render_leaf("CH4 (methane) - ecoinvent", "Emissions to air", "kg", "1 kg", 28.0);
-                render_leaf("N2O (nitrous oxide) - ecoinvent", "Emissions to air", "kg", "1 kg", 265.0);
-                ImGui::TreePop();
-            }
-            if (ImGui::TreeNode(tr("Acidification gases"))) {
-                render_leaf("SO2 (sulfur dioxide) - GaBi", "Emissions to air", "kg", "1 kg", 1.0);
-                render_leaf("NOx (nitrogen oxides) - GaBi", "Emissions to air", "kg", "1 kg", 1.0);
-                ImGui::TreePop();
-            }
-            ImGui::TreePop();
+        if (ImGui::BeginTabItem("Outputs", nullptr, tab_flags(1))) {
+            dibujar_tabla(false);
+            ImGui::EndTabItem();
         }
-
-        if (ImGui::TreeNode(tr("Emisiones a agua dulce"))) {
-            render_leaf("Heavy metals to water - GaBi", "Emissions to fresh water", "kg", "1 kg", 1.0);
-            render_leaf("Nitrates / Phosphates - ecoinvent", "Emissions to fresh water", "kg", "1 kg", 1.0);
-            ImGui::TreePop();
+        if (ImGui::BeginTabItem("Manual Inputs", nullptr, tab_flags(2))) {
+            dibujar_manuales();
+            ImGui::EndTabItem();
         }
-
-        if (ImGui::TreeNode(tr("Resources"))) {
-            render_leaf("Copper ore resource - GaBi", "Resources", "kg", "1 kg", 1.0);
-            render_leaf("Iron ore resource - GaBi", "Resources", "kg", "1 kg", 1.0);
-            render_leaf("Water intake - ecoinvent", "Resources", "kg", "1 kg", 1.0);
-            render_leaf("Electricity (cradle-to-gate) - GaBi", "Resources", "kWh", "1 kWh", 1.0);
-            ImGui::TreePop();
+        if (ImGui::BeginTabItem("Manual Outputs", nullptr, tab_flags(3))) {
+            dibujar_manuales();
+            ImGui::EndTabItem();
         }
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        
-        // Detalles de categoría seleccionada
-        ImGui::Text(tr("Category Details:"));
-        ImGui::TextDisabled(tr("Name: %s"), cat_nombre_.c_str());
-        ImGui::TextDisabled(tr("Path: %s"), cat_path_.c_str());
-        ImGui::TextDisabled(tr("Unit: %s"), cat_unit_.c_str());
-        ImGui::TextDisabled(tr("Ref Quantity: %s"), cat_ref_q_.c_str());
-        ImGui::TextDisabled(tr("Conv Factor: %.1f"), cat_conv_f_);
+        if (ImGui::BeginTabItem("Indicators", nullptr, tab_flags(4))) {
+            dibujar_indicadores();
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Diagnostics")) {
+            dibujar_validacion();
+            ImGui::EndTabItem();
+        }
+        pestana_forzada_ = -1;
+        ImGui::EndTabBar();
     }
     ImGui::EndChild();
-    
+
+    ImGui::NextColumn();
+    ImGui::BeginChild("lca_derecha", ImVec2(0, 0), true);
+    dibujar_catalogo();
+    ImGui::EndChild();
     ImGui::Columns(1);
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Panel de Datos / DataFitter
-// ═══════════════════════════════════════════════════════════════════════════
-void PanelDatosANN::renderizar() {
-    ImGui::Text(tr("Ajuste de Curvas (DataFitter)"));
-    ImGui::Separator();
-
-    ImGui::InputText(tr("X (comma-sep)"), entrada_1_, sizeof(entrada_1_));
-    ImGui::InputText(tr("Y (comma-sep)"), entrada_2_, sizeof(entrada_2_));
-
-    static int grado_poly = 2;
-    ImGui::InputInt("Grado polinomio", &grado_poly);
-    if (grado_poly < 1) grado_poly = 1;
-    if (grado_poly > 10) grado_poly = 10;
-
-    auto parsear_csv = [](const std::string& s) {
-        std::vector<double> v;
-        std::stringstream ss(s);
-        std::string token;
-        while (std::getline(ss, token, ',')) {
-            if (token.empty()) continue;
-            try { v.push_back(std::stod(token)); }
-            catch (...) { v.push_back(0.0); }
+    if (mostrar_ayuda_) {
+        ImGui::SetNextWindowSize(ImVec2(560, 420), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin(tr("Ayuda - Evaluación LCA"), &mostrar_ayuda_)) {
+            dibujar_ayuda();
         }
-        return v;
-    };
-
-    if (ImGui::Button(tr("Ajuste Lineal"), ImVec2(-1, 25))) {
-        std::vector<double> x = parsear_csv(entrada_1_), y = parsear_csv(entrada_2_);
-        if (x.size() == y.size() && x.size() >= 2) {
-            cma::application::modules::DataFitter fitter;
-            res_fit_ = fitter.lineal(x, y);
-            entrenado_ = res_fit_.ok;
-            datos_x_ = x;
-            datos_y_ = y;
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(tr("Ajuste Polinomial"), ImVec2(-1, 25))) {
-        std::vector<double> x = parsear_csv(entrada_1_), y = parsear_csv(entrada_2_);
-        if (x.size() == y.size() && grado_poly >= 0 && x.size() >= static_cast<size_t>(grado_poly + 1)) {
-            cma::application::modules::DataFitter fitter;
-            res_fit_ = fitter.polinomial(x, y, grado_poly);
-            entrenado_ = res_fit_.ok;
-            datos_x_ = x;
-            datos_y_ = y;
-        }
+        ImGui::End();
     }
 
-    if (entrenado_) {
-        ImGui::Separator();
-        ImGui::Text(tr("R² = %.6f"), res_fit_.r_cuadrado);
-        ImGui::Text(tr("Coeficientes:"));
-        for (size_t i = 0; i < res_fit_.coeficientes.size(); i++)
-            ImGui::Text(tr("  a%d = %.6f"), (int)i, res_fit_.coeficientes[i]);
-
-        if (datos_x_.size() > 1 && !res_fit_.coeficientes.empty()) {
-            if (ImPlot::BeginPlot("Ajuste", ImVec2(-1, 280), ImPlotFlags_NoTitle)) {
-                ImPlot::SetupAxes("X", "Y");
-                double xmin = *std::min_element(datos_x_.begin(), datos_x_.end());
-                double xmax = *std::max_element(datos_x_.begin(), datos_x_.end());
-                double ymin = *std::min_element(datos_y_.begin(), datos_y_.end());
-                double ymax = *std::max_element(datos_y_.begin(), datos_y_.end());
-                double margin = (ymax - ymin) * 0.2;
-                ImPlot::SetupAxesLimits(xmin - margin*0.5, xmax + margin*0.5, ymin - margin, ymax + margin);
-                ImPlot::PlotScatter("Datos", datos_x_.data(), datos_y_.data(), (int)datos_x_.size());
-
-                int n_curve = 100;
-                std::vector<double> fx(n_curve), fy(n_curve);
-                for (int i = 0; i < n_curve; i++) {
-                    fx[i] = xmin + (xmax - xmin) * i / (n_curve - 1);
-                    fy[i] = 0;
-                    double xp = 1.0;
-                    for (auto& c : res_fit_.coeficientes) {
-                        fy[i] += c * xp;
-                        xp *= fx[i];
-                    }
-                }
-                ImPlot::PlotLine("Ajuste", fx.data(), fy.data(), n_curve);
-                ImPlot::EndPlot();
+    if (mostrar_validacion_) {
+        ImGui::OpenPopup(tr("Validación del dataset LCA"));
+        mostrar_validacion_ = false;
+    }
+    if (ImGui::BeginPopupModal(tr("Validación del dataset LCA"), nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+        dibujar_validacion();
+        ImGui::Spacing();
+        if (export_pendiente_ != 0) {
+            ImGui::TextColored(color_aviso(),
+                               tr("Hay filas sin mapear o el balance de masa no cierra."));
+            if (ImGui::Button(tr("Exportar de todos modos"))) {
+                const int tipo = export_pendiente_;
+                export_pendiente_ = 0;
+                ImGui::CloseCurrentPopup();
+                if (tipo == 1) exportar_gabi(false);
+                else if (tipo == 2) exportar_gabi(true);
+                else exportar_json();
             }
-        }
-
-        if (!res_fit_.mensaje.empty())
-            ImGui::TextWrapped(tr("%s"), res_fit_.mensaje.c_str());
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Panel de Gráficos 3D
-// ═══════════════════════════════════════════════════════════════════════════
-
-void PanelGrafico3D::generar_datos_ejemplo() {
-    data_x_.clear(); data_y_.clear(); data_z_.clear();
-    // Superficie: z = sin(r)/r (sinc)
-    int n = 30;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            float x = -3.0f + 6.0f * i / (n-1);
-            float y = -3.0f + 6.0f * j / (n-1);
-            float r = std::sqrt(x*x + y*y);
-            float z = (r > 0.01f) ? std::sin(r)/r : 1.0f;
-            data_x_.push_back(x);
-            data_y_.push_back(y);
-            data_z_.push_back(z);
-        }
-    }
-    datos_generados_ = true;
-}
-
-ImVec3 PanelGrafico3D::proyectar(float x, float y, float z, const ImVec2& centro, float escala) const {
-    float sx = -std::sin(ang_y_);
-    float sy = std::cos(ang_y_);
-    float cz = std::cos(ang_x_);
-    float sz = std::sin(ang_x_);
-
-    float rx = x * cz - z * sz;
-    float ry = y;
-    float rz = x * sz + z * cz;
-
-    float px = rx * sy + ry * sx;
-    float py = -rx * sx + ry * sy;
-    float pz = rz + distancia_;
-
-    if (pz < 0.1f) pz = 0.1f;
-    float f = escala * 2.0f / pz;
-    return ImVec3(centro.x + px * f, centro.y - py * f, pz);
-}
-
-void PanelGrafico3D::renderizar() {
-    if (!datos_generados_) generar_datos_ejemplo();
-
-    ImGui::Text(tr("Gráfico 3D"));
-    ImGui::Separator();
-
-    ImGui::SliderFloat("Rotación X", &ang_x_, -3.14f, 3.14f, "%.2f");
-    ImGui::SliderFloat("Rotación Y", &ang_y_, -3.14f, 3.14f, "%.2f");
-    ImGui::SliderFloat("Distancia", &distancia_, 1.0f, 20.0f, "%.1f");
-    ImGui::Checkbox(tr("Auto-rotar"), &auto_rotar_);
-    ImGui::SameLine();
-    ImGui::Combo("Tipo", &tipo_grafico_, "Superficie\0Líneas\0Puntos\0Contorno\0");
-
-    if (auto_rotar_) {
-        ang_y_ += ImGui::GetIO().DeltaTime * 0.5f;
-    }
-
-    ImVec2 area = ImGui::GetContentRegionAvail();
-    float lado = std::min(area.x, area.y);
-    ImVec2 centro(area.x * 0.5f, 60.0f + lado * 0.5f);
-    float escala = lado * 0.25f;
-
-    ImDrawList* draw = ImGui::GetWindowDrawList();
-
-    // Fondo
-    draw->AddRectFilled(ImVec2(0, 50), ImVec2(area.x, 50 + lado),
-                        IM_COL32(15,15,22,255), 4);
-
-    // Ejes
-    ImVec3 ox = proyectar(4,0,0,centro,escala);
-    ImVec3 oy = proyectar(0,4,0,centro,escala);
-    ImVec3 oz = proyectar(0,0,4,centro,escala);
-    ImVec3 oo = proyectar(0,0,0,centro,escala);
-
-    draw->AddLine(ImVec2(oo.x,oo.y), ImVec2(ox.x,ox.y), IM_COL32(255,80,80,200), 2);
-    draw->AddLine(ImVec2(oo.x,oo.y), ImVec2(oy.x,oy.y), IM_COL32(80,255,80,200), 2);
-    draw->AddLine(ImVec2(oo.x,oo.y), ImVec2(oz.x,oz.y), IM_COL32(80,80,255,200), 2);
-
-    if (tipo_grafico_ == 0 || tipo_grafico_ == 3) {
-        // Superficie / Contorno
-        int n = (int)std::sqrt((float)data_x_.size());
-        if (n > 1) {
-            for (int i = 0; i < n-1; i++) {
-                for (int j = 0; j < n-1; j++) {
-                    int idx = i * n + j;
-                    ImVec3 p1 = proyectar(data_x_[idx], data_y_[idx], data_z_[idx], centro, escala);
-                    ImVec3 p2 = proyectar(data_x_[idx+1], data_y_[idx+1], data_z_[idx+1], centro, escala);
-                    ImVec3 p3 = proyectar(data_x_[idx+n], data_y_[idx+n], data_z_[idx+n], centro, escala);
-                    ImVec3 p4 = proyectar(data_x_[idx+n+1], data_y_[idx+n+1], data_z_[idx+n+1], centro, escala);
-
-                    float val = (data_z_[idx] + data_z_[idx+n] + data_z_[idx+n+1] + data_z_[idx]) * 0.25f;
-                    int r = (int)(128 + 127 * std::max(-1.0f, std::min(1.0f, val)));
-                    ImU32 col = IM_COL32(r, (int)(255-r*0.5f), (int)(255-r), 180);
-
-                    if (tipo_grafico_ == 0) {
-                        draw->AddTriangleFilled(ImVec2(p1.x,p1.y), ImVec2(p2.x,p2.y), ImVec2(p3.x,p3.y), col);
-                        draw->AddTriangleFilled(ImVec2(p2.x,p2.y), ImVec2(p4.x,p4.y), ImVec2(p3.x,p3.y), col);
-                    }
-                    draw->AddTriangle(ImVec2(p1.x,p1.y), ImVec2(p2.x,p2.y), ImVec2(p3.x,p3.y), IM_COL32(60,60,80,80), 1);
-                    draw->AddTriangle(ImVec2(p2.x,p2.y), ImVec2(p4.x,p4.y), ImVec2(p3.x,p3.y), IM_COL32(60,60,80,80), 1);
-                }
+            ImGui::SameLine();
+            if (ImGui::Button(tr("Cancelar"))) {
+                export_pendiente_ = 0;
+                ImGui::CloseCurrentPopup();
             }
+        } else {
+            if (ImGui::Button(tr("Cerrar"))) ImGui::CloseCurrentPopup();
         }
-    } else if (tipo_grafico_ == 1) {
-        // Líneas (isolinhas)
-        int n = (int)std::sqrt((float)data_x_.size());
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n-1; j++) {
-                int idx = i * n + j;
-                ImVec3 p1 = proyectar(data_x_[idx], data_y_[idx], data_z_[idx], centro, escala);
-                ImVec3 p2 = proyectar(data_x_[idx+1], data_y_[idx+1], data_z_[idx+1], centro, escala);
-                draw->AddLine(ImVec2(p1.x,p1.y), ImVec2(p2.x,p2.y), IM_COL32(100,200,255,120), 1);
-            }
-        }
-        for (int j = 0; j < n; j++) {
-            for (int i = 0; i < n-1; i++) {
-                int idx = i * n + j;
-                ImVec3 p1 = proyectar(data_x_[idx], data_y_[idx], data_z_[idx], centro, escala);
-                ImVec3 p2 = proyectar(data_x_[idx+n], data_y_[idx+n], data_z_[idx+n], centro, escala);
-                draw->AddLine(ImVec2(p1.x,p1.y), ImVec2(p2.x,p2.y), IM_COL32(100,200,255,120), 1);
-            }
-        }
-    } else {
-        // Puntos
-        for (size_t i = 0; i < data_x_.size(); i++) {
-            ImVec3 p = proyectar(data_x_[i], data_y_[i], data_z_[i], centro, escala);
-            float val = data_z_[i];
-            int r = (int)(128 + 127 * std::max(-1.0f, std::min(1.0f, val)));
-            ImU32 col = IM_COL32(r, 200-r, 255-r, 200);
-            draw->AddCircleFilled(ImVec2(p.x,p.y), 3, col);
-        }
+        ImGui::EndPopup();
     }
-
-    // Leyenda de ejes
-    draw->AddText(ImVec2(ox.x+4,ox.y-6), IM_COL32(255,120,120,200), "X");
-    draw->AddText(ImVec2(oy.x+4,oy.y-6), IM_COL32(120,255,120,200), "Y");
-    draw->AddText(ImVec2(oz.x+4,oz.y-6), IM_COL32(120,120,255,200), "Z");
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-
-}} // namespace
+}} // namespace cma::interfaz

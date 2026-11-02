@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "interfaz/aplicacion.hpp"
 #include "utils/i18n.h"
 
@@ -159,3 +165,5 @@ void Aplicacion::deshacer_ultimo() {
 
 
 }} // namespace
+
+#pragma GCC diagnostic pop

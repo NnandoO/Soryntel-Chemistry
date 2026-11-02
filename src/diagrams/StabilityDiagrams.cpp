@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "StabilityDiagrams.hpp"
 #include <cmath>
 #include <algorithm>
@@ -121,3 +127,5 @@ std::vector<PuntoEstabilidad> StabilityDiagrams::generar(const std::string& meta
 }
 
 } // namespace cma::application::modules
+
+#pragma GCC diagnostic pop

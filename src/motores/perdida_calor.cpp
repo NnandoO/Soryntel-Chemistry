@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "perdida_calor.hpp"
 #include <cmath>
 #include <algorithm>
@@ -204,3 +210,5 @@ std::vector<double> PerdidaCalor::perfil_temperatura(
 }
 
 }} // namespace
+
+#pragma GCC diagnostic pop

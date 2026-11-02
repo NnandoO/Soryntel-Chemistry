@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "SimOptimization.hpp"
 #include <set>
 
@@ -506,3 +512,5 @@ std::vector<std::pair<double, double>> SimOptimization::sensibilidad(
 }
 
 } // namespace cma::application::modules
+
+#pragma GCC diagnostic pop

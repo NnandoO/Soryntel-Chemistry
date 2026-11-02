@@ -14,6 +14,12 @@ double BalanceEnergia::capacidad_calorifica_flujo(const nucleo::Flujo& flujo,
         if (it != db.end())
             Cp_total += n * it->second.cp(flujo.temperatura); // kJ/(K·s)
     }
+    if (flujo.agua_kg_h > 0.0) {
+        Cp_total += (flujo.agua_kg_h / 3600.0) * 4.184;
+    }
+    for (const auto& p : flujo.particulas) {
+        Cp_total += (p.mass_kg_h / 3600.0) * 0.85;
+    }
     return Cp_total;
 }
 
@@ -33,6 +39,14 @@ double BalanceEnergia::entalpia_flujo(const nucleo::Flujo& flujo,
             desconocida.cp_a = 29.1;
             H += n * desconocida.entalpia_abs(flujo.temperatura);
         }
+    }
+    if (flujo.agua_kg_h > 0.0) {
+        double m_w_kg_s = flujo.agua_kg_h / 3600.0;
+        H += m_w_kg_s * (-15879.0 + 4.184 * (flujo.temperatura - nucleo::STP_TEMP));
+    }
+    for (const auto& p : flujo.particulas) {
+        double m_p_kg_s = p.mass_kg_h / 3600.0;
+        H += m_p_kg_s * (0.85 * (flujo.temperatura - nucleo::STP_TEMP));
     }
     return H;
 }

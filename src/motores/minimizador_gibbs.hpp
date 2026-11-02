@@ -28,7 +28,9 @@ public:
         const std::map<int64_t, nucleo::Especie>& db,
         const std::vector<int64_t>& especies_posibles = {},
         std::map<int64_t, double>* n_inout = nullptr,
-        bool modo_celda = false
+        bool modo_celda = false,
+        const std::map<int64_t, double>& coef_actividad = {},
+        const std::map<int64_t, int>& fases_especie = {}
     );
 
 private:

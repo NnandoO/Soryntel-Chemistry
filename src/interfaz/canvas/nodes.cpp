@@ -68,6 +68,9 @@ void Lienzo::renderizar_nodo(nucleo::Nodo& nodo, const ImVec2& pos) {
         nodo_arrastrando_ = nodo.id;
         clic_detectado_en_objeto_ = true;
     }
+    if (hn && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        if (al_doble_clic_nodo) al_doble_clic_nodo(nodo.id);
+    }
 
     if (nodo_arrastrando_ == nodo.id) {
         if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
@@ -134,6 +137,31 @@ void Lienzo::renderizar_nodo(nucleo::Nodo& nodo, const ImVec2& pos) {
         }
     }
 
+    // Insignia de modo de unidad HSC-Sim (P=Particles, R=Reactions, D=Distribution)
+    if (nodo.tipo != nucleo::TipoNodo::Fuente && nodo.tipo != nucleo::TipoNodo::Sumidero) {
+        int modo_u = 1; // Default Reactions
+        if (nodo.params.count("modo_sim")) {
+            modo_u = static_cast<int>(nodo.params.at("modo_sim"));
+        } else if (nodo.tipo == nucleo::TipoNodo::MolinoBolas || nodo.tipo == nucleo::TipoNodo::MolinoSAG ||
+                   nodo.tipo == nucleo::TipoNodo::MolinoBarras || nodo.tipo == nucleo::TipoNodo::TrituradoraMandibula ||
+                   nodo.tipo == nucleo::TipoNodo::TrituradoraGiratoria || nodo.tipo == nucleo::TipoNodo::TrituradoraCono ||
+                   nodo.tipo == nucleo::TipoNodo::Hidrociclon || nodo.tipo == nucleo::TipoNodo::Zaranda ||
+                   nodo.tipo == nucleo::TipoNodo::CeldaFlotacion) {
+            modo_u = 0; // Particles
+        } else if (nodo.tipo == nucleo::TipoNodo::Separador || nodo.tipo == nucleo::TipoNodo::Divisor ||
+                   nodo.tipo == nucleo::TipoNodo::Espesador || nodo.tipo == nucleo::TipoNodo::Filtro ||
+                   nodo.tipo == nucleo::TipoNodo::ColumnaDestilacion) {
+            modo_u = 2; // Distribution
+        }
+        const char* badge_lbl = (modo_u == 0) ? "P" : ((modo_u == 1) ? "R" : "D");
+        ImU32 badge_col = (modo_u == 0) ? IM_COL32(45, 165, 75, 225)
+                        : ((modo_u == 1) ? IM_COL32(45, 115, 210, 225) : IM_COL32(215, 130, 35, 225));
+        ImVec2 bmin(npos.x + 3*z, npos.y + nsz.y - 16*z);
+        ImVec2 bmax(npos.x + 16*z, npos.y + nsz.y - 3*z);
+        draw->AddRectFilled(bmin, bmax, badge_col, 3*z);
+        draw->AddText(ImVec2(bmin.x + 3*z, bmin.y + 0.5f*z), IM_COL32(255, 255, 255, 255), badge_lbl);
+    }
+
     // Indicador de estado (punto verde/amarillo)
     {
         ImVec2 centro_estado(npos.x + nsz.x - 8*z, npos.y + nsz.y - 8*z);
@@ -157,6 +185,7 @@ void Lienzo::renderizar_nodo(nucleo::Nodo& nodo, const ImVec2& pos) {
         if (!nodo.nombre.empty())
             ImGui::Text("Nombre: %s", nodo.nombre.c_str());
         ImGui::Text("Entradas: %d  Salidas: %d", nodo.num_entradas(), nodo.num_salidas());
+        ImGui::TextColored(ImVec4(0.3f, 0.7f, 1.0f, 1.0f), "Doble clic: abrir Hoja de Unidad (Input | Output | Dist | Rxn)");
 
         // Descripción del tipo de equipo
         const char* desc = descripcion_tipo_nodo(nodo.tipo);

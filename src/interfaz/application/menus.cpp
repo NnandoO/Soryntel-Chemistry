@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "interfaz/aplicacion.hpp"
 #include "utils/i18n.h"
 
@@ -55,17 +61,24 @@ void Aplicacion::menu_archivo() {
         }
 
         if (ImGui::BeginMenu(tr("Cargar ejemplo##sub"))) {
-            if (ImGui::MenuItem(tr("SMR - Reformado de Metano"), "Ctrl+E")) {
+            if (ImGui::MenuItem(tr("1. SMR - Reformado de Metano"), "Ctrl+E")) {
                 cargar_ejemplo(1);
             }
-            if (ImGui::MenuItem(tr("Flotación de Cobre"))) {
+            if (ImGui::MenuItem(tr("2. Flotación y Molienda de Cobre (Partículas)"))) {
                 cargar_ejemplo(2);
             }
-            if (ImGui::MenuItem(tr("Alto Horno de Hierro"))) {
+            if (ImGui::MenuItem(tr("3. Alto Horno de Hierro (Pirometalurgia)"))) {
                 cargar_ejemplo(3);
             }
-            if (ImGui::MenuItem(tr("SMR con Reciclo de CH₄ (Separador)"))) {
+            if (ImGui::MenuItem(tr("4. SMR con Reciclo de CH₄ (Wegstein)"))) {
                 cargar_ejemplo(4);
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("5. Proceso Bayer - Alúmina (HSC-Sim)"))) {
+                cargar_ejemplo(5);
+            }
+            if (ImGui::MenuItem(tr("6. Proceso TiO₂ por Cloración + Sankey (HSC-Sim)"))) {
+                cargar_ejemplo(6);
             }
             ImGui::EndMenu();
         }
@@ -177,6 +190,8 @@ void Aplicacion::menu_modulos() {
         ImGui::MenuItem(tr("24. Análisis Estadístico de Datos"), nullptr, &mostrar_statistical_analysis_);
         ImGui::MenuItem("25. Procesamiento mineral", nullptr, &mostrar_mineral_processing_);
         ImGui::MenuItem("26. Auditoría del catálogo", nullptr, &mostrar_catalog_audit_);
+        ImGui::MenuItem(tr("27. Dat - Data (Redes Neuronales)"), nullptr, &mostrar_datos_ann_);
+        ImGui::MenuItem(tr("28. Mat - Base de Datos de Materiales"), nullptr, &mostrar_material_db_);
         
         ImGui::EndMenu();
     }
@@ -196,3 +211,5 @@ void Aplicacion::menu_ayuda() {
 
 
 }} // namespace
+
+#pragma GCC diagnostic pop

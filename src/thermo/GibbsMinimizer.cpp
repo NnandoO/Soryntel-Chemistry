@@ -8,9 +8,11 @@ ResultadoGibbs GibbsMinimizer::minimizar(
     const std::map<int64_t, cma::nucleo::Especie>& db,
     const std::vector<int64_t>& especies_posibles,
     std::map<int64_t, double>* n_inout,
-    bool modo_celda)
+    bool modo_celda,
+    const std::map<int64_t, double>& coef_actividad,
+    const std::map<int64_t, int>& fases_especie)
 {
-    auto res = minimizador_.minimizar(alimentacion, T, P, db, especies_posibles, n_inout, modo_celda);
+    auto res = minimizador_.minimizar(alimentacion, T, P, db, especies_posibles, n_inout, modo_celda, coef_actividad, fases_especie);
     ResultadoGibbs r;
     r.flujo_molar = std::move(res.flujo_molar);
     r.energia_gibbs_total = res.energia_gibbs_total;

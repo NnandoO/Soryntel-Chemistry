@@ -1,855 +1,1120 @@
 #include "shared.hpp"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <sstream>
+
 namespace cma { namespace interfaz {
-// Panel de Balance Hoja de Cálculo
-// ═══════════════════════════════════════════════════════════════════════════
+
+namespace {
+
+const char* kModalHMB = "Buscar Especie (HMB)";
+
+ImVec4 color_ok()   { return cma::interfaz::AdaptiveColor(0.30f, 0.85f, 0.40f, 1.0f); }
+ImVec4 color_malo() { return cma::interfaz::AdaptiveColor(0.90f, 0.40f, 0.30f, 1.0f); }
+ImVec4 color_aviso(){ return cma::interfaz::AdaptiveColor(0.95f, 0.75f, 0.25f, 1.0f); }
+ImVec4 color_cabecera_corriente() {
+    return cma::interfaz::AdaptiveColor(0.85f, 0.92f, 1.00f, 1.0f);
+}
+
+} // namespace
+
+// ─────────────────────────────────────────────────────────────────────────────
 PanelBalanceHoja::PanelBalanceHoja() {
     inicializar_valores_defecto();
 }
 
+const char* PanelBalanceHoja::etiqueta_energia() const {
+    switch (energy_unit_) {
+        case 0: return "Mcal";
+        case 1: return "MJ";
+        case 2: return "kWh";
+        case 3: return "kJ";
+        case 4: return "kcal";
+        default: return "kWh";
+    }
+}
+
+const char* PanelBalanceHoja::etiqueta_temperatura() const {
+    return (temp_unit_ == 0) ? "°C" : "K";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 void PanelBalanceHoja::inicializar_valores_defecto() {
+    cargar_preset(0);
+}
+
+void PanelBalanceHoja::cargar_preset(int idx) {
+    preset_idx_ = idx;
     entradas_.clear();
     salidas_.clear();
-    
-    // Input Stream: CH4 Feed
-    StreamGroup in1;
-    strncpy(in1.nombre, "CH4 Input", sizeof(in1.nombre)-1);
-    
-    SpeciesRow ch4;
-    strncpy(ch4.formula, "CH4(g)", sizeof(ch4.formula)-1);
-    ch4.temper = 25.0;
-    ch4.pressure = 1.0;
-    ch4.amount_kmol = 3.300;
-    in1.filas.push_back(ch4);
-    entradas_.push_back(in1);
+    areas_ui_.clear();
+    area_activa_ = 0;
+    factor_escala_reactiva_ = 1.0;
 
-    // Input Stream: Combustion Air
-    StreamGroup in2;
-    strncpy(in2.nombre, "Combustion Air", sizeof(in2.nombre)-1);
-    
-    SpeciesRow o2;
-    strncpy(o2.formula, "O2(g)", sizeof(o2.formula)-1);
-    o2.temper = 25.0;
-    o2.pressure = 1.0;
-    o2.amount_kmol = 7.350;
-    in2.filas.push_back(o2);
-    
-    SpeciesRow n2;
-    strncpy(n2.formula, "N2(g)", sizeof(n2.formula)-1);
-    n2.temper = 25.0;
-    n2.pressure = 1.0;
-    n2.amount_kmol = 27.650;
-    in2.filas.push_back(n2);
-    entradas_.push_back(in2);
-
-    // Output Stream: Offgas
-    StreamGroup out1;
-    strncpy(out1.nombre, "Offgas", sizeof(out1.nombre)-1);
-    
-    SpeciesRow co2;
-    strncpy(co2.formula, "CO2(g)", sizeof(co2.formula)-1);
-    co2.temper = 350.0;
-    co2.pressure = 1.0;
-    co2.amount_kmol = 3.300;
-    out1.filas.push_back(co2);
-    
-    SpeciesRow h2o;
-    strncpy(h2o.formula, "H2O(g)", sizeof(h2o.formula)-1);
-    h2o.temper = 350.0;
-    h2o.pressure = 1.0;
-    h2o.amount_kmol = 5.900;
-    out1.filas.push_back(h2o);
-    
-    SpeciesRow n2_out;
-    strncpy(n2_out.formula, "N2(g)", sizeof(n2_out.formula)-1);
-    n2_out.temper = 350.0;
-    n2_out.pressure = 1.0;
-    n2_out.amount_kmol = 26.333;
-    out1.filas.push_back(n2_out);
-
-    SpeciesRow o2_out;
-    strncpy(o2_out.formula, "O2(g)", sizeof(o2_out.formula)-1);
-    o2_out.temper = 350.0;
-    o2_out.pressure = 1.0;
-    o2_out.amount_kmol = 0.750;
-    out1.filas.push_back(o2_out);
-
-    out1.heat_loss = 597.36;
-    salidas_.push_back(out1);
-    
-    reciclar_calculos();
-    calcular_balance_elemental();
-}
-
-void PanelBalanceHoja::reciclar_calculos() {
-    double energy_factor = 1.0;
-    if (energy_unit_ == 0) energy_factor = 1.0 / 4184.0; // kJ -> Mcal
-    else if (energy_unit_ == 1) energy_factor = 1.0 / 1000.0; // kJ -> MJ
-    else if (energy_unit_ == 2) energy_factor = 1.0 / 3600.0; // kJ -> kWh
-
-    auto calc_rows = [&](std::vector<StreamGroup>& groups) {
-        for (auto& g : groups) {
-            for (auto& row : g.filas) {
-                double T_K = (temp_unit_ == 0) ? (row.temper + 273.15) : row.temper;
-                const auto* esp = buscar_especie_por_nombre_o_formula(row.formula);
-                if (esp) {
-                    row.amount_kg = row.amount_kmol * esp->masa_molar;
-                    row.amount_nm3 = row.amount_kmol * 22.414;
-                    double H_abs = esp->entalpia_abs(T_K); // kJ/mol
-                    row.heat_content = H_abs * 1000.0 * energy_factor; // unit/kmol
-                    row.total_h = row.amount_kmol * row.heat_content;
-                } else {
-                    row.amount_kg = 0.0;
-                    row.amount_nm3 = 0.0;
-                    row.heat_content = 0.0;
-                    row.total_h = 0.0;
-                }
-            }
-        }
+    auto nueva_fila = [](const char* formula, double T, double P, double kmol) {
+        FilaUI f;
+        copiar_texto(f.formula, sizeof(f.formula), formula);
+        f.temper = T;
+        f.presion = P;
+        f.kmol = kmol;
+        return f;
     };
-    calc_rows(entradas_);
-    calc_rows(salidas_);
-}
 
-double PanelBalanceHoja::calcular_entalpia_corrientes(const std::vector<StreamGroup>& grupos, double t_out_forced) {
-    double total_h = 0.0;
-    
-    double energy_factor = 1.0;
-    if (energy_unit_ == 0) energy_factor = 1.0 / 4184.0;
-    else if (energy_unit_ == 1) energy_factor = 1.0 / 1000.0;
-    else if (energy_unit_ == 2) energy_factor = 1.0 / 3600.0;
-    
-    for (auto& g : grupos) {
-        for (auto& row : g.filas) {
-            double temp_c = (t_out_forced != -9999.0) ? t_out_forced : row.temper;
-            double T_K = (temp_unit_ == 0) ? (temp_c + 273.15) : temp_c;
-            const auto* esp = buscar_especie_por_nombre_o_formula(row.formula);
-            if (esp) {
-                double H_abs = esp->entalpia_abs(T_K);
-                total_h += row.amount_kmol * H_abs * 1000.0 * energy_factor;
-            }
+    if (idx == 0) {
+        // ── Preset 0: Referencia HSC Heat and Material Balance Calculator ──
+        // Combustión de CH4(g) con exceso de aire y circuito de agua de enfriamiento
+        // (Gas Out = 1238.938 °C, Cooling Water Out = 90.000 °C [Fija], unidad = kWh)
+        temp_unit_ = 0;   // °C
+        energy_unit_ = 2; // kWh
+
+        CorrienteUI gas_in;
+        copiar_texto(gas_in.nombre, sizeof(gas_in.nombre), "Fuel Gas (CH4)");
+        gas_in.filas.push_back(nueva_fila("CH4(g)", 25.0, 1.0, 1.000 / 22.414));
+        entradas_.push_back(gas_in);
+
+        CorrienteUI air_in;
+        copiar_texto(air_in.nombre, sizeof(air_in.nombre), "Combustion Air");
+        air_in.filas.push_back(nueva_fila("O2(g)", 25.0, 1.0, 3.600 / 22.414));
+        air_in.filas.push_back(nueva_fila("N2(g)", 25.0, 1.0, 13.543 / 22.414));
+        entradas_.push_back(air_in);
+
+        CorrienteUI cw_in;
+        copiar_texto(cw_in.nombre, sizeof(cw_in.nombre), "Cooling Water In");
+        cw_in.filas.push_back(nueva_fila("H2O(l)", 25.0, 1.0, 100.000 / 18.015));
+        entradas_.push_back(cw_in);
+
+        CorrienteUI gas_out;
+        copiar_texto(gas_out.nombre, sizeof(gas_out.nombre), "Gas Out");
+        gas_out.temperatura_fija = false;
+        gas_out.filas.push_back(nueva_fila("CO2(g)", 1238.938, 1.0, 1.000 / 22.414));
+        gas_out.filas.push_back(nueva_fila("H2O(g)", 1238.938, 1.0, 2.000 / 22.414));
+        gas_out.filas.push_back(nueva_fila("N2(g)", 1238.938, 1.0, 13.543 / 22.414));
+        gas_out.filas.push_back(nueva_fila("O2(g)", 1238.938, 1.0, 1.600 / 22.414));
+        salidas_.push_back(gas_out);
+
+        CorrienteUI cw_out;
+        copiar_texto(cw_out.nombre, sizeof(cw_out.nombre), "Cooling Water Out");
+        cw_out.temperatura_fija = true; // Fija a 90 °C como en HSC
+        cw_out.filas.push_back(nueva_fila("H2O(l)", 90.000, 1.0, 100.000 / 18.015));
+        salidas_.push_back(cw_out);
+
+        vista_ = Vista::OUT_Global;
+        lado_salida_sel_ = true;
+        corriente_sel_ = 0;
+        fila_sel_ = -1; // Cabecera "Gas Out" activa (B2 = 1238.938)
+        col_sel_ = 1;
+        diag_entrada_ = 0;
+        diag_fila_ = 0;
+        diag_unidad_x_ = 2; // Nm³
+        diag_acoplar_esteq_ = true;
+        diag_min_ = 1.0;
+        diag_max_ = 12.0;
+        factor_escala_reactiva_ = 12.0; // Punto final del barrido Diagram 1..12 Nm³ en HSC
+
+        recalcular(true);
+        temp_balance();
+    } else if (idx == 1) {
+        // ── Preset 1: Caldera de Gas Natural (3.3 kmol CH4, humos a 350 °C) ──
+        temp_unit_ = 0;
+        energy_unit_ = 3; // kJ
+
+        CorrienteUI gas;
+        copiar_texto(gas.nombre, sizeof(gas.nombre), "Gas natural (CH4)");
+        gas.filas.push_back(nueva_fila("CH4(g)", 25.0, 1.0, 3.300));
+        entradas_.push_back(gas);
+
+        CorrienteUI aire;
+        copiar_texto(aire.nombre, sizeof(aire.nombre), "Aire de combustión");
+        aire.filas.push_back(nueva_fila("O2(g)", 25.0, 1.0, 7.350));
+        aire.filas.push_back(nueva_fila("N2(g)", 25.0, 1.0, 27.650));
+        entradas_.push_back(aire);
+
+        CorrienteUI humos;
+        copiar_texto(humos.nombre, sizeof(humos.nombre), "Gases de escape");
+        humos.filas.push_back(nueva_fila("CO2(g)", 350.0, 1.0, 3.300));
+        humos.filas.push_back(nueva_fila("H2O(g)", 350.0, 1.0, 6.600));
+        humos.filas.push_back(nueva_fila("N2(g)", 350.0, 1.0, 27.650));
+        humos.filas.push_back(nueva_fila("O2(g)", 350.0, 1.0, 0.750));
+        salidas_.push_back(humos);
+
+        vista_ = Vista::Balance;
+        lado_salida_sel_ = false;
+        corriente_sel_ = 0;
+        fila_sel_ = 0;
+        recalcular(true);
+        if (!salidas_.empty() && !area_.salidas.empty()) {
+            motor_.ajustar_calor_de_area(area_);
+            salidas_.front().calor = motores::energia_desde_kJ(
+                area_.salidas.front().calor_kJ, unidad_energia());
+            recalcular(false);
         }
-        total_h += g.heat_loss;
+    } else if (idx == 2) {
+        // ── Preset 2: Tostación de Pirita (2 FeS2 + 5.5 O2 -> Fe2O3 + 4 SO2) ──
+        temp_unit_ = 0;
+        energy_unit_ = 1; // MJ
+
+        CorrienteUI min_in;
+        copiar_texto(min_in.nombre, sizeof(min_in.nombre), "Concentrado Pirita");
+        min_in.filas.push_back(nueva_fila("FeS2", 25.0, 1.0, 2.000));
+        entradas_.push_back(min_in);
+
+        CorrienteUI aire_in;
+        copiar_texto(aire_in.nombre, sizeof(aire_in.nombre), "Aire de Tostación");
+        aire_in.filas.push_back(nueva_fila("O2(g)", 25.0, 1.0, 6.000));
+        aire_in.filas.push_back(nueva_fila("N2(g)", 25.0, 1.0, 22.560));
+        entradas_.push_back(aire_in);
+
+        CorrienteUI calcina;
+        copiar_texto(calcina.nombre, sizeof(calcina.nombre), "Calcina (Fe2O3)");
+        calcina.temperatura_fija = true;
+        calcina.filas.push_back(nueva_fila("Fe2O3", 850.0, 1.0, 1.000));
+        salidas_.push_back(calcina);
+
+        CorrienteUI gas_so2;
+        copiar_texto(gas_so2.nombre, sizeof(gas_so2.nombre), "Gases SO2");
+        gas_so2.filas.push_back(nueva_fila("SO2(g)", 850.0, 1.0, 4.000));
+        gas_so2.filas.push_back(nueva_fila("O2(g)", 850.0, 1.0, 0.500));
+        gas_so2.filas.push_back(nueva_fila("N2(g)", 850.0, 1.0, 22.560));
+        salidas_.push_back(gas_so2);
+
+        vista_ = Vista::OUT_Global;
+        recalcular(true);
+        temp_balance();
+    } else {
+        // ── Preset 3: Reducción de Hematita en Alto Horno (Fe2O3 + 3CO -> 2Fe + 3CO2) ──
+        temp_unit_ = 0;
+        energy_unit_ = 2; // kWh
+
+        CorrienteUI carga;
+        copiar_texto(carga.nombre, sizeof(carga.nombre), "Mineral Hematita");
+        carga.filas.push_back(nueva_fila("Fe2O3", 25.0, 1.0, 1.000));
+        entradas_.push_back(carga);
+
+        CorrienteUI gas_red;
+        copiar_texto(gas_red.nombre, sizeof(gas_red.nombre), "Gas Reductor (CO + N2)");
+        gas_red.filas.push_back(nueva_fila("CO(g)", 900.0, 2.0, 3.500));
+        gas_red.filas.push_back(nueva_fila("N2(g)", 900.0, 2.0, 6.500));
+        entradas_.push_back(gas_red);
+
+        CorrienteUI arrabio;
+        copiar_texto(arrabio.nombre, sizeof(arrabio.nombre), "Hierro Reducido (Fe)");
+        arrabio.temperatura_fija = true;
+        arrabio.filas.push_back(nueva_fila("Fe", 1450.0, 1.0, 2.000));
+        salidas_.push_back(arrabio);
+
+        CorrienteUI gas_top;
+        copiar_texto(gas_top.nombre, sizeof(gas_top.nombre), "Gas de Tragante");
+        gas_top.filas.push_back(nueva_fila("CO2(g)", 250.0, 1.5, 3.000));
+        gas_top.filas.push_back(nueva_fila("CO(g)", 250.0, 1.5, 0.500));
+        gas_top.filas.push_back(nueva_fila("N2(g)", 250.0, 1.5, 6.500));
+        salidas_.push_back(gas_top);
+
+        vista_ = Vista::IN_Global;
+        recalcular(true);
     }
-    return total_h;
+
+    AreaUI a1;
+    a1.nombre = "Balance Area 1";
+    a1.entradas = entradas_;
+    a1.salidas = salidas_;
+    areas_ui_.push_back(a1);
 }
 
-void PanelBalanceHoja::Temp_Balance() {
-    double H_in = calcular_entalpia_corrientes(entradas_);
-    
-    auto f = [&](double temp) {
-        return calcular_entalpia_corrientes(salidas_, temp) - H_in;
-    };
-    
-    double t0 = (temp_unit_ == 0) ? 25.0 : 298.15;
-    double t1 = (temp_unit_ == 0) ? 1500.0 : 1773.15;
-    
-    double f0 = f(t0);
-    double f1 = f(t1);
-    
-    for (int iter = 0; iter < 50; ++iter) {
-        if (std::abs(f1 - f0) < 1e-8) break;
-        double t_next = t1 - f1 * (t1 - t0) / (f1 - f0);
-        
-        // Clamp to physical ranges to keep solver from diverging
-        double t_min = (temp_unit_ == 0) ? -273.0 : 0.15;
-        double t_max = (temp_unit_ == 0) ? 6000.0 : 6273.15;
-        t_next = std::clamp(t_next, t_min, t_max);
-        
-        t0 = t1;
-        f0 = f1;
-        t1 = t_next;
-        f1 = f(t1);
-        if (std::abs(f1) < 1e-4) {
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelBalanceHoja::cambiar_area_activa(int nueva_area) {
+    if (areas_ui_.empty()) {
+        AreaUI a1;
+        a1.nombre = "Balance Area 1";
+        a1.entradas = entradas_;
+        a1.salidas = salidas_;
+        areas_ui_.push_back(a1);
+        area_activa_ = 0;
+    }
+    if (nueva_area < 0 || nueva_area >= static_cast<int>(areas_ui_.size())) return;
+    if (area_activa_ >= 0 && area_activa_ < static_cast<int>(areas_ui_.size())) {
+        areas_ui_[static_cast<size_t>(area_activa_)].entradas = entradas_;
+        areas_ui_[static_cast<size_t>(area_activa_)].salidas = salidas_;
+    }
+    area_activa_ = nueva_area;
+    entradas_ = areas_ui_[static_cast<size_t>(area_activa_)].entradas;
+    salidas_ = areas_ui_[static_cast<size_t>(area_activa_)].salidas;
+    corriente_sel_ = 0;
+    fila_sel_ = -1;
+    recalcular(true);
+}
+
+void PanelBalanceHoja::insertar_area_balance() {
+    if (areas_ui_.empty()) cambiar_area_activa(0);
+    if (area_activa_ >= 0 && area_activa_ < static_cast<int>(areas_ui_.size())) {
+        areas_ui_[static_cast<size_t>(area_activa_)].entradas = entradas_;
+        areas_ui_[static_cast<size_t>(area_activa_)].salidas = salidas_;
+    }
+    AreaUI nueva;
+    nueva.nombre = "Balance Area " + std::to_string(areas_ui_.size() + 1);
+    CorrienteUI cin, cout;
+    copiar_texto(cin.nombre, sizeof(cin.nombre), "Input Stream 1");
+    FilaUI fin;
+    copiar_texto(fin.formula, sizeof(fin.formula), "H2O(l)");
+    fin.temper = (temp_unit_ == 0) ? 25.0 : 298.15;
+    fin.presion = 1.0;
+    fin.kmol = 1.0;
+    cin.filas.push_back(fin);
+    copiar_texto(cout.nombre, sizeof(cout.nombre), "Output Stream 1");
+    cout.filas.push_back(fin);
+    nueva.entradas.push_back(cin);
+    nueva.salidas.push_back(cout);
+    areas_ui_.push_back(nueva);
+    cambiar_area_activa(static_cast<int>(areas_ui_.size()) - 1);
+}
+
+void PanelBalanceHoja::eliminar_area_balance() {
+    if (areas_ui_.size() <= 1) return;
+    areas_ui_.erase(areas_ui_.begin() + area_activa_);
+    for (size_t i = 0; i < areas_ui_.size(); ++i) {
+        areas_ui_[i].nombre = "Balance Area " + std::to_string(i + 1);
+    }
+    area_activa_ = std::clamp(area_activa_, 0, static_cast<int>(areas_ui_.size()) - 1);
+    entradas_ = areas_ui_[static_cast<size_t>(area_activa_)].entradas;
+    salidas_ = areas_ui_[static_cast<size_t>(area_activa_)].salidas;
+    recalcular(true);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+motores::AreaBalance PanelBalanceHoja::area_escalada_operacion() const {
+    if (std::abs(factor_escala_reactiva_ - 1.0) <= 1e-6) return area_;
+    motores::AreaBalance copia = area_;
+    bool hay_salida_fija = false;
+    for (const auto& cs : copia.salidas) {
+        if (cs.temperatura_fija) {
+            hay_salida_fija = true;
             break;
         }
     }
-    
-    for (auto& g : salidas_) {
-        for (auto& r : g.filas) {
-            r.temper = t1;
-        }
+    for (auto& ce : copia.entradas) {
+        const bool es_agua_enfr = (ce.nombre.find("Water") != std::string::npos ||
+                                   ce.nombre.find("Agua") != std::string::npos);
+        if (hay_salida_fija && es_agua_enfr) continue;
+        for (auto& f : ce.filas) f.kmol *= factor_escala_reactiva_;
     }
-    
-    reciclar_calculos();
+    for (auto& cs : copia.salidas) {
+        if (hay_salida_fija && cs.temperatura_fija) continue;
+        for (auto& f : cs.filas) f.kmol *= factor_escala_reactiva_;
+    }
+    const_cast<motores::BalanceHoja&>(motor_).actualizar(
+        copia, motores::BalanceHoja::ResolvedorEspecie{});
+    return copia;
 }
 
-void PanelBalanceHoja::calcular_balance_elemental() {
-    elem_balance_.clear();
-    std::map<std::string, double> in_elems;
-    std::map<std::string, double> out_elems;
-    
-    for (auto& g : entradas_) {
-        for (auto& r : g.filas) {
-            std::string err;
-            auto el_map = parse_formula_elements(r.formula, err);
-            for (auto& [el, cnt] : el_map) {
-                in_elems[el] += cnt * r.amount_kmol;
+void PanelBalanceHoja::sincronizar_motor(bool resolver) {
+    auto copiar = [&](const std::vector<CorrienteUI>& ui,
+                      std::vector<motores::CorrienteBalance>& dst) {
+        std::vector<motores::CorrienteBalance> nuevo;
+        nuevo.reserve(ui.size());
+        for (size_t i = 0; i < ui.size(); ++i) {
+            motores::CorrienteBalance cb;
+            cb.nombre = ui[i].nombre;
+            cb.calor_kJ = motores::energia_a_kJ(ui[i].calor, unidad_energia());
+            cb.temperatura_fija = ui[i].temperatura_fija;
+            cb.filas.reserve(ui[i].filas.size());
+            for (size_t j = 0; j < ui[i].filas.size(); ++j) {
+                const FilaUI& fu = ui[i].filas[j];
+                motores::FilaBalance fb;
+                fb.formula = fu.formula;
+                fb.temperatura_K = motores::temperatura_a_K(fu.temper, unidad_temperatura());
+                fb.presion_bar = fu.presion;
+                fb.kmol = fu.kmol;
+                if (i < dst.size() && j < dst[i].filas.size() &&
+                    dst[i].filas[j].formula == fb.formula) {
+                    fb.especie = dst[i].filas[j].especie;
+                }
+                cb.filas.push_back(std::move(fb));
             }
+            nuevo.push_back(std::move(cb));
         }
+        dst = std::move(nuevo);
+    };
+
+    copiar(entradas_, area_.entradas);
+    copiar(salidas_, area_.salidas);
+
+    if (resolver) {
+        auto resolver_fn = [](const std::string& etiqueta) -> const nucleo::Especie* {
+            return buscar_especie_por_nombre_o_formula(etiqueta);
+        };
+        motor_.actualizar(area_, resolver_fn);
+    } else {
+        motor_.actualizar(area_, motores::BalanceHoja::ResolvedorEspecie{});
     }
-    for (auto& g : salidas_) {
-        for (auto& r : g.filas) {
-            std::string err;
-            auto el_map = parse_formula_elements(r.formula, err);
-            for (auto& [el, cnt] : el_map) {
-                out_elems[el] += cnt * r.amount_kmol;
-            }
-        }
-    }
-    
-    std::set<std::string> all_elements;
-    for (auto& [el, v] : in_elems) all_elements.insert(el);
-    for (auto& [el, v] : out_elems) all_elements.insert(el);
-    
-    for (auto& el : all_elements) {
-        ElementBal b;
-        b.element = el;
-        b.in_val = in_elems[el];
-        b.out_val = out_elems[el];
-        b.balance = b.in_val - b.out_val;
-        elem_balance_.push_back(b);
+
+    const motores::AreaBalance area_op = area_escalada_operacion();
+    resultado_ = motor_.evaluar(area_op);
+    elem_balance_ = motor_.balance_elemental(area_op);
+    diag_dirty_ = true;
+
+    if (!areas_ui_.empty() && area_activa_ >= 0 &&
+        area_activa_ < static_cast<int>(areas_ui_.size())) {
+        areas_ui_[static_cast<size_t>(area_activa_)].entradas = entradas_;
+        areas_ui_[static_cast<size_t>(area_activa_)].salidas = salidas_;
     }
 }
 
-void PanelBalanceHoja::renderizar(diagrama_flujo::Flowsheet* flowsheet) {
-    std::vector<StreamGroup>& active_groups = (tab_actual_ == 2) ? salidas_ : entradas_;
-    // ── Toolbar ──
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 4));
-    if (ImGui::Button(tr("Open TXT"))) {
-        FILE* zen = adapters::dialog_pipe("zenity --file-selection --file-filter='*.txt' --title='Open HMB Data File' 2>/dev/null");
-        if (zen) {
-            char buf[512] = {0};
-            if (fgets(buf, sizeof(buf), zen)) {
-                std::string path(buf);
-                if (!path.empty() && path.back() == '\n') path.pop_back();
-                FILE* fp = fopen(path.c_str(), "r");
-                if (fp) {
-                    entradas_.clear();
-                    salidas_.clear();
-                    bool parse_outputs = false;
-                    char line[256];
-                    while (fgets(line, sizeof(line), fp)) {
-                        std::string l = trim_str(line);
-                        if (l.empty() || l[0] == '#') {
-                            if (l.find("Outputs") != std::string::npos) parse_outputs = true;
-                            continue;
-                        }
-                        auto parts = split_str(l, ",");
-                        if (parts[0] == "STREAM" && parts.size() >= 3) {
-                            StreamGroup g;
-                            strncpy(g.nombre, parts[1].c_str(), sizeof(g.nombre)-1);
-                            g.nombre[sizeof(g.nombre)-1] = '\0';
-                            try { g.heat_loss = std::stod(parts[2]); } catch (...) { g.heat_loss = 0.0; }
-                            if (parse_outputs) salidas_.push_back(g);
-                            else entradas_.push_back(g);
-                        } else if (parts[0] == "ROW" && parts.size() >= 5) {
-                            SpeciesRow r;
-                            strncpy(r.formula, parts[1].c_str(), sizeof(r.formula)-1);
-                            r.formula[sizeof(r.formula)-1] = '\0';
-                            try {
-                                r.temper = std::stod(parts[2]);
-                                r.pressure = std::stod(parts[3]);
-                                r.amount_kmol = std::stod(parts[4]);
-                            } catch (...) { continue; }
-                            if (parse_outputs && !salidas_.empty()) salidas_.back().filas.push_back(r);
-                            else if (!parse_outputs && !entradas_.empty()) entradas_.back().filas.push_back(r);
-                        }
-                    }
-                    fclose(fp);
-                    reciclar_calculos();
-                    calcular_balance_elemental();
-                }
-            }
-            fclose(zen);
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(tr("Save TXT"))) {
-        FILE* zen = adapters::dialog_pipe("zenity --file-selection --save --confirm-overwrite --file-filter='*.txt' --title='Save HMB Data File' 2>/dev/null");
-        if (zen) {
-            char buf[512] = {0};
-            if (fgets(buf, sizeof(buf), zen)) {
-                std::string path(buf);
-                if (!path.empty() && path.back() == '\n') path.pop_back();
-                if (path.find(".txt") == std::string::npos) path += ".txt";
-                FILE* fp = fopen(path.c_str(), "w");
-                if (fp) {
-                    fprintf(fp, "# HMB Inputs\n");
-                    for (auto& g : entradas_) {
-                        fprintf(fp, "STREAM,%s,%f\n", g.nombre, g.heat_loss);
-                        for (auto& r : g.filas) {
-                            fprintf(fp, "ROW,%s,%f,%f,%f\n", r.formula, r.temper, r.pressure, r.amount_kmol);
-                        }
-                    }
-                    fprintf(fp, "# HMB Outputs\n");
-                    for (auto& g : salidas_) {
-                        fprintf(fp, "STREAM,%s,%f\n", g.nombre, g.heat_loss);
-                        for (auto& r : g.filas) {
-                            fprintf(fp, "ROW,%s,%f,%f,%f\n", r.formula, r.temper, r.pressure, r.amount_kmol);
-                        }
-                    }
-                    fclose(fp);
-                }
-            }
-            fclose(zen);
-        }
-    }
-    ImGui::SameLine();
-    if (flowsheet && ImGui::Button(tr("Load from Flowsheet"))) {
-        entradas_.clear();
-        salidas_.clear();
-        
-        StreamGroup inputs_group;
-        strncpy(inputs_group.nombre, "Flowsheet Inputs", sizeof(inputs_group.nombre)-1);
-        
-        StreamGroup outputs_group;
-        strncpy(outputs_group.nombre, "Flowsheet Outputs", sizeof(outputs_group.nombre)-1);
-        
-        for (auto& [fid, f] : flowsheet->mapa_flujos()) {
-            bool is_input = true;
-            bool is_output = true;
-            
-            for (auto& n : flowsheet->nodos()) {
-                for (int64_t sid : n.ids_flujos_salida) {
-                    if (sid == fid && n.tipo != nucleo::TipoNodo::Fuente) {
-                        is_input = false;
-                    }
-                }
-                for (int64_t sid : n.ids_flujos_entrada) {
-                    if (sid == fid && n.tipo != nucleo::TipoNodo::Sumidero) {
-                        is_output = false;
-                    }
-                }
-            }
-            
-            SpeciesRow r;
-            std::string name = f.nombre.empty() ? ("Stream_" + std::to_string(fid)) : f.nombre;
-            strncpy(r.formula, name.c_str(), sizeof(r.formula)-1);
-            r.temper = f.temperatura - 273.15; // default C
-            r.pressure = f.presion;
-            r.amount_kmol = f.flujo_total() * 3600.0;
-            
-            if (is_input && !is_output) {
-                inputs_group.filas.push_back(r);
-            } else {
-                outputs_group.filas.push_back(r);
+void PanelBalanceHoja::recalcular(bool resolver) {
+    sincronizar_motor(resolver);
+}
+
+void PanelBalanceHoja::copiar_temperaturas_desde_motor() {
+    auto copiar = [&](std::vector<CorrienteUI>& ui,
+                      const std::vector<motores::CorrienteBalance>& src) {
+        for (size_t i = 0; i < ui.size() && i < src.size(); ++i) {
+            for (size_t j = 0; j < ui[i].filas.size() && j < src[i].filas.size(); ++j) {
+                ui[i].filas[j].temper = motores::temperatura_desde_K(
+                    src[i].filas[j].temperatura_K, unidad_temperatura());
             }
         }
-        if (!inputs_group.filas.empty()) entradas_.push_back(inputs_group);
-        if (!outputs_group.filas.empty()) salidas_.push_back(outputs_group);
-        
-        reciclar_calculos();
-        calcular_balance_elemental();
+    };
+    copiar(entradas_, area_.entradas);
+    copiar(salidas_, area_.salidas);
+}
+
+void PanelBalanceHoja::temp_balance() {
+    sincronizar_motor(true);
+    motores::AreaBalance area_op = area_escalada_operacion();
+    ultimo_solver_ = motor_.temperatura_equilibrio(area_op, mantener_offsets_);
+    if (ultimo_solver_.factible) {
+        for (size_t i = 0; i < area_.salidas.size() && i < area_op.salidas.size(); ++i) {
+            for (size_t j = 0; j < area_.salidas[i].filas.size() &&
+                               j < area_op.salidas[i].filas.size(); ++j) {
+                area_.salidas[i].filas[j].temperatura_K =
+                    area_op.salidas[i].filas[j].temperatura_K;
+            }
+        }
+        copiar_temperaturas_desde_motor();
     }
-    ImGui::PopStyleVar();
-    ImGui::Separator();
-    
-    // ── Columns Split (Spreadsheet vs Tools) ──
-    ImGui::Columns(2, "hmb_columns_layout", true);
-    static bool init_w_hmb = true;
-    if (init_w_hmb) {
-        ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() * 0.73f);
-        ImGui::SetColumnWidth(1, ImGui::GetWindowWidth() * 0.27f);
-        init_w_hmb = false;
+    recalcular(false);
+}
+
+void PanelBalanceHoja::ajustar_calor() {
+    sincronizar_motor(true);
+    motor_.ajustar_calor_de_area(area_);
+    if (!salidas_.empty() && !area_.salidas.empty()) {
+        salidas_.front().calor = motores::energia_desde_kJ(
+            area_.salidas.front().calor_kJ, unidad_energia());
+    }
+    recalcular(false);
+}
+
+void PanelBalanceHoja::agregar_corriente(bool salida) {
+    auto& grupos = lista(salida);
+    CorrienteUI c;
+    std::snprintf(c.nombre, sizeof(c.nombre), "%s %d",
+                  salida ? "Output Stream" : "Input Stream",
+                  static_cast<int>(grupos.size()) + 1);
+    FilaUI f;
+    f.temper = (temp_unit_ == 0) ? 25.0 : 298.15;
+    c.filas.push_back(f);
+    grupos.push_back(c);
+    lado_salida_sel_ = salida;
+    corriente_sel_ = static_cast<int>(grupos.size()) - 1;
+    fila_sel_ = 0;
+    vista_ = salida ? Vista::OUT_Global : Vista::IN_Global;
+    recalcular(true);
+}
+
+void PanelBalanceHoja::aplicar_accion_pendiente() {
+    if (accion_pendiente_ == AccionPendiente::Ninguna) return;
+
+    auto& grupos = lista(lado_salida_sel_);
+    const int idx = corriente_sel_;
+    const int fila = fila_sel_;
+
+    switch (accion_pendiente_) {
+        case AccionPendiente::BorrarFila:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size()) &&
+                fila >= 0 && fila < static_cast<int>(grupos[idx].filas.size())) {
+                grupos[idx].filas.erase(grupos[idx].filas.begin() + fila);
+                fila_sel_ = std::min(fila, static_cast<int>(grupos[idx].filas.size()) - 1);
+            }
+            break;
+        case AccionPendiente::DuplicarFila:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size()) &&
+                fila >= 0 && fila < static_cast<int>(grupos[idx].filas.size())) {
+                grupos[idx].filas.insert(grupos[idx].filas.begin() + fila + 1,
+                                         grupos[idx].filas[static_cast<size_t>(fila)]);
+                fila_sel_ = fila + 1;
+            }
+            break;
+        case AccionPendiente::MoverArriba:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size()) && fila > 0 &&
+                fila < static_cast<int>(grupos[idx].filas.size())) {
+                std::swap(grupos[idx].filas[static_cast<size_t>(fila)],
+                          grupos[idx].filas[static_cast<size_t>(fila) - 1]);
+                fila_sel_ = fila - 1;
+            }
+            break;
+        case AccionPendiente::MoverAbajo:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size()) && fila >= 0 &&
+                fila + 1 < static_cast<int>(grupos[idx].filas.size())) {
+                std::swap(grupos[idx].filas[static_cast<size_t>(fila)],
+                          grupos[idx].filas[static_cast<size_t>(fila) + 1]);
+                fila_sel_ = fila + 1;
+            }
+            break;
+        case AccionPendiente::InsertarDebajo:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size())) {
+                FilaUI nf;
+                nf.temper = (temp_unit_ == 0) ? 25.0 : 298.15;
+                const size_t pos = static_cast<size_t>(std::max(fila + 1, 0));
+                const size_t limite = grupos[idx].filas.size();
+                grupos[idx].filas.insert(grupos[idx].filas.begin() +
+                                             static_cast<long>(std::min(pos, limite)),
+                                         nf);
+                fila_sel_ = static_cast<int>(std::min(pos, limite));
+            }
+            break;
+        case AccionPendiente::BorrarCorriente:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size())) {
+                grupos.erase(grupos.begin() + idx);
+                corriente_sel_ = std::max(0, std::min(idx,
+                    static_cast<int>(grupos.size()) - 1));
+                fila_sel_ = -1;
+            }
+            break;
+        case AccionPendiente::DuplicarCorriente:
+            if (idx >= 0 && idx < static_cast<int>(grupos.size())) {
+                CorrienteUI copia = grupos[idx];
+                std::snprintf(copia.nombre, sizeof(copia.nombre), "%.55s (copia)",
+                              grupos[idx].nombre);
+                grupos.insert(grupos.begin() + idx + 1, copia);
+                corriente_sel_ = idx + 1;
+            }
+            break;
+        case AccionPendiente::Ninguna:
+            break;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Columna Izquierda: Spreadsheet Grid & Bottom Panes
-    // ════════════════════════════════════════════════════════════════════════
-    ImGui::BeginChild("left_hmb_pane");
-    {
-        // ── Tabs Selector ──
-        if (ImGui::Button(tr("BALANCE"))) tab_actual_ = 0;
-        ImGui::SameLine();
-        if (ImGui::Button(tr("IN1"))) tab_actual_ = 1;
-        ImGui::SameLine();
-        if (ImGui::Button(tr("OUT1"))) tab_actual_ = 2;
-        ImGui::SameLine();
-        if (ImGui::Button(tr("Target"))) tab_actual_ = 3;
-        
-        ImGui::Separator();
-        ImGui::Spacing();
+    accion_pendiente_ = AccionPendiente::Ninguna;
+    recalcular(true);
+}
 
-        
-        if (tab_actual_ == 1 || tab_actual_ == 2) {
-            // Render spreadsheet grid
-            const char* header_col = (tab_actual_ == 2) ? "OUTPUT SPECIES" : "INPUT SPECIES";
-            const char* unit_t_str = (temp_unit_ == 0) ? "°C" : "K";
-            const char* unit_e_str = (energy_unit_ == 0) ? "Mcal" : (energy_unit_ == 1) ? "MJ" : "kWh";
-            
-            char header_label[128];
-            snprintf(header_label, sizeof(header_label), "%s (1)\nFormula", header_col);
-            char temp_label[64];
-            snprintf(temp_label, sizeof(temp_label), "Temper.\n%s", unit_t_str);
-            char h_content_label[64];
-            snprintf(h_content_label, sizeof(h_content_label), "Heat Content\n%s/kmol", unit_e_str);
-            char total_h_label[64];
-            snprintf(total_h_label, sizeof(total_h_label), "Total H\n%s", unit_e_str);
-            
-            if (ImGui::BeginTable("grid_table", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(0, 240))) {
-                ImGui::TableSetupColumn(header_label, ImGuiTableColumnFlags_WidthFixed, 140.0f);
-                ImGui::TableSetupColumn(temp_label, ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                ImGui::TableSetupColumn("Pressure\nbar", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                ImGui::TableSetupColumn("Amount\nkmol", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                ImGui::TableSetupColumn("Amount\nkg", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                ImGui::TableSetupColumn("Amount\nNm³", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                ImGui::TableSetupColumn(h_content_label, ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableSetupColumn(total_h_label, ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableHeadersRow();
-                
-                int s_idx = 0;
-                for (auto& g : active_groups) {
-                    ImGui::PushID(s_idx);
-                    
-                    // Stream group header row
-                    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 1.0f, 1.0f));
-                    ImGui::SetNextItemWidth(-1.0f);
-                    ImGui::InputText("##stream_name", g.nombre, sizeof(g.nombre));
-                    ImGui::PopStyleColor();
-                    
-                    for (int c = 1; c < 8; ++c) {
-                        ImGui::TableNextColumn();
-                        ImGui::TextDisabled(tr("---"));
-                    }
-                    
-                    int r_idx = 0;
-                    for (auto& row : g.filas) {
-                        ImGui::TableNextRow();
-                        ImGui::PushID(r_idx);
-                        
-                        // Highlight active row selection
-                        bool is_selected = (selected_stream_idx_ == s_idx && selected_row_idx_ == r_idx);
-                        if (is_selected) {
-                            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(40, 60, 100, 255));
-                        }
-                        
-                        // Formula
-                        ImGui::TableNextColumn();
-                        char btn_label[128];
-                        snprintf(btn_label, sizeof(btn_label), "%s##fbtn%d_%d", row.formula[0] == '\0' ? "Buscar..." : row.formula, s_idx, r_idx);
-                        if (ImGui::Button(btn_label, ImVec2(-1, 0))) {
-                            modal_target_stream_ = s_idx;
-                            modal_target_row_ = r_idx;
-                            ModalBuscadorDB::instancia().abrir("Buscar Especie (HMB)");
-                            selected_stream_idx_ = s_idx;
-                            selected_row_idx_ = r_idx;
-                        }
-                        
-                        // We will evaluate the modal return at the end of the window to avoid nested UI IDs issues
-                        
-                        // Temperature
-                        ImGui::TableNextColumn();
-                        ImGui::SetNextItemWidth(-1.0f);
-                        if (ImGui::InputDouble("##temp", &row.temper, 0, 0, "%.3f")) {
-                            reciclar_calculos();
-                        }
-                        
-                        // Pressure
-                        ImGui::TableNextColumn();
-                        ImGui::SetNextItemWidth(-1.0f);
-                        ImGui::InputDouble("##pres", &row.pressure, 0, 0, "%.1f");
-                        
-                        // Amount kmol
-                        ImGui::TableNextColumn();
-                        ImGui::SetNextItemWidth(-1.0f);
-                        if (ImGui::InputDouble("##kmol", &row.amount_kmol, 0, 0, "%.3f")) {
-                            reciclar_calculos();
-                            calcular_balance_elemental();
-                        }
-                        
-                        // Amount kg (computed)
-                        ImGui::TableNextColumn();
-                        ImGui::Text(tr("%.3f"), row.amount_kg);
-                        
-                        // Amount Nm3 (computed)
-                        ImGui::TableNextColumn();
-                        ImGui::Text(tr("%.3f"), row.amount_nm3);
-                        
-                        // Heat Content (computed)
-                        ImGui::TableNextColumn();
-                        ImGui::Text(tr("%.2f"), row.heat_content);
-                        
-                        // Total H (computed)
-                        ImGui::TableNextColumn();
-                        ImGui::Text(tr("%.2f"), row.total_h);
-                        
-                        ImGui::PopID();
-                        r_idx++;
-                    }
-                    
-                    // Heat Loss Row
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextColored(cma::interfaz::AdaptiveColor(1.0f, 0.6f, 0.6f, 1.0f), "Heat Loss:");
-                    
-                    ImGui::TableSetColumnIndex(7);
-                    ImGui::SetNextItemWidth(-1.0f);
-                    if (ImGui::InputDouble("##loss", &g.heat_loss, 0, 0, "%.2f")) {
-                        reciclar_calculos();
-                    }
-                    
-                    ImGui::PopID();
-                    s_idx++;
-                }
-                ImGui::EndTable();
-            }
-        } 
-        else if (tab_actual_ == 0) {
-            // BALANCE tab
-            ImGui::TextColored(cma::interfaz::AdaptiveColor(0.4f, 0.8f, 0.6f, 1.0f), "Heat & Material Overall Balance Summary");
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            double total_kmol_in = 0, total_kg_in = 0, total_nm3_in = 0, total_h_in = 0;
-            for (auto& g : entradas_) {
-                for (auto& r : g.filas) {
-                    total_kmol_in += r.amount_kmol;
-                    total_kg_in += r.amount_kg;
-                    total_nm3_in += r.amount_nm3;
-                    total_h_in += r.total_h;
-                }
-                total_h_in += g.heat_loss;
-            }
-            double total_kmol_out = 0, total_kg_out = 0, total_nm3_out = 0, total_h_out = 0;
-            for (auto& g : salidas_) {
-                for (auto& r : g.filas) {
-                    total_kmol_out += r.amount_kmol;
-                    total_kg_out += r.amount_kg;
-                    total_nm3_out += r.amount_nm3;
-                    total_h_out += r.total_h;
-                }
-                total_h_out += g.heat_loss;
-            }
-            
-            const char* unit_e = (energy_unit_ == 0) ? "Mcal" : (energy_unit_ == 1) ? "MJ" : "kWh";
-            if (ImGui::BeginTable("summary_table", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("Tipo");
-                ImGui::TableSetupColumn("Amount (kmol)");
-                ImGui::TableSetupColumn("Amount (kg)");
-                ImGui::TableSetupColumn("Amount (Nm³)");
-                char en_hdr[64]; snprintf(en_hdr, sizeof(en_hdr), "Total Enthalpy (%s)", unit_e);
-                ImGui::TableSetupColumn(en_hdr);
-                ImGui::TableHeadersRow();
-                
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text(tr("Total ENTRADAS"));
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kmol_in);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kg_in);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_nm3_in);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), total_h_in);
-                
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text(tr("Total SALIDAS"));
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kmol_out);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kg_out);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_nm3_out);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), total_h_out);
-                
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::TextColored(cma::interfaz::AdaptiveColor(1,1,0,1), "Residual Difference");
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kmol_in - total_kmol_out);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_kg_in - total_kg_out);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), total_nm3_in - total_nm3_out);
-                
-                double residual_h = total_h_in - total_h_out;
-                if (std::abs(residual_h) < 1e-2) {
-                    ImGui::TableNextColumn(); ImGui::TextColored(cma::interfaz::AdaptiveColor(0.3f, 0.9f, 0.4f, 1.0f), "%.3f (OK)", residual_h);
-                } else {
-                    ImGui::TableNextColumn(); ImGui::TextColored(cma::interfaz::AdaptiveColor(0.9f, 0.4f, 0.3f, 1.0f), "%.3f (UNBALANCED)", residual_h);
-                }
-                
-                ImGui::EndTable();
-            }
+// ─────────────────────────────────────────────────────────────────────────────
+// Barra de fórmula estilo HSC (Active species + Celda + Valor en doble precisión)
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelBalanceHoja::dibujar_barra_formula() {
+    auto& grupos = lista(lado_salida_sel_);
+    if (grupos.empty()) return;
+    const int c_idx = std::clamp(corriente_sel_, 0, static_cast<int>(grupos.size()) - 1);
+    CorrienteUI& corr = grupos[static_cast<size_t>(c_idx)];
+
+    // Calcula el número de fila en la hoja global (2 = cabecera de corriente 0, etc.)
+    int row_num = 2;
+    for (int i = 0; i < c_idx; ++i) {
+        row_num += 1 + static_cast<int>(grupos[static_cast<size_t>(i)].filas.size());
+    }
+    const bool es_cabecera = (fila_sel_ < 0 || fila_sel_ >= static_cast<int>(corr.filas.size()));
+    if (!es_cabecera) row_num += 1 + fila_sel_;
+
+    const char letras_col[] = {'A', 'B', 'C', 'D', 'E', 'F'};
+    const char col_ch = letras_col[std::clamp(col_sel_, 0, 5)];
+    char ref_celda[16];
+    std::snprintf(ref_celda, sizeof(ref_celda), "%c%d", col_ch, row_num);
+
+    const char* etiqueta_activa = es_cabecera
+                                      ? corr.nombre
+                                      : corr.filas[static_cast<size_t>(fila_sel_)].formula;
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Active species:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(175.0f);
+    char buf_activo[64];
+    copiar_texto(buf_activo, sizeof(buf_activo), etiqueta_activa);
+    ImGui::BeginDisabled();
+    ImGui::InputText("##active_sp_box", buf_activo, sizeof(buf_activo), ImGuiInputTextFlags_ReadOnly);
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(56.0f);
+    ImGui::BeginDisabled();
+    ImGui::InputText("##cell_ref_box", ref_celda, sizeof(ref_celda), ImGuiInputTextFlags_ReadOnly);
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(220.0f);
+    const auto& motor_grupos = lado_salida_sel_ ? area_.salidas : area_.entradas;
+    const motores::CorrienteBalance* mc =
+        (c_idx < static_cast<int>(motor_grupos.size()))
+            ? &motor_grupos[static_cast<size_t>(c_idx)]
+            : nullptr;
+
+    if (es_cabecera) {
+        double t_cab = corr.filas.empty() ? 25.0 : corr.filas.front().temper;
+        if (ImGui::InputDouble("##formula_bar_val", &t_cab, 0, 0, "%.11g")) {
+            for (auto& f : corr.filas) f.temper = t_cab;
+            recalcular(false);
         }
-        else if (tab_actual_ == 3) {
-            // Target Tab
-            ImGui::TextColored(cma::interfaz::AdaptiveColor(0.7f, 0.7f, 1.0f, 1.0f), "Goal Seek / Solver Configuration");
-            ImGui::Separator();
-            ImGui::Spacing();
-            ImGui::Text(tr("Calculate Adiabatic flame temp or zero balance temperature:"));
-            ImGui::BulletText("Target Variable: Output Temperature");
-            ImGui::BulletText("Target Value of Enthalpy Difference: 0.0");
-            if (ImGui::Button(tr("Run Temp. Balance Solver"), ImVec2(-1, 30))) {
-                Temp_Balance();
+    } else {
+        FilaUI& f = corr.filas[static_cast<size_t>(fila_sel_)];
+        const motores::FilaBalance* mf =
+            (mc != nullptr && fila_sel_ >= 0 && fila_sel_ < static_cast<int>(mc->filas.size()))
+                ? &mc->filas[static_cast<size_t>(fila_sel_)]
+                : nullptr;
+        if (col_sel_ == 2) {
+            if (ImGui::InputDouble("##formula_bar_val", &f.presion, 0, 0, "%.11g"))
+                recalcular(false);
+        } else if (col_sel_ == 3) {
+            if (ImGui::InputDouble("##formula_bar_val", &f.kmol, 0, 0, "%.11g")) {
+                factor_escala_reactiva_ = 1.0;
+                recalcular(false);
             }
+        } else if (col_sel_ == 4) {
+            double val_kg = (mf != nullptr) ? mf->masa_kg : 0.0;
+            if (ImGui::InputDouble("##formula_bar_val", &val_kg, 0, 0, "%.11g")) {
+                if (mf != nullptr && mf->especie != nullptr && mf->especie->masa_molar > 0.0) {
+                    f.kmol = std::max(0.0, val_kg / mf->especie->masa_molar);
+                    factor_escala_reactiva_ = 1.0;
+                    recalcular(false);
+                }
+            }
+        } else if (col_sel_ == 5) {
+            double val_nm3 = (mf != nullptr) ? mf->volumen_nm3 : 0.0;
+            if (ImGui::InputDouble("##formula_bar_val", &val_nm3, 0, 0, "%.11g")) {
+                if (mf != nullptr && mf->especie != nullptr) {
+                    const double vm = motores::FilaBalance::volumen_molar_nm3(mf->especie);
+                    if (vm > 0.0) {
+                        f.kmol = std::max(0.0, val_nm3 / vm);
+                        factor_escala_reactiva_ = 1.0;
+                        recalcular(false);
+                    }
+                }
+            }
+        } else {
+            if (ImGui::InputDouble("##formula_bar_val", &f.temper, 0, 0, "%.11g"))
+                recalcular(false);
         }
-        
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-        
-        // ── Bottom Columns (Element Balance & Total Balance) ──
-        ImGui::Columns(2, "bottom_panes_hmb", true);
-        
-        // Element Balance
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.7f, 0.6f, 1.0f), "Element Balance");
-        if (ImGui::BeginTable("elem_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(0, 110))) {
-            ImGui::TableSetupColumn("Element");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Paneles inferiores: Element Balance & Total Balance (como en HSC)
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelBalanceHoja::dibujar_tabla_elementos() {
+    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.7f, 0.6f, 1.0f),
+                       "Element Balance");
+    ImGui::SameLine();
+    if (ImGui::SmallButton(elem_bal_kg_ ? "Ver kmol" : "Ver kg")) {
+        elem_bal_kg_ = !elem_bal_kg_;
+    }
+
+    const ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp;
+    if (elem_bal_kg_) {
+        if (ImGui::BeginTable("hmb_elem_table_kg", 5, flags, ImVec2(0, 0))) {
+            ImGui::TableSetupColumn("Element", ImGuiTableColumnFlags_WidthFixed, 55.0f);
+            ImGui::TableSetupColumn("IN (kg)");
+            ImGui::TableSetupColumn("OUT (kg)");
+            ImGui::TableSetupColumn("Balance");
+            ImGui::TableSetupColumn("Error %", ImGuiTableColumnFlags_WidthFixed, 55.0f);
+            ImGui::TableHeadersRow();
+
+            for (const auto& b : elem_balance_) {
+                const bool ok = std::abs(b.error_pct()) < 0.01;
+                const double bal_kg = b.out_kg - b.in_kg;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%s", b.elemento.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%.3f", b.in_kg);
+                ImGui::TableNextColumn(); ImGui::Text("%.3f", b.out_kg);
+                ImGui::TableNextColumn();
+                ImGui::TextColored(ok ? color_ok() : color_malo(), "%.3f",
+                                   std::abs(bal_kg) < 5e-4 ? 0.0 : bal_kg);
+                ImGui::TableNextColumn();
+                ImGui::TextColored(ok ? color_ok() : color_malo(), "%.2f", b.error_pct());
+            }
+            ImGui::EndTable();
+        }
+    } else {
+        // Modo por defecto HSC: Element | IN kmol | OUT kmol | Balance kmol
+        if (ImGui::BeginTable("hmb_elem_table_kmol", 4, flags, ImVec2(0, 0))) {
+            ImGui::TableSetupColumn("Element", ImGuiTableColumnFlags_WidthFixed, 60.0f);
             ImGui::TableSetupColumn("IN (kmol)");
             ImGui::TableSetupColumn("OUT (kmol)");
-            ImGui::TableSetupColumn("Balance (kmol)");
+            ImGui::TableSetupColumn("Balance");
             ImGui::TableHeadersRow();
-            
-            for (auto& b : elem_balance_) {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text(tr("%s"), b.element.c_str());
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), b.in_val);
-                ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), b.out_val);
-                if (std::abs(b.balance) < 1e-4) {
-                    ImGui::TableNextColumn(); ImGui::TextColored(cma::interfaz::AdaptiveColor(0.3f, 0.9f, 0.4f, 1.0f), "0.000");
-                } else {
-                    ImGui::TableNextColumn(); ImGui::TextColored(cma::interfaz::AdaptiveColor(0.9f, 0.4f, 0.3f, 1.0f), "%.3f", b.balance);
-                }
-            }
-            ImGui::EndTable();
-        }
-        
-        ImGui::NextColumn();
-        
-        // Total Balance
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.7f, 0.6f, 1.0f), "Total Balance");
-        if (ImGui::BeginTable("tot_bal_areas", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(0, 110))) {
-            ImGui::TableSetupColumn("BALANCE AREAS");
-            ImGui::TableSetupColumn("Amount kmol");
-            ImGui::TableSetupColumn("Amount kg");
-            ImGui::TableSetupColumn("Amount Nm³");
-            ImGui::TableSetupColumn("Heat Content");
-            ImGui::TableSetupColumn("H Total");
-            ImGui::TableSetupColumn("Exergy");
-            ImGui::TableHeadersRow();
-            
-            double sum_kmol = 0, sum_kg = 0, sum_nm3 = 0, sum_hc = 0, sum_h = 0;
-            for (auto& g : salidas_) {
-                for (auto& r : g.filas) {
-                    sum_kmol += r.amount_kmol;
-                    sum_kg += r.amount_kg;
-                    sum_nm3 += r.amount_nm3;
-                    sum_hc += r.heat_content;
-                    sum_h += r.total_h;
-                }
-            }
-            
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::Text(tr("Balance (1)"));
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_kmol);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_kg);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_nm3);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), sum_hc);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), sum_h);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), -669.07); // Simulated Exergy
-            
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::Text(tr("Total Balance"));
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_kmol);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_kg);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), sum_nm3);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), sum_hc);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), sum_h);
-            ImGui::TableNextColumn(); ImGui::Text(tr("%.3f"), -669.07);
-            
-            ImGui::EndTable();
-        }
-        
-        ImGui::Columns(1);
-    }
-    ImGui::EndChild();
-    
-    ImGui::NextColumn();
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Columna Derecha: Tools Panel
-    // ════════════════════════════════════════════════════════════════════════
-    ImGui::BeginChild("right_hmb_pane");
-    {
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.6f, 0.8f, 1.0f), "Tools");
-        ImGui::Separator();
-        ImGui::Spacing();
-        
-        // Balance Area selection
-        ImGui::Text(tr("Área de Balance"));
-        static int area_sel = 0;
-        ImGui::SetNextItemWidth(-1.0f);
-        ImGui::Combo("##bal_area_sel", &area_sel, "Balance Area 1\0Balance Area 2\0");
-        ImGui::Spacing();
-        
-        // Get Species from Database
-        ImGui::Text(tr("Get Species from Database"));
-        if (ImGui::Button(tr("Entrada"), ImVec2(70, 24))) {
-            if (tab_actual_ == 1 && !entradas_.empty()) {
-                SpeciesRow r;
-                strncpy(r.formula, "O2(g)", sizeof(r.formula)-1);
-                entradas_[0].filas.push_back(r);
-                reciclar_calculos();
-                calcular_balance_elemental();
+            for (const auto& b : elem_balance_) {
+                const bool ok = std::abs(b.error_pct()) < 0.01;
+                const double bal_kmol = b.out_kmol_at - b.in_kmol_at;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%s", b.elemento.c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%.3f", b.in_kmol_at);
+                ImGui::TableNextColumn(); ImGui::Text("%.3f", b.out_kmol_at);
+                ImGui::TableNextColumn();
+                ImGui::TextColored(ok ? color_ok() : color_malo(), "%.3f",
+                                   std::abs(bal_kmol) < 5e-4 ? 0.0 : bal_kmol);
             }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(tr("Salida"), ImVec2(70, 24))) {
-            if (tab_actual_ == 2 && !salidas_.empty()) {
-                SpeciesRow r;
-                strncpy(r.formula, "CO2(g)", sizeof(r.formula)-1);
-                salidas_[0].filas.push_back(r);
-                reciclar_calculos();
-                calcular_balance_elemental();
-            }
-        }
-        ImGui::Spacing();
-        ImGui::Separator();
-        
-        // Insert
-        ImGui::Text(tr("Insert"));
-        if (ImGui::Button(tr("Área de Balance"), ImVec2(110, 24))) {
-            StreamGroup g;
-            snprintf(g.nombre, sizeof(g.nombre), "Area %zu", active_groups.size() + 1);
-            active_groups.push_back(g);
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(tr("Eliminar Área"), ImVec2(110, 24))) {
-            if (selected_stream_idx_ >= 0 && selected_stream_idx_ < (int)active_groups.size()) {
-                active_groups.erase(active_groups.begin() + selected_stream_idx_);
-                selected_stream_idx_ = std::max(0, selected_stream_idx_ - 1);
-                reciclar_calculos();
-                calcular_balance_elemental();
-            } else if (!active_groups.empty()) {
-                active_groups.pop_back();
-            }
-        }
-        if (ImGui::Button(tr("Corriente"), ImVec2(100, 24))) {
-            StreamGroup g;
-            snprintf(g.nombre, sizeof(g.nombre), "Stream %zu", active_groups.size() + 1);
-            active_groups.push_back(g);
-        }
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 15);
-        if (ImGui::Button(tr("Selected Stream"), ImVec2(120, 24))) {
-            if (selected_stream_idx_ >= 0 && selected_stream_idx_ < (int)active_groups.size()) {
-                active_groups.erase(active_groups.begin() + selected_stream_idx_);
-                selected_stream_idx_ = std::max(0, selected_stream_idx_ - 1);
-                reciclar_calculos();
-                calcular_balance_elemental();
-            }
-        }
-        
-        if (ImGui::Button(tr("Fila"), ImVec2(100, 24))) {
-            if (selected_stream_idx_ >= 0 && selected_stream_idx_ < (int)active_groups.size()) {
-                SpeciesRow r;
-                active_groups[selected_stream_idx_].filas.push_back(r);
-            }
-        }
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 15);
-        if (ImGui::Button(tr("Selected Row"), ImVec2(120, 24))) {
-            if (selected_stream_idx_ >= 0 && selected_stream_idx_ < (int)active_groups.size()) {
-                auto& stream = active_groups[selected_stream_idx_];
-                if (selected_row_idx_ >= 0 && selected_row_idx_ < (int)stream.filas.size()) {
-                    stream.filas.erase(stream.filas.begin() + selected_row_idx_);
-                    selected_row_idx_ = std::max(0, selected_row_idx_ - 1);
-                    reciclar_calculos();
-                    calcular_balance_elemental();
-                }
-            }
-        }
-        
-        if (ImGui::Button(tr("Flujo de Calor"), ImVec2(100, 24))) {
-            if (selected_stream_idx_ >= 0 && selected_stream_idx_ < (int)active_groups.size()) {
-                active_groups[selected_stream_idx_].heat_loss += 50.0;
-                reciclar_calculos();
-            }
-        }
-        
-        ImGui::Spacing();
-        ImGui::Separator();
-        
-        // Measure Units
-        ImGui::Text(tr("Measure Units"));
-        ImGui::Text(tr("Temperature:")); ImGui::SameLine();
-        if (ImGui::RadioButton("°C", &temp_unit_, 0)) reciclar_calculos();
-        ImGui::SameLine();
-        if (ImGui::RadioButton("K", &temp_unit_, 1)) reciclar_calculos();
-        
-        ImGui::Text(tr("Energy:"));
-        if (ImGui::RadioButton("Mcal", &energy_unit_, 0)) reciclar_calculos();
-        ImGui::SameLine();
-        if (ImGui::RadioButton("MJ", &energy_unit_, 1)) reciclar_calculos();
-        ImGui::SameLine();
-        if (ImGui::RadioButton("kWh", &energy_unit_, 2)) reciclar_calculos();
-        
-        ImGui::Spacing();
-        ImGui::Separator();
-        
-        // Functions
-        ImGui::Text(tr("Functions"));
-        ImGui::Checkbox(tr("Enable Predictive Typing"), &enable_predictive_typing_);
-        
-        if (ImGui::Button(tr("Temp. Balance"), ImVec2(110, 26))) {
-            Temp_Balance();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(tr("Resumen"), ImVec2(100, 26))) {
-            tab_actual_ = 0; // go to BALANCE
-        }
-        
-        ImGui::Spacing();
-        if (ImGui::Button(tr("Diagrama"), ImVec2(-1, 30))) {
-            show_diagram_ = !show_diagram_;
-        }
-    }
-    ImGui::EndChild();
-    
-    std::vector<const nucleo::Especie*> sel_hmb;
-    if (ModalBuscadorDB::instancia().dibujar("Buscar Especie (HMB)", sel_hmb, false)) { // Single selection
-        if (!sel_hmb.empty() && modal_target_stream_ != -1 && modal_target_row_ != -1) {
-            std::vector<StreamGroup>& groups = (tab_actual_ == 2) ? salidas_ : entradas_;
-            if (modal_target_stream_ < (int)groups.size() && modal_target_row_ < (int)groups[modal_target_stream_].filas.size()) {
-                strncpy(groups[modal_target_stream_].filas[modal_target_row_].formula, sel_hmb[0]->formula.c_str(), 63);
-                reciclar_calculos();
-                calcular_balance_elemental();
-            }
-        }
-        modal_target_stream_ = -1;
-        modal_target_row_ = -1;
-    }
-    
-    ImGui::Columns(1);
-    
-    // ── Diagram window popup ──
-    if (show_diagram_) {
-        ImGui::SetNextWindowSize(ImVec2(450, 320), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(tr("Diagram (Adiabatic Flame Temp)"), &show_diagram_)) {
-            if (!entradas_.empty() && !entradas_[0].filas.empty()) {
-                double orig_val = entradas_[0].filas[0].amount_kmol;
-                
-                std::vector<double> xs;
-                std::vector<double> ys;
-                
-                for (double x = 1.0; x <= 12.0; x += 1.0) {
-                    entradas_[0].filas[0].amount_kmol = x;
-                    Temp_Balance();
-                    double solved_t = salidas_[0].filas[0].temper;
-                    xs.push_back(x);
-                    ys.push_back(solved_t);
-                }
-                
-                entradas_[0].filas[0].amount_kmol = orig_val;
-                reciclar_calculos();
-                
-                std::string label = "Adiabatic Flame Temp vs " + std::string(entradas_[0].filas[0].formula) + " Input";
-                if (ImPlot::BeginPlot(label.c_str(), ImVec2(-1, -1))) {
-                    ImPlot::SetupAxes("Reactant Input (kmol)", "Temperature (°C)");
-                    ImPlot::PlotLine("Adiabatic Temp", xs.data(), ys.data(), (int)xs.size());
-                    ImPlot::EndPlot();
-                }
-            } else {
-                ImGui::Text(tr("Agrega especies de entrada para generar el diagrama."));
-            }
-            ImGui::End();
+            ImGui::EndTable();
         }
     }
 }
 
+void PanelBalanceHoja::dibujar_resumen_total() {
+    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.7f, 0.6f, 1.0f),
+                       "Total Balance");
+    const double ue_kj = motores::factor_energia_kJ(unidad_energia());
+    const char* ue = etiqueta_energia();
 
-// ═══════════════════════════════════════════════════════════════════════════
+    char h_hc[48], h_ht[48], h_ex[48];
+    std::snprintf(h_hc, sizeof(h_hc), "Heat Content\n%s", ue);
+    std::snprintf(h_ht, sizeof(h_ht), "Total H\n%s", ue);
+    std::snprintf(h_ex, sizeof(h_ex), "Exergy\n%s", ue);
 
-}} // namespace
+    const ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp;
+    if (ImGui::BeginTable("hmb_total_table", 7, flags, ImVec2(0, 0))) {
+        ImGui::TableSetupColumn("BALANCE\nAREAS", ImGuiTableColumnFlags_WidthFixed, 88.0f);
+        ImGui::TableSetupColumn("Amount\nkmol");
+        ImGui::TableSetupColumn("Amount\nkg");
+        ImGui::TableSetupColumn("Amount\nNm3");
+        ImGui::TableSetupColumn(h_hc);
+        ImGui::TableSetupColumn(h_ht);
+        ImGui::TableSetupColumn(h_ex);
+        ImGui::TableHeadersRow();
+
+        // Filas IN y OUT del área activa
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::TextDisabled("Inputs (%d)", area_activa_ + 1);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.kmol_entrada);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.masa_entrada_kg);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.nm3_entrada);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.h_sensible_entrada_kJ / ue_kj);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.h_entrada_kJ / ue_kj);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.exergia_entrada_kJ / ue_kj);
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::TextDisabled("Outputs (%d)", area_activa_ + 1);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.kmol_salida);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.masa_salida_kg);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.nm3_salida);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.h_sensible_salida_kJ / ue_kj);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.h_salida_kJ / ue_kj);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", resultado_.exergia_salida_kJ / ue_kj);
+
+        // Fila Balance (1) estilo HSC: OUT - IN (+ calor externo en Total H)
+        const double d_kmol = resultado_.kmol_salida - resultado_.kmol_entrada;
+        const double d_kg   = resultado_.masa_salida_kg - resultado_.masa_entrada_kg;
+        const double d_nm3  = resultado_.nm3_salida - resultado_.nm3_entrada;
+        const double d_hc   = (resultado_.h_sensible_salida_kJ - resultado_.h_sensible_entrada_kJ) / ue_kj;
+        const double d_ht   = -resultado_.residual_energia_kJ / ue_kj;
+        const double d_ex   = (resultado_.exergia_salida_kJ - resultado_.exergia_entrada_kJ) / ue_kj;
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text("Balance (%d)", area_activa_ + 1);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", std::abs(d_kmol) < 5e-4 ? 0.0 : d_kmol);
+        ImGui::TableNextColumn();
+        ImGui::TextColored(resultado_.balance_masa_ok ? color_ok() : color_malo(),
+                           "%.3f", std::abs(d_kg) < 5e-4 ? 0.0 : d_kg);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", std::abs(d_nm3) < 5e-4 ? 0.0 : d_nm3);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", d_hc);
+        ImGui::TableNextColumn();
+        ImGui::TextColored(resultado_.balance_energia_ok ? color_ok() : color_malo(),
+                           "%.3f", std::abs(d_ht) < 5e-4 ? 0.0 : d_ht);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", d_ex);
+
+        // Fila Total Balance
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableNextColumn(); ImGui::TextColored(color_aviso(), "Total Balance");
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", std::abs(d_kmol) < 5e-4 ? 0.0 : d_kmol);
+        ImGui::TableNextColumn();
+        ImGui::TextColored(resultado_.balance_masa_ok ? color_ok() : color_malo(),
+                           "%.3f", std::abs(d_kg) < 5e-4 ? 0.0 : d_kg);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", std::abs(d_nm3) < 5e-4 ? 0.0 : d_nm3);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", d_hc);
+        ImGui::TableNextColumn();
+        ImGui::TextColored(resultado_.balance_energia_ok ? color_ok() : color_malo(),
+                           "%.3f", std::abs(d_ht) < 5e-4 ? 0.0 : d_ht);
+        ImGui::TableNextColumn(); ImGui::Text("%.3f", d_ex);
+
+        ImGui::EndTable();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Herramientas (columna derecha - réplica de Tools en HSC Bal)
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelBalanceHoja::dibujar_herramientas() {
+    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.6f, 0.8f, 1.0f), "Tools");
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // Balance Area
+    ImGui::Text("Balance Area");
+    if (areas_ui_.empty()) cambiar_area_activa(0);
+    std::string items_areas;
+    for (const auto& a : areas_ui_) {
+        items_areas += a.nombre;
+        items_areas.push_back('\0');
+    }
+    items_areas.push_back('\0');
+    int sel_area = area_activa_;
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::Combo("##view_bal_area", &sel_area, items_areas.c_str())) {
+        cambiar_area_activa(sel_area);
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Text("Get Species from Database");
+    const float avail_w = ImGui::GetContentRegionAvail().x;
+    const float half_w = (avail_w - 6.0f) * 0.5f;
+    if (ImGui::Button("Input##db_in", ImVec2(half_w, 24))) {
+        if (entradas_.empty()) agregar_corriente(false);
+        modal_es_salida_ = false;
+        modal_corriente_ = std::clamp(corriente_sel_, 0, static_cast<int>(entradas_.size()) - 1);
+        modal_fila_ = -1;
+        ModalBuscadorDB::instancia().abrir(kModalHMB);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Output##db_out", ImVec2(half_w, 24))) {
+        if (salidas_.empty()) agregar_corriente(true);
+        modal_es_salida_ = true;
+        modal_corriente_ = std::clamp(corriente_sel_, 0, static_cast<int>(salidas_.size()) - 1);
+        modal_fila_ = -1;
+        ModalBuscadorDB::instancia().abrir(kModalHMB);
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    // Insert y Delete en tabla de 2 columnas proporcionales
+    if (ImGui::BeginTable("hsc_ins_del_tbl", 2, ImGuiTableFlags_SizingStretchSame)) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::Text("Insert");
+        ImGui::TableNextColumn(); ImGui::Text("Delete");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Balance Area##ins", ImVec2(-1, 23))) insertar_area_balance();
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Balance Area##del", ImVec2(-1, 23))) eliminar_area_balance();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Stream##ins", ImVec2(-1, 23))) agregar_corriente(lado_salida_sel_);
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Sel. Stream##del", ImVec2(-1, 23))) accion_pendiente_ = AccionPendiente::BorrarCorriente;
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Eliminar corriente seleccionada");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Row##ins", ImVec2(-1, 23))) {
+            auto& grupos = lista(lado_salida_sel_);
+            if (!grupos.empty()) {
+                const int ci = std::clamp(corriente_sel_, 0, static_cast<int>(grupos.size()) - 1);
+                FilaUI f;
+                f.temper = grupos[static_cast<size_t>(ci)].filas.empty()
+                               ? ((temp_unit_ == 0) ? 25.0 : 298.15)
+                               : grupos[static_cast<size_t>(ci)].filas.back().temper;
+                grupos[static_cast<size_t>(ci)].filas.push_back(f);
+                fila_sel_ = static_cast<int>(grupos[static_cast<size_t>(ci)].filas.size()) - 1;
+                recalcular(false);
+            }
+        }
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Sel. Row##del", ImVec2(-1, 23))) accion_pendiente_ = AccionPendiente::BorrarFila;
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Eliminar fila/especie seleccionada");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Heat Flow##ins", ImVec2(-1, 23))) {
+            auto& grupos = lista(lado_salida_sel_);
+            if (!grupos.empty()) {
+                const int ci = std::clamp(corriente_sel_, 0, static_cast<int>(grupos.size()) - 1);
+                if (std::abs(grupos[static_cast<size_t>(ci)].calor) < 1e-9)
+                    grupos[static_cast<size_t>(ci)].calor = 10.0;
+                recalcular(false);
+            }
+        }
+        ImGui::TableNextColumn();
+        if (ImGui::Button("Clear Heat##del", ImVec2(-1, 23))) {
+            auto& grupos = lista(lado_salida_sel_);
+            if (!grupos.empty()) {
+                const int ci = std::clamp(corriente_sel_, 0, static_cast<int>(grupos.size()) - 1);
+                grupos[static_cast<size_t>(ci)].calor = 0.0;
+                recalcular(false);
+            }
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Poner a cero el calor externo de esta corriente");
+
+        ImGui::EndTable();
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    // Measure Units
+    ImGui::Text("Measure Units");
+    ImGui::Text("Temperature:");
+    const int temp_prev = temp_unit_;
+    ImGui::SameLine();
+    ImGui::RadioButton("°C", &temp_unit_, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("K", &temp_unit_, 1);
+    if (temp_unit_ != temp_prev) {
+        auto conv = [&](double v) {
+            const double K = (temp_prev == 0) ? v + 273.15 : v;
+            return (temp_unit_ == 0) ? K - 273.15 : K;
+        };
+        for (auto* grupos : {&entradas_, &salidas_})
+            for (auto& c : *grupos)
+                for (auto& f : c.filas) f.temper = conv(f.temper);
+        target_temp_ = conv(target_temp_);
+        gem_temp_ = conv(gem_temp_);
+        calor_calculado_ = false;
+        recalcular(false);
+    }
+
+    ImGui::Text("Amount:");
+    ImGui::SameLine();
+    int amt_u = elem_bal_kg_ ? 1 : 0;
+    if (ImGui::RadioButton("kmol", &amt_u, 0)) elem_bal_kg_ = false;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("kg", &amt_u, 1)) elem_bal_kg_ = true;
+
+    ImGui::Text("Energy:");
+    const int energy_prev = energy_unit_;
+    ImGui::RadioButton("Mcal", &energy_unit_, 0); ImGui::SameLine(0, 8);
+    ImGui::RadioButton("MJ", &energy_unit_, 1);   ImGui::SameLine(0, 8);
+    ImGui::RadioButton("kWh", &energy_unit_, 2);
+    ImGui::RadioButton("kJ", &energy_unit_, 3);   ImGui::SameLine(0, 8);
+    ImGui::RadioButton("kcal", &energy_unit_, 4);
+    if (energy_unit_ != energy_prev) {
+        auto conv = [&](double v) {
+            return motores::energia_desde_kJ(
+                motores::energia_a_kJ(v, static_cast<motores::UnidadEnergia>(energy_prev)),
+                unidad_energia());
+        };
+        for (auto* grupos : {&entradas_, &salidas_})
+            for (auto& c : *grupos) c.calor = conv(c.calor);
+        calor_requerido_ = conv(calor_requerido_);
+        recalcular(false);
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    // Functions
+    ImGui::Text("Functions");
+    ImGui::Checkbox("Predictive Typing", &enable_predictive_typing_);
+    const float btn_w = (ImGui::GetContentRegionAvail().x - 6.0f) * 0.5f;
+    if (ImGui::Button("Temp. Balance", ImVec2(btn_w, 25))) temp_balance();
+    ImGui::SameLine();
+    if (ImGui::Button("Summary", ImVec2(btn_w, 25))) copiar_informe();
+    if (ImGui::Button("Ajustar Calor", ImVec2(btn_w, 25))) ajustar_calor();
+    ImGui::SameLine();
+    if (ImGui::Button(show_diagram_ ? "Hide Diagram" : "Diagram", ImVec2(btn_w, 25))) {
+        show_diagram_ = !show_diagram_;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render principal
+// ─────────────────────────────────────────────────────────────────────────────
+void PanelBalanceHoja::renderizar(diagrama_flujo::Flowsheet* flowsheet) {
+    if (corriente_sel_ < 0 ||
+        corriente_sel_ >= static_cast<int>(lista(lado_salida_sel_).size())) {
+        corriente_sel_ = 0;
+    }
+
+    // ── Barra de herramientas superior ──
+    if (ImGui::Button(tr("Abrir"))) abrir_txt();
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Guardar"))) guardar_txt();
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Exportar CSV"))) exportar_csv();
+    if (flowsheet != nullptr) {
+        ImGui::SameLine();
+        if (ImGui::Button(tr("Cargar del diagrama"))) cargar_flujos(flowsheet);
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(std::clamp(ImGui::GetContentRegionAvail().x - 90.0f, 140.0f, 300.0f));
+    const char* presets_nombres[] = {
+        "HSC Ref: CH4 + Cooling Water (1238.9 °C)",
+        "Caldera de Gas Natural (350 °C)",
+        "Tostación de Pirita FeS2 (850 °C)",
+        "Alto Horno Hematita Fe2O3 + CO"
+    };
+    if (ImGui::Combo("##preset_hmb", &preset_idx_, presets_nombres, 4)) {
+        cargar_preset(preset_idx_);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Limpiar"))) {
+        entradas_.clear();
+        salidas_.clear();
+        corriente_sel_ = 0;
+        fila_sel_ = -1;
+        vista_ = Vista::Balance;
+        recalcular(false);
+    }
+
+    // ── Barra de fórmula activa estilo HSC + indicadores de estado ──
+    dibujar_barra_formula();
+    ImGui::SameLine(0.0f, 16.0f);
+    if (resultado_.balance_masa_ok)
+        ImGui::TextColored(color_ok(), "Masa: OK");
+    else
+        ImGui::TextColored(color_malo(), "Masa: Δ=%.3f kg", resultado_.residual_masa_kg);
+    ImGui::SameLine();
+    if (resultado_.balance_energia_ok)
+        ImGui::TextColored(color_ok(), "Energía: OK");
+    else
+        ImGui::TextColored(color_malo(), "Energía: Δ=%.2f %%", resultado_.error_energia_pct);
+    ImGui::Separator();
+
+    // ── Dos paneles: hoja (izquierda) | Tools (derecha, ancho fijo) ──
+    const ImVec2 disponible = ImGui::GetContentRegionAvail();
+    const float espacio = ImGui::GetStyle().ItemSpacing.x;
+    const float ancho_tools = std::clamp(disponible.x * 0.24f, 200.0f, 260.0f);
+    const float ancho_hoja = std::max(disponible.x - ancho_tools - espacio, 240.0f);
+    const float alto_panel = disponible.y;
+
+    // ───────── Panel izquierdo ─────────
+    ImGui::BeginChild("hmb_izquierda", ImVec2(ancho_hoja, alto_panel), false);
+    {
+        // Altura reservada para Element Balance / Total Balance (siempre visibles, como en HSC)
+        const float alto_total = ImGui::GetContentRegionAvail().y;
+        const float alto_aviso = ImGui::GetFrameHeightWithSpacing() + 6.0f;
+        const float alto_inferior = std::clamp((alto_total - alto_aviso) * 0.32f, 130.0f, 210.0f);
+        const float alto_hoja = std::max(alto_total - alto_inferior - alto_aviso - ImGui::GetStyle().ItemSpacing.y * 2, 120.0f);
+
+        ImGui::BeginChild("hmb_hoja_tabs", ImVec2(0.0f, alto_hoja), false);
+        if (ImGui::BeginTabBar("hmb_pestanas", ImGuiTabBarFlags_FittingPolicyScroll)) {
+            char tab_in[32], tab_out[32], tab_in_pct[32], tab_out_pct[32];
+            std::snprintf(tab_in, sizeof(tab_in), "IN%d###tab_in_g", area_activa_ + 1);
+            std::snprintf(tab_out, sizeof(tab_out), "OUT%d###tab_out_g", area_activa_ + 1);
+            std::snprintf(tab_in_pct, sizeof(tab_in_pct), "In%d-%%###tab_in_pct", area_activa_ + 1);
+            std::snprintf(tab_out_pct, sizeof(tab_out_pct), "Out%d-%%###tab_out_pct", area_activa_ + 1);
+
+            if (ImGui::BeginTabItem("BALANCE###tab_bal_g")) {
+                vista_ = Vista::Balance;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_balance();
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem(tab_in)) {
+                vista_ = Vista::IN_Global;
+                lado_salida_sel_ = false;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_global_hoja(false);
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem(tab_out)) {
+                vista_ = Vista::OUT_Global;
+                lado_salida_sel_ = true;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_global_hoja(true);
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Target###tab_target_g")) {
+                vista_ = Vista::Target;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_target();
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem(tab_in_pct)) {
+                vista_ = Vista::InPct;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_porcentaje(false);
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem(tab_out_pct)) {
+                vista_ = Vista::OutPct;
+                ImGui::BeginChild("hmb_tab_body", ImVec2(0, 0), false);
+                dibujar_pestana_porcentaje(true);
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::EndChild();
+
+        // ── Paneles inferiores: Element Balance | Total Balance ──
+        const float ancho_avail = ImGui::GetContentRegionAvail().x;
+        const float ancho_elem = std::clamp(ancho_avail * 0.35f, 230.0f, 350.0f);
+        const float ancho_total = ancho_avail - ancho_elem - espacio;
+        ImGui::BeginChild("hmb_inf_elem", ImVec2(ancho_elem, alto_inferior), true);
+        dibujar_tabla_elementos();
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("hmb_inf_total", ImVec2(ancho_total, alto_inferior), true);
+        dibujar_resumen_total();
+        ImGui::EndChild();
+
+        if (!resultado_.avisos.empty()) {
+            ImGui::TextColored(color_aviso(), "Avisos (%d): %s",
+                               static_cast<int>(resultado_.avisos.size()),
+                               resultado_.avisos.front().c_str());
+            if (ImGui::IsItemHovered() && resultado_.avisos.size() > 1) {
+                ImGui::BeginTooltip();
+                for (const auto& a : resultado_.avisos) ImGui::BulletText("%s", a.c_str());
+                ImGui::EndTooltip();
+            }
+        } else {
+            ImGui::TextColored(color_ok(), "Sin avisos: hoja de balance consistente.");
+        }
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+
+    // ───────── Panel derecho (Tools) ─────────
+    ImGui::BeginChild("hmb_derecha", ImVec2(ancho_tools, alto_panel), true);
+    dibujar_herramientas();
+    ImGui::EndChild();
+
+    // ── Modal buscador de especies ──
+    std::vector<const nucleo::Especie*> seleccionadas;
+    if (ModalBuscadorDB::instancia().dibujar(kModalHMB, seleccionadas, false)) {
+        if (!seleccionadas.empty() && modal_corriente_ >= 0) {
+            auto& grupos = lista(modal_es_salida_);
+            if (modal_corriente_ < static_cast<int>(grupos.size())) {
+                CorrienteUI& c = grupos[static_cast<size_t>(modal_corriente_)];
+                const std::string formula = seleccionadas[0]->formula;
+                if (modal_fila_ >= 0 && modal_fila_ < static_cast<int>(c.filas.size())) {
+                    copiar_texto(c.filas[static_cast<size_t>(modal_fila_)].formula,
+                                 sizeof(FilaUI::formula), formula);
+                } else {
+                    FilaUI f;
+                    copiar_texto(f.formula, sizeof(f.formula), formula);
+                    f.temper = c.filas.empty()
+                                   ? ((temp_unit_ == 0) ? 25.0 : 298.15)
+                                   : c.filas.back().temper;
+                    c.filas.push_back(f);
+                    fila_sel_ = static_cast<int>(c.filas.size()) - 1;
+                }
+                lado_salida_sel_ = modal_es_salida_;
+                corriente_sel_ = modal_corriente_;
+            }
+        }
+        modal_corriente_ = -1;
+        modal_fila_ = -1;
+        recalcular(true);
+    }
+
+    // ── Ventana flotante Diagram (como en HSC Bal) ──
+    if (show_diagram_) {
+        ImGui::SetNextWindowSize(ImVec2(640, 430), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin(tr("Diagram - HSC Heat and Material Balance"), &show_diagram_)) {
+            dibujar_diagrama();
+        }
+        ImGui::End();
+    }
+
+    aplicar_accion_pendiente();
+}
+
+}} // namespace cma::interfaz

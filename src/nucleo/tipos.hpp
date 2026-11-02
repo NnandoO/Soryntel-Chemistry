@@ -49,8 +49,9 @@ struct Especie {
     double      antoine_a = 0.0, antoine_b = 0.0, antoine_c = 0.0;
     double      temp_min_antoine = 0.0, temp_max_antoine = 0.0; // °C
 
-    // Estado estándar
+    // Estado estándar y composición elemental
     Fase        fase_std = Fase::Gas;
+    std::map<std::string, int> composicion_elemental;
 
     double cp(double T_K) const {
         return cp_a + cp_b*T_K + cp_c*T_K*T_K + cp_d*T_K*T_K*T_K;
@@ -184,12 +185,29 @@ struct Flujo {
     // LCA Mappings
     std::string lca_equivalent = "No Mapping";
     std::string lca_group = "Not defined";
+    // Mapeo LCA por especie (etiqueta de especie -> id de equivalente)
+    std::map<std::string, std::string> lca_especies;
 
     // Mass Balance (Reconciliation) Data
-    double measured_flow = -1.0;      // -1 means not initialized yet
-    double sd = -1.0;
+    double measured_flow = -1.0;      // -1 means not initialized yet; t/h de sólidos secos
+    double sd = -1.0;                 // desviación estándar absoluta; t/h
+    double measured_water = -1.0;     // t/h de líquido
+    double sd_water = -1.0;           // desviación estándar absoluta; t/h
     bool mb_selected = true;
     bool mb_assayed = true;
+    std::map<std::string, double> mb_assays; // elemento -> fracción másica seca (0..1)
+
+    double flujo_molar_total() const {
+        double s = 0;
+        for (auto& [_, n] : flujo_molar) s += n;
+        return s;
+    }
+
+    double masa_particulas_kg_h() const {
+        double s = agua_kg_h;
+        for (const auto& p : particulas) s += p.mass_kg_h;
+        return s;
+    }
 
     double flujo_total() const {
         double s = 0;
@@ -200,40 +218,67 @@ struct Flujo {
     }
 
     std::map<int64_t, double> fracciones_molares() const {
-        double tot = flujo_total();
+        double tot = flujo_molar_total();
         std::map<int64_t, double> x;
-        if (tot > 0) for (auto& [id, n] : flujo_molar) x[id] = n / tot;
+        if (tot > 0) for (auto& [sid, n] : flujo_molar) x[sid] = n / tot;
         return x;
     }
 
-    double flujo_especie(int64_t id) const {
-        auto it = flujo_molar.find(id);
+    double flujo_especie(int64_t species_id) const {
+        auto it = flujo_molar.find(species_id);
         return it != flujo_molar.end() ? it->second : 0.0;
     }
 
-    bool tiene_especie(int64_t id) const {
-        return flujo_molar.count(id) > 0;
+    bool tiene_especie(int64_t species_id) const {
+        return flujo_molar.count(species_id) > 0;
     }
 
     // Calcular entalpía total usando Cp polinomial de cada especie (kJ/s)
-    double calcular_entalpia(const std::map<int64_t, nucleo::Especie>& db) {
+    double calcular_entalpia(const std::map<int64_t, nucleo::Especie>& db) const {
         double H = 0;
-        for (auto& [id, n] : flujo_molar) {
-            auto it = db.find(id);
+        for (auto& [sid, n] : flujo_molar) {
+            auto it = db.find(sid);
             if (it != db.end()) {
                 H += n * it->second.entalpia_abs(temperatura);
             } else {
                 H += n * 0.0291 * (temperatura - STP_TEMP);
             }
         }
+        // Entalpía sensible de fase particulada + agua (agua_kg_h y particulas en kg/h)
+        if (agua_kg_h > 0.0) {
+            double m_w_kg_s = agua_kg_h / 3600.0;
+            // H2O(l): Hf = -15879 kJ/kg, Cp = 4.184 kJ/(kg·K)
+            H += m_w_kg_s * (-15879.0 + 4.184 * (temperatura - STP_TEMP));
+        }
+        for (const auto& p : particulas) {
+            double m_p_kg_s = p.mass_kg_h / 3600.0;
+            // Sólido mineral genérico Cp ~ 0.85 kJ/(kg·K)
+            H += m_p_kg_s * (0.85 * (temperatura - STP_TEMP));
+        }
         return H;
+    }
+
+    double calcular_entalpia(const std::map<int64_t, nucleo::Especie>& db) {
+        entalpia = static_cast<const Flujo*>(this)->calcular_entalpia(db);
+        return entalpia;
+    }
+
+    template <typename Repo, typename = decltype(std::declval<const Repo&>().mapa_especies())>
+    double calcular_entalpia(const Repo& repo) const {
+        return calcular_entalpia(repo.mapa_especies());
+    }
+
+    template <typename Repo, typename = decltype(std::declval<const Repo&>().mapa_especies())>
+    double calcular_entalpia(const Repo& repo) {
+        entalpia = calcular_entalpia(repo.mapa_especies());
+        return entalpia;
     }
 
     // Calcular Cp del flujo a temperatura actual (kJ/(K·s) = kW/K)
     double cp_flujo(const std::map<int64_t, nucleo::Especie>& db) const {
         double cp = 0;
-        for (auto& [id, n] : flujo_molar) {
-            auto it = db.find(id);
+        for (auto& [sid, n] : flujo_molar) {
+            auto it = db.find(sid);
             if (it != db.end()) {
                 cp += n * it->second.cp(temperatura);
             } else {
@@ -246,8 +291,8 @@ struct Flujo {
     // Calcular entropía total del flujo (kJ/K·s)
     double entropia_total(const std::map<int64_t, nucleo::Especie>& db) const {
         double S = 0;
-        for (auto& [id, n] : flujo_molar) {
-            auto it = db.find(id);
+        for (auto& [sid, n] : flujo_molar) {
+            auto it = db.find(sid);
             if (it != db.end())
                 S += n * it->second.entropia_abs(temperatura);
         }
@@ -257,27 +302,42 @@ struct Flujo {
     // Calcular energía de Gibbs total del flujo (kJ/s)
     double gibbs_total(const std::map<int64_t, nucleo::Especie>& db) const {
         double G = 0;
-        for (auto& [id, n] : flujo_molar) {
-            auto it = db.find(id);
+        for (auto& [sid, n] : flujo_molar) {
+            auto it = db.find(sid);
             if (it != db.end())
                 G += n * it->second.energia_gibbs(temperatura);
         }
         return G;
     }
 
-    // Masa total del flujo (kg/s)
+    // Masa total del flujo (kg/s): n [kmol/s] * M [g/mol = kg/kmol] = kg/s
     double masa_total(const std::map<int64_t, nucleo::Especie>& db) const {
         double m = 0;
-        for (auto& [id, n] : flujo_molar) {
-            auto it = db.find(id);
+        for (auto& [sid, n] : flujo_molar) {
+            auto it = db.find(sid);
             if (it != db.end())
                 m += n * it->second.masa_molar;
         }
         for (const auto& p : particulas) {
-            m += p.mass_kg_h / 3.6; // kg/h -> g/s (m is in g/s before / 1000)
+            m += p.mass_kg_h / 3600.0;
         }
-        m += agua_kg_h / 3.6;
-        return m / 1000.0;
+        m += agua_kg_h / 3600.0;
+        return m;
+    }
+
+    template <typename Repo, typename = decltype(std::declval<const Repo&>().mapa_especies())>
+    double masa_total(const Repo& repo) const {
+        return masa_total(repo.mapa_especies());
+    }
+
+    // Masa total del flujo en toneladas por hora (t/h), estándar HSC Sim
+    double masa_total_t_h(const std::map<int64_t, nucleo::Especie>& db) const {
+        return masa_total(db) * 3.6;
+    }
+
+    template <typename Repo, typename = decltype(std::declval<const Repo&>().mapa_especies())>
+    double masa_total_t_h(const Repo& repo) const {
+        return masa_total(repo.mapa_especies()) * 3.6;
     }
 };
 
@@ -502,11 +562,11 @@ struct Nodo {
 
     int num_etapas() const {
         auto it = params.find("etapas");
-        return it != params.end() ? (int)it->second : 10;
+        return it != params.end() ? static_cast<int>(it->second) : 10;
     }
 
-    int num_entradas()  const { return (int)ids_flujos_entrada.size(); }
-    int num_salidas()   const { return (int)ids_flujos_salida.size(); }
+    int num_entradas()  const { return static_cast<int>(ids_flujos_entrada.size()); }
+    int num_salidas()   const { return static_cast<int>(ids_flujos_salida.size()); }
 };
 
 // ── Manejo de errores ───────────────────────────────────────────────────────

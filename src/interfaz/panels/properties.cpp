@@ -8,6 +8,11 @@ PanelPropiedades::PanelPropiedades() {}
 void PanelPropiedades::seleccionar_nodo(int64_t id) { id_nodo_ = id; id_flujo_ = -1; id_anotacion_ = -1; forzar_seleccion_proceso_ = true; }
 void PanelPropiedades::seleccionar_flujo(int64_t id) { id_flujo_ = id; id_nodo_ = -1; id_anotacion_ = -1; forzar_seleccion_proceso_ = true; }
 void PanelPropiedades::seleccionar_anotacion(int64_t id) { id_anotacion_ = id; id_nodo_ = -1; id_flujo_ = -1; forzar_seleccion_dibujos_ = true; }
+void PanelPropiedades::abrir_editor_unidad(int64_t id) {
+    id_nodo_ = id;
+    id_nodo_editor_ = id;
+    mostrar_editor_unidad_ = true;
+}
 
 void PanelPropiedades::renderizar() {
     if (!flowsheet_) { ImGui::TextDisabled(tr("Sin flowsheet.")); return; }
@@ -29,11 +34,19 @@ void PanelPropiedades::renderizar() {
             renderizar_contenido_proceso();
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Stream Viewer")) {
+            renderizar_stream_viewer();
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem(tr("Dibujos"), nullptr, tab_drawings_flags)) {
             renderizar_contenido_dibujos();
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
+    }
+
+    if (mostrar_editor_unidad_) {
+        renderizar_editor_unidad();
     }
 }
 
@@ -92,7 +105,7 @@ void PanelPropiedades::renderizar_contenido_dibujos() {
 
 void PanelPropiedades::propiedades_nodo(nucleo::Nodo& nodo) {
     if (ImGui::BeginTable("process_props_node", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInner | ImGuiTableFlags_RowBg)) {
-        ImGui::TableSetupColumn("Propiedad", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("Propiedad", ImGuiTableColumnFlags_WidthFixed, 105.0f);
         ImGui::TableSetupColumn("Valor", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 
@@ -117,20 +130,49 @@ void PanelPropiedades::propiedades_nodo(nucleo::Nodo& nodo) {
         // Number/Alias
         ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Number/Alias")); ImGui::TableNextColumn(); ImGui::Text(tr("%lld"), (long long)nodo.id);
 
-        // Mode / Type / Model
-        ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Mode")); ImGui::TableNextColumn(); ImGui::Text(tr("General"));
+        // Mode (HSC-Sim: Particles, Reactions, Distribution)
+        int modo_sim = 1;
+        if (nodo.params.count("modo_sim")) {
+            modo_sim = static_cast<int>(nodo.params.at("modo_sim"));
+        } else if (nodo.tipo == nucleo::TipoNodo::MolinoBolas || nodo.tipo == nucleo::TipoNodo::MolinoSAG ||
+                   nodo.tipo == nucleo::TipoNodo::MolinoBarras || nodo.tipo == nucleo::TipoNodo::TrituradoraMandibula ||
+                   nodo.tipo == nucleo::TipoNodo::TrituradoraGiratoria || nodo.tipo == nucleo::TipoNodo::TrituradoraCono ||
+                   nodo.tipo == nucleo::TipoNodo::Hidrociclon || nodo.tipo == nucleo::TipoNodo::Zaranda ||
+                   nodo.tipo == nucleo::TipoNodo::CeldaFlotacion) {
+            modo_sim = 0;
+        } else if (nodo.tipo == nucleo::TipoNodo::Separador || nodo.tipo == nucleo::TipoNodo::Divisor ||
+                   nodo.tipo == nucleo::TipoNodo::Espesador || nodo.tipo == nucleo::TipoNodo::Filtro ||
+                   nodo.tipo == nucleo::TipoNodo::ColumnaDestilacion) {
+            modo_sim = 2;
+        }
+        modo_sim = std::clamp(modo_sim, 0, 2);
+        const char* modos_hsc[] = { "Particles (PSD)", "Reactions (Equil/Stoich)", "Distribution (Elem/Split)" };
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Mode")); ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::Combo("##ModoHSCSim", &modo_sim, modos_hsc, 3)) {
+            nodo.params["modo_sim"] = static_cast<double>(modo_sim);
+            if (al_cambio_flowsheet) al_cambio_flowsheet();
+        }
+
         ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Tipo")); ImGui::TableNextColumn(); ImGui::Text(tr("Standard"));
         ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Modelo")); ImGui::TableNextColumn(); ImGui::Text(tr("%s"), nucleo::nombre_tipo_nodo(nodo.tipo));
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text("Technology"); ImGui::TableNextColumn();
+        ImGui::TextUnformatted(modo_sim == 0 ? "Mineral Processing" : (modo_sim == 1 ? "Hydro / Pyrometallurgy" : "Mass Balance / Separation"));
 
         // Location
         ImGui::TableNextRow();
         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_Header));
         ImGui::TableNextColumn(); ImGui::Text(tr("Ubicación")); ImGui::TableNextColumn(); ImGui::Text(tr(""));
 
-        ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Página")); ImGui::TableNextColumn(); ImGui::Text(tr("Page1"));
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Página")); ImGui::TableNextColumn(); ImGui::Text("Page%d", nodo.pagina + 1);
         ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::Text(tr("Capa")); ImGui::TableNextColumn(); ImGui::Text(tr("Layer 0 (Default)"));
 
         ImGui::EndTable();
+    }
+
+    ImGui::Spacing();
+    if (ImGui::Button("Abrir Hoja de Unidad (XLS: Input | Output | Dist | Rxn | Tanks)", ImVec2(-1, 26))) {
+        abrir_editor_unidad(nodo.id);
     }
 
     ImGui::Spacing();
@@ -151,6 +193,33 @@ void PanelPropiedades::propiedades_nodo(nucleo::Nodo& nodo) {
     }
 }
 
+static void dibujar_selector_reaccion_hsc(nucleo::Nodo& nodo, const std::function<void()>& al_cambio) {
+    auto& gestor = base_datos::GestorDB::instancia();
+    auto rxns = gestor.todas_reacciones();
+    int rxn_id = nodo.params.count("reaccion_id") ? static_cast<int>(nodo.params.at("reaccion_id")) : 0;
+    const auto* rxn_actual = (rxn_id > 0) ? gestor.reaccion_por_id(rxn_id) : nullptr;
+    std::string preview = rxn_actual ? ("#" + std::to_string(rxn_id) + ": " + rxn_actual->nombre) : "(Sin reacción / Seleccionar...)";
+    ImGui::TextUnformatted("Reacción Química Principal:");
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::BeginCombo("##RxnComboHSC", preview.c_str())) {
+        if (ImGui::Selectable("(0) Sin reacción fija / Equilibrio libre", rxn_id == 0)) {
+            nodo.params.erase("reaccion_id");
+            if (al_cambio) al_cambio();
+        }
+        for (const auto* r : rxns) {
+            if (!r) continue;
+            bool sel = (r->id == rxn_id);
+            std::string label = "#" + std::to_string(r->id) + ": " + r->nombre;
+            if (ImGui::Selectable(label.c_str(), sel)) {
+                nodo.params["reaccion_id"] = static_cast<double>(r->id);
+                if (al_cambio) al_cambio();
+            }
+            if (sel) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+}
+
 void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
     switch (nodo.tipo) {
         case nucleo::TipoNodo::Fuente: {
@@ -158,19 +227,23 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
             
             // Temperature input
             double T = nodo.params.count("temperatura") ? nodo.params.at("temperatura") : 
-                      (nodo.params.count("temperature") ? nodo.params.at("temperature") : nucleo::STP_TEMP);
+                      (nodo.params.count("temperature") ? nodo.params.at("temperature") :
+                      (nodo.params.count("T") ? nodo.params.at("T") : nucleo::STP_TEMP));
             if (ImGui::InputDouble("Temperatura de alimentación (K)", &T, 1.0, 10.0, "%.2f")) {
                 nodo.params["temperatura"] = T;
                 nodo.params["temperature"] = T;
+                nodo.params["T"] = T;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
             
             // Pressure input
             double P = nodo.params.count("presion") ? nodo.params.at("presion") : 
-                      (nodo.params.count("pressure") ? nodo.params.at("pressure") : nucleo::STP_PRES);
+                      (nodo.params.count("pressure") ? nodo.params.at("pressure") :
+                      (nodo.params.count("P") ? nodo.params.at("P") : nucleo::STP_PRES));
             if (ImGui::InputDouble("Presión de alimentación (atm)", &P, 0.1, 1.0, "%.4f")) {
                 nodo.params["presion"] = P;
                 nodo.params["pressure"] = P;
+                nodo.params["P"] = P;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
             
@@ -178,7 +251,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
             ImGui::Separator();
             ImGui::Spacing();
             
-            ImGui::Text(tr("Composición de alimentación:"));
+            ImGui::Text(tr("Composición de alimentación (kmol/s):"));
             
             if (ImGui::Button(tr("Examinar Base de Datos##feed"), ImVec2(-1, 0))) {
                 ModalBuscadorDB::instancia().abrir("Buscar Especie (Alimentación)");
@@ -210,11 +283,11 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
                         std::string name = sp ? sp->nombre : ("ID " + std::to_string(sid));
                         
                         ImGui::PushID(sid);
-                        ImGui::SetNextItemWidth(120.0f);
+                        ImGui::SetNextItemWidth(110.0f);
                         double flow_val = v;
                         if (ImGui::InputDouble(name.c_str(), &flow_val, 0, 0, "%.4f")) {
-                            nodo.params["flujo_" + std::to_string(sid)] = flow_val;
-                            nodo.params["flow_" + std::to_string(sid)] = flow_val;
+                            nodo.params["flujo_" + std::to_string(sid)] = std::max(0.0, flow_val);
+                            nodo.params["flow_" + std::to_string(sid)] = std::max(0.0, flow_val);
                             if (al_cambio_flowsheet) al_cambio_flowsheet();
                         }
                         ImGui::SameLine();
@@ -231,28 +304,60 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
                 nodo.params.erase(k);
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
+
+            // Alimentación particulada (Modo Particles PSD)
+            if (ImGui::CollapsingHeader("Partículas Minerales (PSD) y Pulpa")) {
+                double agua = nodo.params.count("agua_kg_h") ? nodo.params.at("agua_kg_h") : 0.0;
+                if (ImGui::InputDouble("Agua de pulpa (kg/h)", &agua, 100.0, 1000.0, "%.1f")) {
+                    nodo.params["agua_kg_h"] = std::max(0.0, agua);
+                    if (al_cambio_flowsheet) al_cambio_flowsheet();
+                }
+                for (int i = 0; i < 3; ++i) {
+                    std::string kf = "mineral_" + std::to_string(i) + "_flow";
+                    std::string kd = "mineral_" + std::to_string(i) + "_d";
+                    double mf = nodo.params.count(kf) ? nodo.params.at(kf) : 0.0;
+                    double md = nodo.params.count(kd) ? nodo.params.at(kd) : 1000.0;
+                    ImGui::PushID(2000 + i);
+                    ImGui::SetNextItemWidth(100);
+                    if (ImGui::InputDouble(("Masa M" + std::to_string(i) + " (kg/h)").c_str(), &mf, 0, 0, "%.1f")) {
+                        nodo.params[kf] = std::max(0.0, mf);
+                        if (al_cambio_flowsheet) al_cambio_flowsheet();
+                    }
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(85);
+                    if (ImGui::InputDouble(("d" + std::to_string(i) + " (μm)").c_str(), &md, 0, 0, "%.0f")) {
+                        nodo.params[kd] = std::max(1.0, md);
+                        if (al_cambio_flowsheet) al_cambio_flowsheet();
+                    }
+                    ImGui::PopID();
+                }
+            }
             break;
         }
+        case nucleo::TipoNodo::ReactorGibbs:
+        case nucleo::TipoNodo::ReactorEsteq:
+        case nucleo::TipoNodo::ReactorCinetica:
         case nucleo::TipoNodo::Reactor: {
+            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
             double conv = nodo.conversion();
-            if (ImGui::InputDouble("Conversión", &conv, 0, 1, "%.3f")) {
-                nodo.params["conversion"] = conv;
+            if (ImGui::SliderScalar("Conversión (X)", ImGuiDataType_Double, &conv,
+                                    & (const double&){0.0}, & (const double&){1.0}, "%.3f")) {
+                nodo.params["conversion"] = std::clamp(conv, 0.0, 1.0);
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
             double T = nodo.params.count("temperatura") ? nodo.params.at("temperatura") : nucleo::STP_TEMP;
-            if (ImGui::InputDouble("Temperatura (K)", &T)) {
+            if (ImGui::InputDouble("Temperatura (K)", &T, 5.0, 25.0, "%.2f")) {
                 nodo.params["temperatura"] = T;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
             double P = nodo.params.count("presion") ? nodo.params.at("presion") : nucleo::STP_PRES;
-            if (ImGui::InputDouble("Presión (atm)", &P)) {
+            if (ImGui::InputDouble("Presión (atm)", &P, 0.5, 2.0, "%.3f")) {
                 nodo.params["presion"] = P;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
-            int rxn = (int)(nodo.params.count("reaccion_id") ? nodo.params.at("reaccion_id") : 1);
-            if (ImGui::InputInt("ID Reacción", &rxn)) {
-                nodo.params["reaccion_id"] = (double)rxn;
-                if (al_cambio_flowsheet) al_cambio_flowsheet();
+            if (nodo.tipo == nucleo::TipoNodo::ReactorGibbs) {
+                ImGui::TextColored(ImVec4(0.2f, 0.75f, 0.35f, 1.0f),
+                    "Tip: Borre 'conversion' en la Hoja de Unidad para minimizar energía libre de Gibbs directamente.");
             }
             break;
         }
@@ -541,6 +646,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
                 nodo.params["dissolution"] = diss;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
+            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
             ImGui::TextWrapped("%s", tr("Salida 0 = solución cargada (líquidos), Salida 1 = residuo (sólidos)."));
             dibujar_selector_splits(nodo, tr("Fijar Especie (Residuo / Salida 1)"));
             break;
@@ -631,11 +737,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
         case nucleo::TipoNodo::HornoReverbero:
         case nucleo::TipoNodo::Tostador:
         case nucleo::TipoNodo::Convertidor: {
-            int rxn = (int)(nodo.params.count("reaccion_id") ? nodo.params.at("reaccion_id") : 0);
-            if (ImGui::InputInt("ID Reacción (0 = sin reacción)", &rxn)) {
-                nodo.params["reaccion_id"] = (double)rxn;
-                if (al_cambio_flowsheet) al_cambio_flowsheet();
-            }
+            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
             double conv = nodo.conversion();
             if (ImGui::InputDouble("Conversión", &conv, 0, 1, "%.3f")) {
                 nodo.params["conversion"] = conv;
@@ -753,7 +855,9 @@ void PanelPropiedades::propiedades_flujo_especificas(nucleo::Flujo& flujo) {
         if (al_cambio_flowsheet) al_cambio_flowsheet();
     }
     
-    ImGui::Text(tr("Flujo Total: %.6f kmol/s"), flujo.flujo_total());
+    auto& gestor = base_datos::GestorDB::instancia();
+    ImGui::Text(tr("Flujo Molar Total: %.6f kmol/s"), flujo.flujo_molar_total());
+    ImGui::Text(tr("Flujo Másico Total: %.3f t/h (%.4f kg/s)"), flujo.masa_total_t_h(gestor), flujo.masa_total(gestor));
     
     ImGui::Spacing();
     ImGui::Separator();
@@ -784,8 +888,7 @@ void PanelPropiedades::propiedades_flujo_especificas(nucleo::Flujo& flujo) {
         ImGui::TableSetupColumn("Acción", ImGuiTableColumnFlags_WidthFixed, 80.0f);
         ImGui::TableHeadersRow();
         
-        double total = flujo.flujo_total();
-        auto& gestor = base_datos::GestorDB::instancia();
+        double total = flujo.flujo_molar_total();
         
         std::vector<int64_t> ids_to_delete;
         
@@ -896,5 +999,6 @@ void PanelPropiedades::propiedades_anotacion(diagrama_flujo::Anotacion& a) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// HSC-Sim Stream Viewer (Comparación Multi-Corriente por Fases y Pirometalurgia)
 
 }} // namespace

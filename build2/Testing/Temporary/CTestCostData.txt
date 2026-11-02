@@ -1,0 +1,4 @@
+architecture_boundaries 1 0.158633
+source_structure 1 0.0841422
+external_reference_integrity 1 0.0733712
+---

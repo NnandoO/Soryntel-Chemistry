@@ -1,18 +1,270 @@
 #include "shared.hpp"
 namespace cma { namespace interfaz {
-// Panel de Simulación Dinámica
+// Panel de Simulación Dinámica (HSC-Sim Dynamic Dialog)
 // ═══════════════════════════════════════════════════════════════════════════
+PanelSimulacionDinamica::PanelSimulacionDinamica() {
+    tanques_ = {
+        {"Container 1", 2.0, 3.0, 0.0085, 65.0},
+        {"Container 2", 2.2, 3.0, 0.0075, 35.0},
+        {"Container 3", 2.5, 3.0, 0.0068, 15.0}
+    };
+    agenda_ = {
+        {0.0,  42000.0, 100.0, 100.0, 100.0},
+        {30.0, 15000.0,  80.0, 100.0, 100.0},
+        {60.0, 55000.0, 100.0,  70.0, 100.0},
+        {90.0, 25000.0, 100.0, 100.0,  85.0}
+    };
+    ejecutar_cascada_tanques();
+}
+
+void PanelSimulacionDinamica::ejecutar_cascada_tanques() {
+    if (tanques_.size() < 3) return;
+    double dt = std::max(0.05, paso_);
+    double t0 = std::max(0.0, t_inicial_);
+    double tf = std::max(t0 + dt, t_final_);
+
+    const double g = 9.81;
+    const double Cd = 0.62;
+    const double rho = 1000.0; // kg/m³
+
+    auto eval_agenda = [&](double t) -> EventoDinamicoTanques {
+        EventoDinamicoTanques ev = agenda_.empty()
+            ? EventoDinamicoTanques{0.0, 36000.0, 100.0, 100.0, 100.0}
+            : agenda_.front();
+        for (const auto& item : agenda_) {
+            if (t >= item.tiempo_s) ev = item;
+        }
+        return ev;
+    };
+
+    auto q_out_kgh = [&](int idx, double h, double valve_pct) -> double {
+        if (h <= 1e-6 || valve_pct <= 0.0) return 0.0;
+        double v_frac = std::clamp(valve_pct / 100.0, 0.0, 1.0);
+        double a = std::max(1e-6, tanques_[idx].area_orificio_m2);
+        return 3600.0 * rho * v_frac * Cd * a * std::sqrt(2.0 * g * std::max(0.0, h));
+    };
+
+    std::map<std::string, double> y0;
+    for (int i = 0; i < 3; ++i) {
+        std::string key = "h" + std::to_string(i + 1);
+        y0[key] = std::clamp(tanques_[i].nivel_inicial_pct / 100.0, 0.0, 1.0) * tanques_[i].altura_max_m;
+    }
+
+    auto ode_fn = [&](double t, const std::map<std::string, double>& y, std::map<std::string, double>& dydt) {
+        EventoDinamicoTanques ev = eval_agenda(t);
+        double h1 = std::clamp(y.at("h1"), 0.0, tanques_[0].altura_max_m);
+        double h2 = std::clamp(y.at("h2"), 0.0, tanques_[1].altura_max_m);
+        double h3 = std::clamp(y.at("h3"), 0.0, tanques_[2].altura_max_m);
+
+        double q1 = q_out_kgh(0, h1, ev.valvula1_pct);
+        double q2 = q_out_kgh(1, h2, ev.valvula2_pct);
+        double q3 = q_out_kgh(2, h3, ev.valvula3_pct);
+
+        double dh1 = (ev.feed_kg_h - q1) / (3600.0 * rho * std::max(0.1, tanques_[0].area_m2));
+        double dh2 = (q1 - q2) / (3600.0 * rho * std::max(0.1, tanques_[1].area_m2));
+        double dh3 = (q2 - q3) / (3600.0 * rho * std::max(0.1, tanques_[2].area_m2));
+
+        if (h1 >= tanques_[0].altura_max_m && dh1 > 0) dh1 = 0.0;
+        if (h2 >= tanques_[1].altura_max_m && dh2 > 0) dh2 = 0.0;
+        if (h3 >= tanques_[2].altura_max_m && dh3 > 0) dh3 = 0.0;
+        dydt["h1"] = dh1;
+        dydt["h2"] = dh2;
+        dydt["h3"] = dh3;
+    };
+
+    resultado_ = motor_.resolver(t0, tf, dt, y0, ode_fn);
+    resultado_.variables["Level 1 (%)"].clear();
+    resultado_.variables["Level 2 (%)"].clear();
+    resultado_.variables["Level 3 (%)"].clear();
+    resultado_.variables["Feed (kg/h)"].clear();
+    resultado_.variables["Outflow 1 (kg/h)"].clear();
+    resultado_.variables["Outflow 2 (kg/h)"].clear();
+    resultado_.variables["Outflow 3 (kg/h)"].clear();
+
+    for (size_t k = 0; k < resultado_.tiempos.size(); ++k) {
+        double t = resultado_.tiempos[k];
+        EventoDinamicoTanques ev = eval_agenda(t);
+        double h1 = std::clamp(resultado_.variables["h1"][k], 0.0, tanques_[0].altura_max_m);
+        double h2 = std::clamp(resultado_.variables["h2"][k], 0.0, tanques_[1].altura_max_m);
+        double h3 = std::clamp(resultado_.variables["h3"][k], 0.0, tanques_[2].altura_max_m);
+
+        resultado_.variables["Level 1 (%)"].push_back(100.0 * h1 / std::max(0.1, tanques_[0].altura_max_m));
+        resultado_.variables["Level 2 (%)"].push_back(100.0 * h2 / std::max(0.1, tanques_[1].altura_max_m));
+        resultado_.variables["Level 3 (%)"].push_back(100.0 * h3 / std::max(0.1, tanques_[2].altura_max_m));
+
+        resultado_.variables["Feed (kg/h)"].push_back(ev.feed_kg_h);
+        resultado_.variables["Outflow 1 (kg/h)"].push_back(q_out_kgh(0, h1, ev.valvula1_pct));
+        resultado_.variables["Outflow 2 (kg/h)"].push_back(q_out_kgh(1, h2, ev.valvula2_pct));
+        resultado_.variables["Outflow 3 (kg/h)"].push_back(q_out_kgh(2, h3, ev.valvula3_pct));
+    }
+
+    if (!resultado_.tiempos.empty()) {
+        char buf[160];
+        snprintf(buf, sizeof(buf),
+                 "RK4 completado (%zu pasos). Niveles finales: C1=%.1f%%, C2=%.1f%%, C3=%.1f%%",
+                 resultado_.tiempos.size(),
+                 resultado_.variables["Level 1 (%)"].back(),
+                 resultado_.variables["Level 2 (%)"].back(),
+                 resultado_.variables["Level 3 (%)"].back());
+        resultado_.mensaje = buf;
+    }
+    calculado_ = true;
+}
+
 void PanelSimulacionDinamica::renderizar() {
-    ImGui::Text(tr("Simulación Dinámica (ODE)"));
-    ImGui::Separator();
-    ImGui::Combo("Modo", &modo_, "Vaciado de tanque\0Horno (enfriamiento)\0Reactor Batch\0");
+    // Barra superior estilo HSC-Sim Dynamic Dialog
+    ImGui::TextColored(ImVec4(0.25f, 0.58f, 0.96f, 1.0f), "HSC-Sim Dynamic Dialog — Gravitational Flow & Transient ODE Solver");
     ImGui::Separator();
 
-    ImGui::InputDouble("t inicial (s)", &t_inicial_);
-    ImGui::InputDouble("t final (s)", &t_final_);
-    ImGui::InputDouble("Paso (s)", &paso_);
+    if (ImGui::Button("Run", ImVec2(75, 28))) {
+        if (modo_ == 0) ejecutar_cascada_tanques();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset", ImVec2(75, 28))) {
+        tanques_ = {
+            {"Container 1", 2.0, 3.0, 0.0085, 65.0},
+            {"Container 2", 2.2, 3.0, 0.0075, 35.0},
+            {"Container 3", 2.5, 3.0, 0.0068, 15.0}
+        };
+        ejecutar_cascada_tanques();
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(95);
+    ImGui::InputDouble("Start (s)", &t_inicial_, 0, 0, "%.1f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(95);
+    ImGui::InputDouble("End (s)", &t_final_, 0, 0, "%.1f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(85);
+    ImGui::InputDouble("Step (s)", &paso_, 0, 0, "%.2f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(230);
+    if (ImGui::Combo("Model", &modo_,
+        "Gravitational Flow (3 Tanks HSC-Sim)\0Single Tank Drain (Torricelli)\0Furnace Cooling\0Batch Reactor\0")) {
+        if (modo_ == 0) ejecutar_cascada_tanques();
+    }
+
+    ImGui::Separator();
 
     if (modo_ == 0) {
+        if (ImGui::BeginTabBar("HSCDynamicTabs")) {
+            if (ImGui::BeginTabItem("Schedule Sheet 1")) {
+                ImGui::TextDisabled("Eventos programados de alimentación y apertura de válvulas durante la corrida dinámica:");
+                if (ImGui::BeginTable("ScheduleSheetTable", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp, ImVec2(0, 125))) {
+                    ImGui::TableSetupColumn("Step #", ImGuiTableColumnFlags_WidthFixed, 55.0f);
+                    ImGui::TableSetupColumn("Time (s)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Feed In (kg/h)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Container 1 Valve (%)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Container 2 Valve (%)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Container 3 Valve (%)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableHeadersRow();
+
+                    bool changed = false;
+                    for (size_t i = 0; i < agenda_.size(); ++i) {
+                        ImGui::TableNextRow();
+                        ImGui::PushID((int)i);
+                        ImGui::TableNextColumn(); ImGui::Text("#%zu", i + 1);
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##t", &agenda_[i].tiempo_s, 0, 0, "%.1f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##f", &agenda_[i].feed_kg_h, 0, 0, "%.0f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##v1", &agenda_[i].valvula1_pct, 0, 0, "%.1f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##v2", &agenda_[i].valvula2_pct, 0, 0, "%.1f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##v3", &agenda_[i].valvula3_pct, 0, 0, "%.1f");
+                        ImGui::PopID();
+                    }
+                    ImGui::EndTable();
+                    if (changed) ejecutar_cascada_tanques();
+                }
+                if (ImGui::SmallButton("+ Add Schedule Event")) {
+                    double next_t = agenda_.empty() ? 0.0 : agenda_.back().tiempo_s + 30.0;
+                    agenda_.push_back({next_t, 36000.0, 100.0, 100.0, 100.0});
+                    ejecutar_cascada_tanques();
+                }
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Tanks (Container 1 -> 2 -> 3)")) {
+                if (ImGui::BeginTable("TanksConfigTable", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, ImVec2(0, 115))) {
+                    ImGui::TableSetupColumn("Unit Name", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+                    ImGui::TableSetupColumn("Cross Area (m²)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Max Height (m)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Orifice Area (m²)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Initial Level (%)", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableHeadersRow();
+
+                    bool changed = false;
+                    for (size_t i = 0; i < tanques_.size(); ++i) {
+                        ImGui::TableNextRow();
+                        ImGui::PushID((int)i + 500);
+                        ImGui::TableNextColumn(); ImGui::TextUnformatted(tanques_[i].nombre.c_str());
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##a", &tanques_[i].area_m2, 0, 0, "%.2f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##h", &tanques_[i].altura_max_m, 0, 0, "%.2f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##o", &tanques_[i].area_orificio_m2, 0, 0, "%.4f");
+                        ImGui::TableNextColumn(); ImGui::SetNextItemWidth(-1);
+                        changed |= ImGui::InputDouble("##l0", &tanques_[i].nivel_inicial_pct, 0, 0, "%.1f");
+                        ImGui::PopID();
+                    }
+                    ImGui::EndTable();
+                    if (changed) ejecutar_cascada_tanques();
+                }
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+
+        // Gráficos apilados HSC-Sim: 1) Tank Level % vs Time (s) con cursor vertical, 2) Outflow (kg/h) vs Time (s)
+        if (calculado_ && !resultado_.tiempos.empty()) {
+            const auto& ts = resultado_.tiempos;
+            const auto& l1 = resultado_.variables["Level 1 (%)"];
+            const auto& l2 = resultado_.variables["Level 2 (%)"];
+            const auto& l3 = resultado_.variables["Level 3 (%)"];
+            const auto& qf = resultado_.variables["Feed (kg/h)"];
+            const auto& q1 = resultado_.variables["Outflow 1 (kg/h)"];
+            const auto& q2 = resultado_.variables["Outflow 2 (kg/h)"];
+            const auto& q3 = resultado_.variables["Outflow 3 (kg/h)"];
+            int npts = (int)ts.size();
+
+            // Interpolar valores en la posición del cursor vertical
+            cursor_tiempo_ = std::clamp(cursor_tiempo_, ts.front(), ts.back());
+            size_t idx_c = 0;
+            for (size_t i = 0; i < ts.size(); ++i) {
+                if (ts[i] <= cursor_tiempo_) idx_c = i;
+            }
+            ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.55f, 1.0f),
+                "Cursor t = %.1f s  |  Levels: C1=%.1f%%, C2=%.1f%%, C3=%.1f%%  |  Outflows: C1=%.0f, C2=%.0f, C3=%.0f kg/h",
+                ts[idx_c], l1[idx_c], l2[idx_c], l3[idx_c], q1[idx_c], q2[idx_c], q3[idx_c]);
+
+            if (ImPlot::BeginPlot("Tank Level %", ImVec2(-1, 185))) {
+                ImPlot::SetupAxes("Time (s)", "Tank Level (%)", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_None);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 105.0, ImGuiCond_Once);
+                ImPlot::PlotLine("Container 1 Level %", ts.data(), l1.data(), npts);
+                ImPlot::PlotLine("Container 2 Level %", ts.data(), l2.data(), npts);
+                ImPlot::PlotLine("Container 3 Level %", ts.data(), l3.data(), npts);
+                ImPlot::DragLineX(0, &cursor_tiempo_, ImVec4(0.95f, 0.80f, 0.20f, 0.95f), 1.5f);
+                ImPlot::EndPlot();
+            }
+
+            if (ImPlot::BeginPlot("Outflow (kg/h)", ImVec2(-1, 185))) {
+                ImPlot::SetupAxes("Time (s)", "Flowrate (kg/h)", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+                ImPlot::PlotLine("Feed In", ts.data(), qf.data(), npts);
+                ImPlot::PlotLine("Container 1 Outflow", ts.data(), q1.data(), npts);
+                ImPlot::PlotLine("Container 2 Outflow", ts.data(), q2.data(), npts);
+                ImPlot::PlotLine("Container 3 Outflow", ts.data(), q3.data(), npts);
+                ImPlot::DragLineX(1, &cursor_tiempo_, ImVec4(0.95f, 0.80f, 0.20f, 0.95f), 1.5f);
+                ImPlot::EndPlot();
+            }
+        }
+        return;
+    }
+
+    if (modo_ == 1) {
         ImGui::InputDouble("Área tanque (m²)", &A_tanque_);
         ImGui::InputDouble("Área orificio (m²)", &A_orificio_);
         ImGui::InputDouble("Altura inicial (m)", &h0_);
@@ -34,7 +286,7 @@ void PanelSimulacionDinamica::renderizar() {
             resultado_.mensaje = "Tiempo de vaciado: " + std::to_string(t_vaciado) + " s";
             calculado_ = true;
         }
-    } else if (modo_ == 1) {
+    } else if (modo_ == 2) {
         ImGui::InputDouble("T inicial (K)", &T0_horno_);
         ImGui::InputDouble("T ambiente (K)", &T_amb_);
         ImGui::InputDouble("Masa (kg)", &masa_);
@@ -74,7 +326,7 @@ void PanelSimulacionDinamica::renderizar() {
         ImGui::Text(tr("Resultados (%zu puntos)"), resultado_.tiempos.size());
 
         if (ImPlot::BeginPlot("Evolución Temporal", ImVec2(-1, 250), ImPlotFlags_NoTitle)) {
-            ImPlot::SetupAxes("Tiempo (s)", modo_ == 1 ? "T (K)" : modo_ == 0 ? "h (m)" : "C (mol/L)");
+            ImPlot::SetupAxes("Tiempo (s)", modo_ == 2 ? "T (K)" : modo_ == 1 ? "h (m)" : "C (mol/L)");
             auto it = resultado_.variables.begin();
             if (it != resultado_.variables.end()) {
                 std::vector<double>& t = resultado_.tiempos;
@@ -101,491 +353,105 @@ void PanelSimulacionDinamica::renderizar() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Panel de Reconciliación de Datos
-// ═══════════════════════════════════════════════════════════════════════════
-void PanelReconciliacion::inicializar_datos(diagrama_flujo::Flowsheet* fs) {
-    if (!fs || cargado_inicial_) return;
-    unidades_.clear();
-    corrientes_.clear();
-    
-    for (auto& n : fs->nodos()) {
-        if (n.tipo == nucleo::TipoNodo::CajaTexto || n.tipo == nucleo::TipoNodo::Rectangulo || n.tipo == nucleo::TipoNodo::Elipse) continue;
-        ReconciliacionUnit u;
-        u.name = n.nombre;
-        u.selected = true;
-        u.psd_changing = (n.tipo == nucleo::TipoNodo::MolinoSAG || n.tipo == nucleo::TipoNodo::MolinoBolas || n.tipo == nucleo::TipoNodo::TrituradoraGiratoria);
-        unidades_.push_back(u);
+void PanelReconciliacion::reset() {
+    config_ = motores::ConfigBalanceMetalurgico{};
+    resultado_ = motores::ResultadoBalanceMetalurgico{};
+    elementos_.clear();
+    fs_ = nullptr;
+    modo_ = 0;
+    fila_seleccionada_ = -1;
+    calculado_ = false;
+    cargado_inicial_ = false;
+    mensaje_.clear();
+}
+
+void PanelReconciliacion::inicializar_datos(diagrama_flujo::Flowsheet* flowsheet) {
+    fs_ = flowsheet;
+    config_ = motores::ConfigBalanceMetalurgico{};
+    elementos_ = {"Cu", "Fe", "S", "SiO2"};
+    if (flowsheet != nullptr && !flowsheet->mapa_flujos().empty()) {
+        for (const auto& [fid, fl] : flowsheet->mapa_flujos()) {
+            if (fl.es_energia) continue;
+            motores::CorrienteBalanceMetalurgico c;
+            c.id = fid;
+            c.nombre = fl.nombre.empty() ? ("Stream " + std::to_string(fid)) : fl.nombre;
+            double sum_sol_kg_h = 0.0;
+            for (const auto& [sid, v] : fl.flujo_solido) sum_sol_kg_h += v;
+            c.solido_t_h = std::max(0.0, sum_sol_kg_h / 1000.0);
+            c.liquido_t_h = std::max(0.0, fl.agua_kg_h / 1000.0);
+            c.sd_solido_t_h = std::max(0.1, c.solido_t_h * 0.05);
+            c.sd_liquido_t_h = std::max(0.1, c.liquido_t_h * 0.05);
+            config_.corrientes.push_back(c);
+        }
+        for (const auto& n : flowsheet->nodos()) {
+            if (n.ids_flujos_entrada.empty() || n.ids_flujos_salida.empty()) continue;
+            motores::UnidadBalanceMetalurgico u;
+            u.id = n.id;
+            u.nombre = n.nombre;
+            u.entradas = n.ids_flujos_entrada;
+            u.salidas = n.ids_flujos_salida;
+            config_.unidades.push_back(u);
+        }
     }
-    
-    for (auto& [fid, f] : fs->mapa_flujos()) {
-        ReconciliacionStream s;
-        s.id = fid;
-        s.name = f.nombre.empty() ? ("Stream " + std::to_string(fid)) : f.nombre;
-        s.selected = f.mb_selected;
-        s.assayed = f.mb_assayed;
-        
-        if (f.measured_flow >= 0.0) {
-            s.measured_flow = f.measured_flow;
-        } else {
-            s.measured_flow = f.flujo_total();
-            if (s.measured_flow <= 0.0) s.measured_flow = 100.0;
-        }
-        
-        if (f.sd >= 0.0) {
-            s.sd = f.sd;
-        } else {
-            s.sd = s.measured_flow * 0.05;
-            if (s.sd <= 0.0) s.sd = 2.0;
-        }
-        corrientes_.push_back(s);
+    if (config_.corrientes.empty()) {
+        motores::CorrienteBalanceMetalurgico f1{1, "Feed", 100.0, 150.0, 2.0, 5.0, true, true, false, {{"Cu", 0.012}, {"Fe", 0.045}}};
+        motores::CorrienteBalanceMetalurgico f2{2, "Concentrate", 4.2, 8.0, 0.2, 0.5, true, true, false, {{"Cu", 0.265}, {"Fe", 0.280}}};
+        motores::CorrienteBalanceMetalurgico f3{3, "Tailings", 95.8, 142.0, 2.0, 5.0, true, true, false, {{"Cu", 0.001}, {"Fe", 0.035}}};
+        config_.corrientes = {f1, f2, f3};
+        motores::UnidadBalanceMetalurgico u1{1, "Flotation Cell", {1}, {2, 3}, true};
+        config_.unidades = {u1};
     }
     cargado_inicial_ = true;
 }
 
 void PanelReconciliacion::ejecutar_balance() {
-    std::vector<motores::Medicion> ent;
-    std::vector<motores::Medicion> sal;
-    
-    for (auto& s : corrientes_) {
-        if (!s.selected) continue;
-        motores::Medicion m = { s.name, s.measured_flow, s.sd };
-        if (s.assayed) {
-            ent.push_back(m);
-        } else {
-            sal.push_back(m);
-        }
-    }
-    
-    if (ent.empty() || sal.empty()) {
-        ent.clear(); sal.clear();
-        int half = (int)corrientes_.size() / 2;
-        if (half < 1) half = 1;
-        for (int i = 0; i < (int)corrientes_.size(); i++) {
-            auto& s = corrientes_[i];
-            motores::Medicion m = { s.name, s.measured_flow, s.sd };
-            if (i < half) ent.push_back(m);
-            else sal.push_back(m);
-        }
-    }
-    
-    resultado_ = motor_.reconciliar_balance_masa(ent, sal);
-    calculado_ = resultado_.ok;
-    
-    if (calculado_) {
-        for (auto& s : corrientes_) {
-            auto it = resultado_.valores_reconciliados.find(s.name);
-            if (it != resultado_.valores_reconciliados.end()) {
-                s.reconciled_flow = it->second;
-                s.reconciled_error = resultado_.residuos[s.name];
-            } else {
-                s.reconciled_flow = s.measured_flow;
-                s.reconciled_error = 0.0;
-            }
-        }
-    }
+    config_.modo = static_cast<motores::ModoBalanceMetalurgico>(std::clamp(modo_, 0, 2));
+    motores::BalanceMetalurgico solver;
+    resultado_ = solver.resolver(config_);
+    calculado_ = true;
+    mensaje_ = resultado_.mensaje;
 }
 
 void PanelReconciliacion::renderizar(diagrama_flujo::Flowsheet* flowsheet) {
-    if (!flowsheet) {
-        ImGui::Text(tr("Cargue un flowsheet para realizar balance de masa."));
-        return;
-    }
-    
-    inicializar_datos(flowsheet);
-
-    // ── Barra de herramientas superior ──
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 4));
-    if (ImGui::Button(tr("Abrir"))) {
-        cargado_inicial_ = false;
+    if (!cargado_inicial_ || fs_ != flowsheet) {
         inicializar_datos(flowsheet);
+        ejecutar_balance();
     }
+    const char* modos[] = {"Solids only", "Assays only", "Solids + Water"};
+    ImGui::SetNextItemWidth(180.0f);
+    if (ImGui::Combo("Mode", &modo_, modos, 3)) ejecutar_balance();
     ImGui::SameLine();
-    if (ImGui::Button(tr("Guardar"))) {
-        for (auto& s : corrientes_) {
-            auto* f = flowsheet->flujo_por_id(s.id);
-            if (f) {
-                f->measured_flow = s.measured_flow;
-                f->sd = s.sd;
-                f->mb_selected = s.selected;
-                f->mb_assayed = s.assayed;
-            }
-        }
-        ImGui::OpenPopup("mb_saved");
-    }
-    if (ImGui::BeginPopup("mb_saved")) {
-        ImGui::Text(tr("Configuration saved to flowsheet streams!"));
-        if (ImGui::Button(tr("Cerrar"))) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
-    }
+    if (ImGui::Button("Solve Mass Balance")) ejecutar_balance();
     ImGui::SameLine();
-    if (ImGui::Button(tr("Importar Datos"))) {
-        FILE* zenity = adapters::dialog_pipe("zenity --file-selection --file-filter='*.csv' --title='Import Raw Mass Balance Measurements' 2>/dev/null");
-        if (zenity) {
-            char path[512] = {0};
-            if (fgets(path, sizeof(path), zenity)) {
-                std::string path_str(path);
-                if (!path_str.empty() && path_str.back() == '\n') path_str.pop_back();
-                if (!path_str.empty()) {
-                    FILE* fp = fopen(path_str.c_str(), "r");
-                    if (fp) {
-                        char line[256];
-                        // Skip header
-                        if (fgets(line, sizeof(line), fp)) {
-                            while (fgets(line, sizeof(line), fp)) {
-                                std::string l(line);
-                                auto parts = split_str(l, ",");
-                                if (parts.size() >= 2) {
-                                    std::string name = trim_str(parts[0]);
-                                    try {
-                                        double val = std::stod(parts[1]);
-                                        double sd_val = (parts.size() >= 3) ? std::stod(parts[2]) : (val * 0.05);
-                                        
-                                        // Find stream by name (case-insensitive)
-                                        std::string name_lower = name;
-                                        std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
-                                        for (auto& s : corrientes_) {
-                                            std::string s_lower = s.name;
-                                            std::transform(s_lower.begin(), s_lower.end(), s_lower.begin(), ::tolower);
-                                            if (s_lower == name_lower) {
-                                                s.measured_flow = val;
-                                                s.sd = sd_val;
-                                                // Sync with flowsheet
-                                                auto* f = flowsheet->flujo_por_id(s.id);
-                                                if (f) {
-                                                    f->measured_flow = val;
-                                                    f->sd = sd_val;
-                                                }
-                                            }
-                                        }
-                                    } catch (...) {}
-                                }
-                            }
-                        }
-                        fclose(fp);
-                    }
-                }
-            }
-            fclose(zenity);
-        }
+    if (ImGui::Button("Reload Flowsheet")) {
+        inicializar_datos(flowsheet);
+        ejecutar_balance();
     }
-    ImGui::PopStyleVar();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    // ── Layout de tres paneles (Splitters) ──
-    // Izquierda: Balancing Navigator (25% ancho)
-    // Centro: Data Grid (50% ancho)
-    // Derecha: Properties Inspector (25% ancho)
-    ImGui::Columns(3, "mass_balance_split", true);
-    static bool init_w = true;
-    if (init_w) {
-        float w = ImGui::GetWindowWidth();
-        ImGui::SetColumnWidth(0, w * 0.25f);
-        ImGui::SetColumnWidth(1, w * 0.50f);
-        ImGui::SetColumnWidth(2, w * 0.25f);
-        init_w = false;
+    if (!mensaje_.empty()) ImGui::TextWrapped("%s", mensaje_.c_str());
+    if (ImGui::BeginTable("reconcil_tbl", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+        ImGui::TableSetupColumn("Stream");
+        ImGui::TableSetupColumn("Measured Solids (t/h)");
+        ImGui::TableSetupColumn("SD Solids");
+        ImGui::TableSetupColumn("Reconciled Solids (t/h)");
+        ImGui::TableSetupColumn("Measured Water (t/h)");
+        ImGui::TableSetupColumn("Reconciled Water (t/h)");
+        ImGui::TableHeadersRow();
+        for (size_t i = 0; i < config_.corrientes.size(); ++i) {
+            auto& c = config_.corrientes[i];
+            ImGui::TableNextRow();
+            ImGui::PushID(static_cast<int>(i));
+            ImGui::TableNextColumn(); ImGui::Text("%s", c.nombre.c_str());
+            ImGui::TableNextColumn(); ImGui::InputDouble("##ms", &c.solido_t_h, 0, 0, "%.2f");
+            ImGui::TableNextColumn(); ImGui::InputDouble("##sds", &c.sd_solido_t_h, 0, 0, "%.2f");
+            ImGui::TableNextColumn();
+            ImGui::Text("%.2f", resultado_.solido_reconciliado_t_h.count(c.id) ? resultado_.solido_reconciliado_t_h.at(c.id) : c.solido_t_h);
+            ImGui::TableNextColumn(); ImGui::InputDouble("##mw", &c.liquido_t_h, 0, 0, "%.2f");
+            ImGui::TableNextColumn();
+            ImGui::Text("%.2f", resultado_.liquido_reconciliado_t_h.count(c.id) ? resultado_.liquido_reconciliado_t_h.at(c.id) : c.liquido_t_h);
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
     }
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Panel Izquierdo: Balancing Navigator
-    // ════════════════════════════════════════════════════════════════════════
-    ImGui::BeginChild("nav_pane");
-    {
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.6f, 0.7f, 0.9f, 1.0f), "Balancing Navigator");
-        ImGui::Separator();
-        
-        auto render_nav_item = [&](const char* label, SeccionNavegacion target) {
-            bool sel = (seccion_ == target);
-            if (ImGui::Selectable(label, sel)) {
-                seccion_ = target;
-                fila_seleccionada_ = -1;
-            }
-        };
-
-        if (ImGui::CollapsingHeader("Experimental Data", ImGuiTreeNodeFlags_DefaultOpen)) {
-            render_nav_item("Units", SeccionNavegacion::Units);
-            render_nav_item("Streams", SeccionNavegacion::Streams);
-            render_nav_item("Variables", SeccionNavegacion::Variables);
-            render_nav_item("Size Fractions", SeccionNavegacion::SizeFractions);
-            render_nav_item("Data Sets", SeccionNavegacion::DataSets);
-            render_nav_item("Measurement Data", SeccionNavegacion::MeasurementData);
-        }
-        
-        if (ImGui::CollapsingHeader("Estado de Datos")) {
-            render_nav_item("Stream View", SeccionNavegacion::StreamView);
-            render_nav_item("Variable View", SeccionNavegacion::VariableView);
-        }
-        
-        if (ImGui::CollapsingHeader("Standard Deviations")) {
-            render_nav_item("SD - Stream View", SeccionNavegacion::SDStream);
-            render_nav_item("SD - Variable View", SeccionNavegacion::SDVariable);
-        }
-        
-        render_nav_item("Balancing Solver", SeccionNavegacion::Balancing);
-        render_nav_item("Reporting & Stats", SeccionNavegacion::Reporting);
-    }
-    ImGui::EndChild();
-    
-    ImGui::NextColumn();
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Panel Central: Data Grid / Central Editor
-    // ════════════════════════════════════════════════════════════════════════
-    ImGui::BeginChild("grid_pane");
-    {
-        if (seccion_ == SeccionNavegacion::Units) {
-            ImGui::Text(tr("Process Units Configuration"));
-            if (ImGui::BeginTable("units_grid", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-                ImGui::TableSetupColumn("Selected", ImGuiTableColumnFlags_WidthFixed, 60.0f);
-                ImGui::TableSetupColumn("Unidad", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("PSD Changing", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                ImGui::TableHeadersRow();
-                
-                for (int i = 0; i < (int)unidades_.size(); i++) {
-                    auto& u = unidades_[i];
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::Checkbox(("##sel_u"+std::to_string(i)).c_str(), &u.selected);
-                    
-                    ImGui::TableNextColumn();
-                    bool row_sel = (fila_seleccionada_ == i);
-                    if (ImGui::Selectable(u.name.c_str(), row_sel, ImGuiSelectableFlags_SpanAllColumns)) {
-                        fila_seleccionada_ = i;
-                    }
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::Checkbox(("##psd_u"+std::to_string(i)).c_str(), &u.psd_changing);
-                }
-                ImGui::EndTable();
-            }
-        }
-        else if (seccion_ == SeccionNavegacion::Streams) {
-            ImGui::Text(tr("Process Streams Settings"));
-            if (ImGui::BeginTable("streams_grid", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-                ImGui::TableSetupColumn("Selected", ImGuiTableColumnFlags_WidthFixed, 60.0f);
-                ImGui::TableSetupColumn("Corriente", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Input Stream", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                ImGui::TableSetupColumn("Measured Flow", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableSetupColumn("Std Dev (SD)", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                ImGui::TableHeadersRow();
-                
-                for (int i = 0; i < (int)corrientes_.size(); i++) {
-                    auto& s = corrientes_[i];
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::Checkbox(("##sel_s"+std::to_string(i)).c_str(), &s.selected);
-                    
-                    ImGui::TableNextColumn();
-                    bool row_sel = (fila_seleccionada_ == i);
-                    if (ImGui::Selectable(s.name.c_str(), row_sel, ImGuiSelectableFlags_SpanAllColumns)) {
-                        fila_seleccionada_ = i;
-                    }
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::Checkbox(("##in_s"+std::to_string(i)).c_str(), &s.assayed);
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::SetNextItemWidth(90.0f);
-                    ImGui::InputDouble(("##flo_s"+std::to_string(i)).c_str(), &s.measured_flow, 0, 0, "%.2f");
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::SetNextItemWidth(70.0f);
-                    ImGui::InputDouble(("##sd_s"+std::to_string(i)).c_str(), &s.sd, 0, 0, "%.2f");
-                }
-                ImGui::EndTable();
-            }
-        }
-        else if (seccion_ == SeccionNavegacion::SDStream) {
-            ImGui::Text(tr("Desviaciones Est. Corrientes"));
-            if (ImGui::BeginTable("sd_grid", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-                ImGui::TableSetupColumn("Corriente", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Measured Flow", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-                ImGui::TableSetupColumn("SD % of Flow", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableHeadersRow();
-                
-                for (int i = 0; i < (int)corrientes_.size(); i++) {
-                    auto& s = corrientes_[i];
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::Text(tr("%s"), s.name.c_str());
-                    ImGui::TableNextColumn();
-                    ImGui::Text(tr("%.2f"), s.measured_flow);
-                    ImGui::TableNextColumn();
-                    double pct = (s.measured_flow > 0.0) ? (s.sd / s.measured_flow * 100.0) : 5.0;
-                    ImGui::Text(tr("%.1f %%"), pct);
-                }
-                ImGui::EndTable();
-            }
-        }
-        else if (seccion_ == SeccionNavegacion::Balancing) {
-            ImGui::TextColored(cma::interfaz::AdaptiveColor(0.4f,0.8f,0.6f,1.0f), "Mass Balance Solver Settings");
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            ImGui::Text(tr("Problem Type Option:"));
-            ImGui::RadioButton("Solids Only (Standard metallurgical balancing)", &tipo_problema_, 0);
-            ImGui::RadioButton("Assays Only (No direct flow measurements)", &tipo_problema_, 1);
-            ImGui::RadioButton("Solids & Water Independently (Solve pulp flow rates)", &tipo_problema_, 2);
-            
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            if (ImGui::Button(tr("Solve Mass Balance (Run Reconciliation)"), ImVec2(-1, 35))) {
-                ejecutar_balance();
-            }
-            
-            ImGui::Spacing();
-            ImGui::Text(tr("Solver Log:"));
-            ImGui::BeginChild("solver_log", ImVec2(0, 100), true);
-            if (calculado_) {
-                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.4f, 0.9f, 0.4f, 1.0f), "Reconciliation finalized successfully!");
-                ImGui::Text(tr("Degrees of freedom: %zu"), corrientes_.size() - 1);
-                ImGui::Text(tr("Convergence chi-square check finalized."));
-            } else {
-                ImGui::Text(tr("Ready. Press solver button above to calculate."));
-            }
-            ImGui::EndChild();
-        }
-        else if (seccion_ == SeccionNavegacion::Reporting) {
-            ImGui::TextColored(cma::interfaz::AdaptiveColor(0.3f,0.8f,0.9f,1.0f), "Data Reconciliation Report");
-            ImGui::Separator();
-            
-            if (calculado_) {
-                // ── Stats summary ──
-                float chi2 = (float)resultado_.chi_cuadrado;
-                float q    = (float)resultado_.q_ajuste;
-                bool good  = (q > 0.05f);
-                ImGui::TextColored(good ? cma::interfaz::AdaptiveColor(0.3f,0.9f,0.4f,1.0f) : cma::interfaz::AdaptiveColor(0.9f,0.5f,0.3f,1.0f),
-                    "X2 = %.4f   Q = %.4f   %s", chi2, q, good ? "[OK] Acceptable fit" : "[!] Poor fit");
-                
-                ImGui::SameLine();
-                if (ImGui::Button(tr("Exportar CSV##report"))) {
-                    FILE* zen = adapters::dialog_pipe("zenity --file-selection --save --confirm-overwrite --file-filter='*.csv' 2>/dev/null");
-                    if (zen) {
-                        char path[512]={0};
-                        if (fgets(path, sizeof(path), zen)) {
-                            std::string p(path);
-                            if (!p.empty() && p.back()=='\n') p.pop_back();
-                            if (!p.empty()) {
-                                if (p.find(".csv")==std::string::npos) p+=".csv";
-                                FILE* fp = fopen(p.c_str(),"w");
-                                if (fp) {
-                                    fprintf(fp,"Chi2,%.6f\nQ,%.6f\n\n",resultado_.chi_cuadrado,resultado_.q_ajuste);
-                                    fprintf(fp,"Stream,Measured,Reconciled,Residual,RecSD\n");
-                                    for (auto& s : corrientes_) {
-                                        fprintf(fp,"\"%s\",%.4f,%.4f,%.4f,%.4f\n",
-                                            s.name.c_str(),s.measured_flow,s.reconciled_flow,
-                                            s.measured_flow-s.reconciled_flow,s.reconciled_error);
-                                    }
-                                    fclose(fp);
-                                }
-                            }
-                        }
-                        fclose(zen);
-                    }
-                }
-                
-                ImGui::Spacing();
-
-                if (ImGui::BeginTabBar("report_tabs")) {
-                    if (ImGui::BeginTabItem(tr("Tabla"))) {
-                        if (ImGui::BeginTable("report_grid", 5,
-                                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
-                                ImVec2(0, 180))) {
-                            ImGui::TableSetupColumn("Corriente", ImGuiTableColumnFlags_WidthStretch);
-                            ImGui::TableSetupColumn("Measured", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                            ImGui::TableSetupColumn("Reconciled", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                            ImGui::TableSetupColumn("Residual", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                            ImGui::TableSetupColumn("SD", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                            ImGui::TableHeadersRow();
-                            
-                            for (auto& s : corrientes_) {
-                                double res = s.measured_flow - s.reconciled_flow;
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn(); ImGui::Text(tr("%s"), s.name.c_str());
-                                ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), s.measured_flow);
-                                ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), s.reconciled_flow);
-                                ImGui::TableNextColumn();
-                                if (fabs(res) < s.sd)
-                                    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.3f,0.9f,0.4f,1.0f), "%.2f", res);
-                                else
-                                    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.9f,0.4f,0.3f,1.0f), "%.2f", res);
-                                ImGui::TableNextColumn(); ImGui::Text(tr("%.2f"), s.reconciled_error);
-                            }
-                            ImGui::EndTable();
-                        }
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem(tr("Residuals Chart"))) {
-                        static std::vector<double> res_vals, xs_r;
-                        static std::vector<const char*> lbs_r;
-                        int nc = (int)corrientes_.size();
-                        res_vals.resize(nc); xs_r.resize(nc); lbs_r.resize(nc);
-                        for (int i=0;i<nc;i++){
-                            res_vals[i] = corrientes_[i].measured_flow - corrientes_[i].reconciled_flow;
-                            xs_r[i] = (double)i;
-                            lbs_r[i] = corrientes_[i].name.c_str();
-                        }
-                        if (ImPlot::BeginPlot("Residuals (Measured - Reconciled)", ImVec2(-1, 200))) {
-                            ImPlot::SetupAxes("Corriente", "Residual (kg/h)");
-                            if (nc > 0)
-                                ImPlot::SetupAxisTicks(ImAxis_X1, xs_r.data(), nc, lbs_r.data());
-                            ImPlot::SetNextFillStyle(ImVec4(0.4f,0.7f,1.0f,0.85f));
-                            ImPlot::PlotBars("Residual", res_vals.data(), nc, 0.6);
-                            ImPlot::EndPlot();
-                        }
-                        ImGui::EndTabItem();
-                    }
-                    ImGui::EndTabBar();
-                }
-            } else {
-                ImGui::TextDisabled(tr("Run mass balance calculations to generate reconciliation report."));
-            }
-        }
-
-        else {
-            ImGui::TextDisabled(tr("This section is configured automatically by flowsheet parameters."));
-        }
-    }
-    ImGui::EndChild();
-    
-    ImGui::NextColumn();
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Panel Derecho: Properties Inspector
-    // ════════════════════════════════════════════════════════════════════════
-    ImGui::BeginChild("prop_pane");
-    {
-        ImGui::TextColored(cma::interfaz::AdaptiveColor(0.8f, 0.7f, 0.5f, 1.0f), "Properties");
-        ImGui::Separator();
-        
-        if (seccion_ == SeccionNavegacion::Units && fila_seleccionada_ >= 0 && fila_seleccionada_ < (int)unidades_.size()) {
-            auto& u = unidades_[fila_seleccionada_];
-            ImGui::Text(tr("Unit settings:"));
-            ImGui::TextDisabled(tr("Name: %s"), u.name.c_str());
-            ImGui::Checkbox(tr("Selected"), &u.selected);
-            ImGui::Checkbox(tr("PSD Changing"), &u.psd_changing);
-        }
-        else if (seccion_ == SeccionNavegacion::Streams && fila_seleccionada_ >= 0 && fila_seleccionada_ < (int)corrientes_.size()) {
-            auto& s = corrientes_[fila_seleccionada_];
-            ImGui::Text(tr("Stream settings:"));
-            ImGui::TextDisabled(tr("Name: %s"), s.name.c_str());
-            ImGui::Checkbox(tr("Selected"), &s.selected);
-            ImGui::Checkbox(tr("Input Stream"), &s.assayed);
-            ImGui::InputDouble("Measured", &s.measured_flow, 1.0, 10.0, "%.2f");
-            ImGui::InputDouble("SD", &s.sd, 0.5, 5.0, "%.2f");
-        }
-        else {
-            ImGui::TextDisabled(tr("Select an element in middle table grid to view properties."));
-        }
-    }
-    ImGui::EndChild();
-    
-    ImGui::Columns(1);
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
 
 }} // namespace

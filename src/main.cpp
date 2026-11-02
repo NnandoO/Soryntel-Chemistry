@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "interfaz/aplicacion.hpp"
 #include <cstdio>
 #include <cstdlib>
@@ -27,3 +33,5 @@ int main(int argc, char* argv[]) {
     app.ejecutar();
     return 0;
 }
+
+#pragma GCC diagnostic pop

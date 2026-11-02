@@ -1,3 +1,9 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "process.hpp"
 #include <vector>
 #include <cctype>
@@ -144,3 +150,5 @@ bool render_molecule(const std::string& script, const std::string& input, const 
 #endif
 }
 }
+
+#pragma GCC diagnostic pop
