@@ -6,6 +6,7 @@
 #include "motores/destilacion.hpp"
 #include "motores/agua.hpp"
 #include "motores/minimizador_gibbs.hpp"
+#include "motores/balance_energia.hpp"
 #include "motores/balance_masa.hpp"
 #include "motores/balance_hoja.hpp"
 #include "motores/estimador_propiedades.hpp"
@@ -1507,8 +1508,65 @@ int main() {
                 CHECK(near(ch4->entropia_ref(298.15), 0.0, 1e-9));
                 CHECK(near(ch4->entalpia_abs(298.15), ch4->h_formacion, 1e-9));
                 CHECK(near(ch4->entropia_abs(298.15), ch4->s_formacion, 1e-9));
-                double g_std = ch4->h_formacion - 298.15 * ch4->s_formacion / 1000.0;
-                CHECK(near(ch4->energia_gibbs(298.15), g_std, 1e-9));
+                double g_aparente_298 = ch4->h_formacion - 298.15 * ch4->s_formacion / 1000.0;
+                CHECK(near(ch4->energia_gibbs(298.15), g_aparente_298, 1e-9));
+                CHECK(near(g_aparente_298, -130.137, 0.01));
+
+                // Semántica de formación: C(grafito) + 2 H2(g) -> CH4(g)
+                const auto* c_graf = por_formula("C");
+                const auto* h2_gas = por_formula("H2");
+                CHECK(c_graf != nullptr && h2_gas != nullptr);
+                if (c_graf && h2_gas) {
+                    double g_elems_298 = 1.0 * c_graf->energia_gibbs(298.15) + 2.0 * h2_gas->energia_gibbs(298.15);
+                    double delta_f_G_298 = ch4->energia_gibbs(298.15) - g_elems_298;
+                    // Valor calculado en CMA: ~ -50.501 kJ/mol vs NIST-JANAF -50.768 kJ/mol
+                    CHECK(near(delta_f_G_298, -50.50, 0.1));
+                    CHECK(std::abs(delta_f_G_298 - (-50.768)) < 0.35);
+                }
+
+                // Verificación dimensional de derivadas: 1000 * dH/dT = Cp(T) y dS/dT = Cp(T)/T
+                const double eps = 1e-4;
+                for (double T_chk = 300.0; T_chk <= 1250.0; T_chk += 200.0) {
+                    double dH_dT = (ch4->entalpia_abs(T_chk + eps) - ch4->entalpia_abs(T_chk - eps)) / (2.0 * eps);
+                    double cp_eval = ch4->cp(T_chk);
+                    CHECK(std::abs(1000.0 * dH_dT - cp_eval) / cp_eval < 1e-5);
+
+                    double dS_dT = (ch4->entropia_abs(T_chk + eps) - ch4->entropia_abs(T_chk - eps)) / (2.0 * eps);
+                    CHECK(std::abs(dS_dT - cp_eval / T_chk) / (cp_eval / T_chk) < 1e-5);
+                }
+
+                // Verificación de los picos de error relativo (375.67 K) y absoluto (382.07 K)
+                double cp_382 = ch4->cp(382.07);
+                // NIST Shomate a 382.07 K es 39.5111 J/(mol K)
+                CHECK(near(cp_382, 40.028, 0.05));
+                CHECK(near(cp_382 - 39.5111, 0.5169, 0.005)); // Pico de error absoluto ~ 0.5169 J/(mol K)
+
+                // 7. Prueba de extremo a extremo: Propagación de advertencias a los motores
+                // A) MinimizadorGibbs
+                auto& repo_glob = cma::base_datos::GestorDB::instancia();
+                cma::motores::MinimizadorGibbs gibbs_eng;
+                auto res_g1500 = gibbs_eng.minimizar({{ch4->id, 1.0}}, 1500.0, 1.0, repo_glob.mapa_especies());
+                CHECK(res_g1500.convergio);
+                CHECK(!res_g1500.advertencias.empty());
+                CHECK(res_g1500.mensaje.find("ADVERTENCIA: Extrapolacion termica detectada") != std::string::npos);
+
+                auto res_g2000 = gibbs_eng.minimizar({{ch4->id, 1.0}}, 2000.0, 1.0, repo_glob.mapa_especies());
+                CHECK(res_g2000.convergio);
+                CHECK(!res_g2000.advertencias.empty());
+                CHECK(res_g2000.advertencias[0].find("CH4") != std::string::npos);
+
+                // B) BalanceEnergia
+                cma::motores::BalanceEnergia balance_eng;
+                cma::nucleo::Flujo fl_hot;
+                fl_hot.id = 101;
+                fl_hot.temperatura = 1600.0;
+                fl_hot.flujo_molar[ch4->id] = 2.0;
+                cma::nucleo::Nodo nd;
+                nd.id = 1;
+                nd.tipo = cma::nucleo::TipoNodo::IntercambiadorCalor;
+                auto res_be = balance_eng.resolver_nodo(nd, {fl_hot}, {}, repo_glob.mapa_especies());
+                CHECK(!res_be.advertencias.empty());
+                CHECK(res_be.mensaje.find("ADVERTENCIA: Extrapolacion termica detectada") != std::string::npos);
             }
         }
 

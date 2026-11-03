@@ -19,6 +19,7 @@ ResultadoGibbs GibbsMinimizer::minimizar(
     r.iteraciones = res.iteraciones;
     r.convergio = res.convergio;
     r.mensaje = std::move(res.mensaje);
+    r.advertencias = std::move(res.advertencias);
     return r;
 }
 

@@ -51,6 +51,7 @@ struct PuntoPropiedadTermo {
     double dSf = 0.0;          // Delta S°f(T) desde elementos o Delta S°_rxn(T) normalizado [J/(mol*K)]
     double log10K = 0.0;       // log10 K(T)
     std::string active_phase;  // Formula/nombre del polimorfo activo a esta T
+    bool en_rango = true;      // Pertinencia al dominio termico validado
 };
 
 struct TransicionFasePunto {
@@ -68,6 +69,7 @@ struct CurvaDiagramaTermo {
     bool visible = true;
     std::vector<PuntoPropiedadTermo> points;
     std::vector<TransicionFasePunto> phase_transitions;
+    std::vector<std::string> warnings;  // Advertencias de extrapolacion termica
 
     double evaluar_propiedad(PropertyDiagramType tipo, size_t idx, bool en_kcal = false) const {
         if (idx >= points.size()) {

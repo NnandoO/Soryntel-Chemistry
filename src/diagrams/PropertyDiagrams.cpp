@@ -694,6 +694,10 @@ domain::CurvaDiagramaTermo PropertyDiagrams::calcular_curva_especie(
         pt.Cp = act.cp(T) * multiplicador;
         pt.G = act.energia_gibbs(T) * multiplicador;
         pt.active_phase = act.formula;
+        pt.en_rango = act.en_rango_temperatura(T);
+        if (!pt.en_rango && curva.warnings.size() < 10) {
+            curva.warnings.push_back(act.comprobar_rango(T).advertencia);
+        }
 
         if (es_elem_puro) {
             pt.dHf = 0.0;

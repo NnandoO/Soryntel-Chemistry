@@ -12,6 +12,7 @@ struct ResultadoGibbs {
     int    iteraciones = 0;
     bool   convergio   = false;
     std::string mensaje;
+    std::vector<std::string> advertencias;
 };
 
 class MinimizadorGibbs {

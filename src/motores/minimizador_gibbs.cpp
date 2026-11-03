@@ -202,9 +202,13 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     std::vector<bool> es_gas(NS);
     std::vector<int> fase_id(NS, 0); // 0 = pura condensada, 1 = gas, >=2 = fase de solución condensada
     Eigen::VectorXd cvec(static_cast<int>(NS));
+    std::vector<std::string> advertencias_rango;
     for (size_t j = 0; j < NS; ++j) {
         int64_t sid = activas[j];
         const auto& species = db.at(sid);
+        if (!species.en_rango_temperatura(T_K)) {
+            advertencias_rango.push_back(species.comprobar_rango(T_K).advertencia);
+        }
         es_gas[j] = species.fase_std == nucleo::Fase::Gas || species.fase_std == nucleo::Fase::Mixto;
         if (es_gas[j]) {
             fase_id[j] = 1;
@@ -385,9 +389,21 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     }
 
     res.energia_gibbs_total = total_G;
-    if (res.mensaje.empty()) res.mensaje = res.convergio
+    res.advertencias = advertencias_rango;
+    std::string base_msg = res.convergio
         ? "Minimización Gibbs convergió en " + std::to_string(res.iteraciones) + " iteraciones."
         : "No convergió completamente tras " + std::to_string(res.iteraciones) + " iteraciones.";
+    if (!advertencias_rango.empty()) {
+        std::string warn_msg = " [ADVERTENCIA: Extrapolacion termica detectada (";
+        for (size_t i = 0; i < advertencias_rango.size(); ++i) {
+            if (i > 0) warn_msg += "; ";
+            warn_msg += advertencias_rango[i];
+        }
+        warn_msg += ")]";
+        res.mensaje = base_msg + warn_msg;
+    } else {
+        res.mensaje = base_msg;
+    }
 
     // Exportar la solución como semilla para warm starts
     if (n_inout && res.convergio) {
