@@ -163,6 +163,53 @@ int main() {
     CHECK(sqlite3_prepare_v2(sql,"SELECT count(*) FROM cma_species_provenance WHERE quality=0 AND min_kelvin IS NULL",-1,&statement,nullptr)==SQLITE_OK);
     CHECK(sqlite3_step(statement)==SQLITE_ROW && sqlite3_column_int(statement,0)==repository.conteo_especies());
     sqlite3_finalize(statement); sqlite3_close(sql);
+
+    // Verificación de recarga e importación SQLite con preservación de ModeloCp
+    cma::base_datos::GestorDB loaded_repo;
+    CHECK(loaded_repo.importar_sqlite((tmp/"species.sqlite").string()));
+    CHECK(loaded_repo.conteo_especies() == repository.conteo_especies());
+    const auto* sp_o2_loaded = loaded_repo.especie_por_nombre("Oxígeno");
+    CHECK(sp_o2_loaded != nullptr);
+    if (sp_o2_loaded) {
+        CHECK(sp_o2_loaded->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+        CHECK(near(sp_o2_loaded->T_min, 298.15, 1e-3));
+        CHECK(near(sp_o2_loaded->T_max, 2000.0, 1e-3));
+    }
+    const cma::nucleo::Especie* sp_li2o_loaded = nullptr;
+    for (const auto& [id, sp] : loaded_repo.mapa_especies()) {
+        if (sp.formula == "Li2O(s)") {
+            sp_li2o_loaded = &sp;
+            break;
+        }
+    }
+    CHECK(sp_li2o_loaded != nullptr);
+    if (sp_li2o_loaded) {
+        CHECK(sp_li2o_loaded->modelo_cp == cma::nucleo::ModeloCp::MAIER_KELLEY);
+    }
+
+    // Verificación de migración compatible de base de datos SQLite legacy (11 columnas)
+    {
+        sqlite3* leg_sql = nullptr;
+        std::string leg_path = (tmp/"legacy_11col.sqlite").string();
+        CHECK(sqlite3_open(leg_path.c_str(), &leg_sql) == SQLITE_OK);
+        sqlite3_exec(leg_sql,
+            "CREATE TABLE cma_species (id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, "
+            "hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL);"
+            "CREATE TABLE cma_species_provenance (id INTEGER PRIMARY KEY, source TEXT, reference TEXT, "
+            "revision TEXT, quality INTEGER, min_kelvin REAL, max_kelvin REAL);"
+            "INSERT INTO cma_species VALUES (1, 'LegacyGas', 'O2', 31.999, 0.0, 205.15, 1, 29.0, 0.01, -1e-6, 0.0);"
+            "INSERT INTO cma_species VALUES (2, 'LegacyMineral', 'FeS', 87.91, -100.0, 60.0, 2, 45.0, 0.02, 50000.0, 0.0);",
+            nullptr, nullptr, nullptr);
+        sqlite3_close(leg_sql);
+
+        cma::base_datos::GestorDB leg_repo;
+        CHECK(leg_repo.importar_sqlite(leg_path));
+        CHECK(leg_repo.conteo_especies() == 2);
+        const auto* leg_sp1 = leg_repo.especie_por_id(1);
+        const auto* leg_sp2 = leg_repo.especie_por_id(2);
+        CHECK(leg_sp1 != nullptr && leg_sp1->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+        CHECK(leg_sp2 != nullptr && leg_sp2->modelo_cp == cma::nucleo::ModeloCp::MAIER_KELLEY);
+    }
     std::filesystem::remove_all(tmp);
 
     const auto& periodic_table = cma::nucleo::TablaPeriodica::instancia();

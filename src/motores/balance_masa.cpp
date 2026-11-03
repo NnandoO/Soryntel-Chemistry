@@ -175,9 +175,13 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, 
         res.iteraciones = iter + 1;
         res.error_final = error;
         res.convergio = error < TOL;
-        res.mensaje = res.convergio
-            ? "Balance de masa convergido con recirculación en " + std::to_string(iter + 1) + " iteraciones"
-            : "No convergió después de " + std::to_string(MAX_ITER) + " iteraciones (error=" + std::to_string(error) + ")";
+        if (res.convergio) {
+            res.mensaje = "Balance de masa convergido con recirculación en " + std::to_string(iter + 1) + " iteraciones";
+        } else if (!std::isfinite(error) || error > 1e6) {
+            res.mensaje = "No convergió: divergencia numérica detectada (error=" + std::to_string(error) + ")";
+        } else {
+            res.mensaje = "No convergió: iteraciones agotadas después de " + std::to_string(MAX_ITER) + " iteraciones (error=" + std::to_string(error) + ")";
+        }
     }
 
     // ── Restaurar metadatos de corrientes, desglose por fases y entalpía ──
