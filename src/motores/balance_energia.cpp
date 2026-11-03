@@ -90,6 +90,27 @@ ResultadoBalanceEnergia BalanceEnergia::resolver_nodo(
     res.mensaje = res.balanceado
         ? "Balance de energía satisfecho."
         : "Desequilibrio energético: Q = " + std::to_string(res.calor) + " kJ/s";
+
+    for (const auto& e : entradas) {
+        for (const auto& [sid, n] : e.flujo_molar) {
+            auto it = db.find(sid);
+            if (it != db.end() && !it->second.en_rango_temperatura(e.temperatura)) {
+                res.advertencias.push_back("Entrada: " + it->second.comprobar_rango(e.temperatura).advertencia);
+            }
+        }
+    }
+    for (const auto& s : salidas) {
+        for (const auto& [sid, n] : s.flujo_molar) {
+            auto it = db.find(sid);
+            if (it != db.end() && !it->second.en_rango_temperatura(s.temperatura)) {
+                res.advertencias.push_back("Salida: " + it->second.comprobar_rango(s.temperatura).advertencia);
+            }
+        }
+    }
+    if (!res.advertencias.empty()) {
+        res.mensaje += " [ADVERTENCIA: Extrapolacion termica detectada]";
+    }
+
     return res;
 }
 

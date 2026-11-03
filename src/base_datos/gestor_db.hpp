@@ -22,18 +22,20 @@ public:
 
     bool cargar_predeterminadas();
     bool exportar_sqlite(const std::string& ruta) const;
+    bool importar_sqlite(const std::string& ruta);
 
     // Especies
-    const nucleo::Especie* especie_por_id(int64_t id) const;
-    const nucleo::Especie* especie_por_nombre(const std::string& nombre) const;
-    std::vector<const nucleo::Especie*> buscar_especies(const std::string& query) const;
-    std::vector<const nucleo::Especie*> todas_especies() const;
-    const std::map<int64_t, nucleo::Especie>& mapa_especies() const { return especies_; }
+    const nucleo::Especie* especie_por_id(int64_t id) const override;
+    const nucleo::Especie* especie_por_nombre(const std::string& nombre) const override;
+    std::vector<const nucleo::Especie*> buscar_especies(const std::string& query) const override;
+    std::vector<const nucleo::Especie*> todas_especies() const override;
+    std::vector<const nucleo::Especie*> especies_curadas() const;
+    const std::map<int64_t, nucleo::Especie>& mapa_especies() const override { return especies_; }
     int conteo_especies() const { return (int)especies_.size(); }
 
     // Reacciones
-    const nucleo::Reaccion* reaccion_por_id(int64_t id) const;
-    std::vector<const nucleo::Reaccion*> todas_reacciones() const;
+    const nucleo::Reaccion* reaccion_por_id(int64_t id) const override;
+    std::vector<const nucleo::Reaccion*> todas_reacciones() const override;
     int conteo_reacciones() const { return (int)reacciones_.size(); }
 
     // Elementos (tabla periódica)

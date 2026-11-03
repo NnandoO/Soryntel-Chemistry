@@ -14,6 +14,7 @@ struct ResultadoBalanceEnergia {
     double delta_T          = 0.0; // K
     bool   balanceado       = false;
     std::string mensaje;
+    std::vector<std::string> advertencias;
 };
 
 class BalanceEnergia {

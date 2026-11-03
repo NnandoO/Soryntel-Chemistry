@@ -37,8 +37,13 @@ void GestorDB::poblar_especies() {
     for (auto& d : semilla_especies()) {
         nucleo::Especie e;
         e.id = prox_id_especie_++;
-        e.provenance.source = "seed:datos_especies.hpp record " + std::to_string(e.id);
-        e.provenance.revision = "legacy-import; reference pending";
+        if (e.id <= 445) {
+            e.provenance.source = "curated:NIST-JANAF-HSC seed record " + std::to_string(e.id);
+            e.provenance.revision = "curated-experimental";
+        } else {
+            e.provenance.source = "generated:extended-combinatorial record " + std::to_string(e.id);
+            e.provenance.revision = "synthetic-estimate";
+        }
         e.nombre = d.nombre;
         e.formula = d.formula;
         e.masa_molar = d.M;
@@ -48,6 +53,15 @@ void GestorDB::poblar_especies() {
         e.cp_b = d.Cp_b;
         e.cp_c = d.Cp_c;
         e.cp_d = d.Cp_d;
+        if (d.modelo_cp != nucleo::ModeloCp::POLINOMIAL_ESTANDAR) {
+            e.modelo_cp = d.modelo_cp;
+        } else if (std::abs(d.Cp_c) > 1.0) {
+            e.modelo_cp = nucleo::ModeloCp::MAIER_KELLEY;
+        } else {
+            e.modelo_cp = nucleo::ModeloCp::POLINOMIAL_ESTANDAR;
+        }
+        e.T_min = d.T_min;
+        e.T_max = d.T_max;
         e.antoine_a = d.AntA;
         e.antoine_b = d.AntB;
         e.antoine_c = d.AntC;
@@ -66,7 +80,9 @@ void GestorDB::poblar_especies() {
             default: e.fase_std = nucleo::Fase::Mixto;   break;
         }
         especies_[e.id] = e;
-        nombre_a_id_especie_[e.nombre] = e.id;
+        if (e.id <= 445 || nombre_a_id_especie_.find(e.nombre) == nombre_a_id_especie_.end()) {
+            nombre_a_id_especie_[e.nombre] = e.id;
+        }
     }
 }
 
@@ -208,12 +224,47 @@ std::vector<const nucleo::Especie*> GestorDB::buscar_especies(const std::string&
         if (nom.find(q) != std::string::npos || form.find(q) != std::string::npos)
             res.push_back(&sp);
     }
+
+    std::sort(res.begin(), res.end(), [&](const nucleo::Especie* a, const nucleo::Especie* b) {
+        const bool a_curated = (a->id <= 445 || a->provenance.revision != "synthetic-estimate");
+        const bool b_curated = (b->id <= 445 || b->provenance.revision != "synthetic-estimate");
+        if (a_curated != b_curated) return a_curated;
+
+        std::string a_form = a->formula;
+        std::transform(a_form.begin(), a_form.end(), a_form.begin(), lowercase);
+        std::string b_form = b->formula;
+        std::transform(b_form.begin(), b_form.end(), b_form.begin(), lowercase);
+        const bool a_exact_form = (a_form == q);
+        const bool b_exact_form = (b_form == q);
+        if (a_exact_form != b_exact_form) return a_exact_form;
+
+        std::string a_nom = a->nombre;
+        std::transform(a_nom.begin(), a_nom.end(), a_nom.begin(), lowercase);
+        std::string b_nom = b->nombre;
+        std::transform(b_nom.begin(), b_nom.end(), b_nom.begin(), lowercase);
+        const bool a_exact_nom = (a_nom == q);
+        const bool b_exact_nom = (b_nom == q);
+        if (a_exact_nom != b_exact_nom) return a_exact_nom;
+
+        return a->id < b->id;
+    });
+
     return res;
 }
 
 std::vector<const nucleo::Especie*> GestorDB::todas_especies() const {
     std::vector<const nucleo::Especie*> res;
     for (auto& [id, sp] : especies_) res.push_back(&sp);
+    return res;
+}
+
+std::vector<const nucleo::Especie*> GestorDB::especies_curadas() const {
+    std::vector<const nucleo::Especie*> res;
+    for (const auto& [id, sp] : especies_) {
+        if (sp.id <= 445 || sp.provenance.revision != "synthetic-estimate") {
+            res.push_back(&sp);
+        }
+    }
     return res;
 }
 
@@ -256,11 +307,44 @@ bool GestorDB::exportar_sqlite(const std::string& ruta) const {
     if (sqlite3_open(ruta.c_str(), &raw) != SQLITE_OK) { if (raw) sqlite3_close(raw); return false; }
     std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
     auto exec = [&](const char* sql) { return sqlite3_exec(raw, sql, nullptr, nullptr, nullptr) == SQLITE_OK; };
-    if (!exec("BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS cma_species (id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL); CREATE TABLE IF NOT EXISTS cma_species_provenance (id INTEGER PRIMARY KEY, source TEXT NOT NULL, reference TEXT, revision TEXT, quality INTEGER NOT NULL, min_kelvin REAL, max_kelvin REAL); DELETE FROM cma_species; DELETE FROM cma_species_provenance;")) {
+    if (!exec("BEGIN IMMEDIATE;")) {
+        return false;
+    }
+
+    // Asegurar migración de esquema si la tabla cma_species ya existía en formato legacy (11 columnas)
+    sqlite3_stmt* check_stmt = nullptr;
+    if (sqlite3_prepare_v2(raw, "PRAGMA table_info(cma_species)", -1, &check_stmt, nullptr) == SQLITE_OK) {
+        bool has_table = false;
+        bool has_cp_model = false;
+        while (sqlite3_step(check_stmt) == SQLITE_ROW) {
+            has_table = true;
+            const unsigned char* col_name = sqlite3_column_text(check_stmt, 1);
+            if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == "cp_model") {
+                has_cp_model = true;
+            }
+        }
+        sqlite3_finalize(check_stmt);
+        if (has_table && !has_cp_model) {
+            exec("ALTER TABLE cma_species ADD COLUMN cp_model INTEGER DEFAULT 0; "
+                 "ALTER TABLE cma_species ADD COLUMN cp_e REAL DEFAULT 0.0; "
+                 "ALTER TABLE cma_species ADD COLUMN t_min REAL DEFAULT 298.15; "
+                 "ALTER TABLE cma_species ADD COLUMN t_max REAL DEFAULT 2000.0;");
+        }
+    }
+
+    if (!exec("CREATE TABLE IF NOT EXISTS cma_species ("
+              "id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, "
+              "hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL, "
+              "cp_model INTEGER DEFAULT 0, cp_e REAL DEFAULT 0.0, "
+              "t_min REAL DEFAULT 298.15, t_max REAL DEFAULT 2000.0); "
+              "CREATE TABLE IF NOT EXISTS cma_species_provenance ("
+              "id INTEGER PRIMARY KEY, source TEXT NOT NULL, reference TEXT, revision TEXT, "
+              "quality INTEGER NOT NULL, min_kelvin REAL, max_kelvin REAL); "
+              "DELETE FROM cma_species; DELETE FROM cma_species_provenance;")) {
         exec("ROLLBACK"); return false;
     }
     sqlite3_stmt* statement = nullptr;
-    if (sqlite3_prepare_v2(raw, "INSERT INTO cma_species VALUES (?,?,?,?,?,?,?,?,?,?,?)", -1, &statement, nullptr) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(raw, "INSERT INTO cma_species VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", -1, &statement, nullptr) != SQLITE_OK) {
         exec("ROLLBACK"); return false;
     }
     std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> stmt(statement, sqlite3_finalize);
@@ -281,6 +365,10 @@ bool GestorDB::exportar_sqlite(const std::string& ruta) const {
         sqlite3_bind_double(statement, 9, species.cp_b);
         sqlite3_bind_double(statement, 10, species.cp_c);
         sqlite3_bind_double(statement, 11, species.cp_d);
+        sqlite3_bind_int(statement, 12, static_cast<int>(species.modelo_cp));
+        sqlite3_bind_double(statement, 13, species.cp_e);
+        sqlite3_bind_double(statement, 14, species.T_min);
+        sqlite3_bind_double(statement, 15, species.T_max);
         if (sqlite3_step(statement) != SQLITE_DONE) { exec("ROLLBACK"); return false; }
         sqlite3_reset(statement);
         sqlite3_clear_bindings(statement);
@@ -298,6 +386,113 @@ bool GestorDB::exportar_sqlite(const std::string& ruta) const {
         sqlite3_reset(provenance_statement); sqlite3_clear_bindings(provenance_statement);
     }
     if (!exec("COMMIT")) { exec("ROLLBACK"); return false; }
+    return true;
+}
+
+bool GestorDB::importar_sqlite(const std::string& ruta) {
+    sqlite3* raw = nullptr;
+    if (sqlite3_open(ruta.c_str(), &raw) != SQLITE_OK) {
+        if (raw) sqlite3_close(raw);
+        return false;
+    }
+    std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
+
+    // Detectar presencia de columnas modernas en cma_species
+    sqlite3_stmt* info_stmt = nullptr;
+    if (sqlite3_prepare_v2(raw, "PRAGMA table_info(cma_species)", -1, &info_stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+    bool has_cp_model = false;
+    while (sqlite3_step(info_stmt) == SQLITE_ROW) {
+        const unsigned char* col_name = sqlite3_column_text(info_stmt, 1);
+        if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == "cp_model") {
+            has_cp_model = true;
+        }
+    }
+    sqlite3_finalize(info_stmt);
+
+    const std::string query = has_cp_model
+        ? "SELECT id, name, formula, molar_mass, hf, sf, phase, cp_a, cp_b, cp_c, cp_d, cp_model, cp_e, t_min, t_max FROM cma_species ORDER BY id"
+        : "SELECT id, name, formula, molar_mass, hf, sf, phase, cp_a, cp_b, cp_c, cp_d FROM cma_species ORDER BY id";
+
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(raw, query.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+    std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> species_stmt(stmt, sqlite3_finalize);
+
+    const auto& tp = nucleo::TablaPeriodica::instancia();
+    std::map<int64_t, nucleo::Especie> loaded_species;
+    std::map<std::string, int64_t> loaded_name_map;
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        nucleo::Especie sp;
+        sp.id = sqlite3_column_int64(stmt, 0);
+        const unsigned char* n = sqlite3_column_text(stmt, 1);
+        const unsigned char* f = sqlite3_column_text(stmt, 2);
+        sp.nombre = n ? reinterpret_cast<const char*>(n) : "";
+        sp.formula = f ? reinterpret_cast<const char*>(f) : "";
+        sp.masa_molar = sqlite3_column_double(stmt, 3);
+        sp.h_formacion = sqlite3_column_double(stmt, 4);
+        sp.s_formacion = sqlite3_column_double(stmt, 5);
+        int phase_int = sqlite3_column_int(stmt, 6);
+        switch (phase_int) {
+            case 0: sp.fase_std = nucleo::Fase::Liquido; break;
+            case 1: sp.fase_std = nucleo::Fase::Gas;     break;
+            case 2: sp.fase_std = nucleo::Fase::Solido;  break;
+            case 3: sp.fase_std = nucleo::Fase::Mixto;   break;
+            default: sp.fase_std = nucleo::Fase::Desconocido; break;
+        }
+        sp.cp_a = sqlite3_column_double(stmt, 7);
+        sp.cp_b = sqlite3_column_double(stmt, 8);
+        sp.cp_c = sqlite3_column_double(stmt, 9);
+        sp.cp_d = sqlite3_column_double(stmt, 10);
+        if (has_cp_model) {
+            sp.modelo_cp = static_cast<nucleo::ModeloCp>(sqlite3_column_int(stmt, 11));
+            sp.cp_e = sqlite3_column_double(stmt, 12);
+            sp.T_min = sqlite3_column_double(stmt, 13);
+            sp.T_max = sqlite3_column_double(stmt, 14);
+        } else {
+            sp.modelo_cp = (std::abs(sp.cp_c) > 1.0) ? nucleo::ModeloCp::MAIER_KELLEY : nucleo::ModeloCp::POLINOMIAL_ESTANDAR;
+            sp.cp_e = 0.0;
+            sp.T_min = 298.15;
+            sp.T_max = 2000.0;
+        }
+        for (const auto& ca : tp.analizar_formula(sp.formula)) {
+            if (!ca.elem.empty() && ca.cuenta > 0)
+                sp.composicion_elemental[ca.elem] += ca.cuenta;
+        }
+        loaded_species[sp.id] = sp;
+        if (sp.id <= 445 || loaded_name_map.find(sp.nombre) == loaded_name_map.end()) {
+            loaded_name_map[sp.nombre] = sp.id;
+        }
+    }
+
+    // Cargar procedencia
+    sqlite3_stmt* prov_stmt = nullptr;
+    if (sqlite3_prepare_v2(raw, "SELECT id, source, reference, revision, quality, min_kelvin, max_kelvin FROM cma_species_provenance", -1, &prov_stmt, nullptr) == SQLITE_OK) {
+        std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> p_stmt(prov_stmt, sqlite3_finalize);
+        while (sqlite3_step(prov_stmt) == SQLITE_ROW) {
+            int64_t pid = sqlite3_column_int64(prov_stmt, 0);
+            if (auto it = loaded_species.find(pid); it != loaded_species.end()) {
+                const unsigned char* s = sqlite3_column_text(prov_stmt, 1);
+                const unsigned char* r = sqlite3_column_text(prov_stmt, 2);
+                const unsigned char* rev = sqlite3_column_text(prov_stmt, 3);
+                it->second.provenance.source = s ? reinterpret_cast<const char*>(s) : "";
+                it->second.provenance.reference = r ? reinterpret_cast<const char*>(r) : "";
+                it->second.provenance.revision = rev ? reinterpret_cast<const char*>(rev) : "";
+                it->second.provenance.quality = static_cast<domain::DataQuality>(sqlite3_column_int(prov_stmt, 4));
+                if (sqlite3_column_type(prov_stmt, 5) != SQLITE_NULL)
+                    it->second.provenance.min_kelvin = sqlite3_column_double(prov_stmt, 5);
+                if (sqlite3_column_type(prov_stmt, 6) != SQLITE_NULL)
+                    it->second.provenance.max_kelvin = sqlite3_column_double(prov_stmt, 6);
+            }
+        }
+    }
+
+    if (loaded_species.empty()) return false;
+    especies_ = std::move(loaded_species);
+    nombre_a_id_especie_ = std::move(loaded_name_map);
     return true;
 }
 

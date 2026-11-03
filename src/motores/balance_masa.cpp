@@ -2,12 +2,28 @@
 #include "motores/mineral_processing.hpp"
 #include "motores/minimizador_gibbs.hpp"
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <set>
 #include <sstream>
 
 namespace cma { namespace motores {
+
+namespace {
+bool parse_id_especie(const std::string& str, int64_t& out_id) {
+    if (str.empty() || !std::isdigit(static_cast<unsigned char>(str[0]))) return false;
+    char* endp = nullptr;
+    errno = 0;
+    const long long val = std::strtoll(str.c_str(), &endp, 10);
+    if (errno == ERANGE || val <= 0 || endp != str.c_str() + str.size()) return false;
+    out_id = static_cast<int64_t>(val);
+    return true;
+}
+} // namespace
 
 ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, int max_iter, double tolerancia) {
     ResultadoBalanceMasa res;
@@ -71,17 +87,27 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, 
         auto wegstein_step = [](double x_val, double f_val, double& xp, double& fp, int it_idx) {
             double x_next = f_val;
             if (it_idx > 0) {
-                double dx = x_val - xp;
-                double df = f_val - fp;
+                const double dx = x_val - xp;
+                const double df = f_val - fp;
                 if (std::abs(dx) > 1e-12) {
-                    double s = std::clamp(df / dx, -5.0, -0.1);
-                    double q = s / (s - 1.0);
-                    x_next = std::max(0.0, q * x_val + (1.0 - q) * f_val);
+                    const double s = df / dx;
+                    if (std::abs(s - 1.0) < 0.02) {
+                        x_next = f_val;
+                    } else if (s <= -5.0) {
+                        const double w = 1.0 / (1.0 - s);
+                        x_next = (1.0 - w) * x_val + w * f_val;
+                    } else if (s < 1.0) {
+                        const double q = std::clamp(s / (s - 1.0), -20.0, 0.8);
+                        x_next = q * x_val + (1.0 - q) * f_val;
+                    } else {
+                        const double step = (f_val - x_val) / (s - 1.0);
+                        x_next = x_val - 0.9 * step;
+                    }
                 }
             }
             xp = x_val;
             fp = f_val;
-            return x_next;
+            return std::max(0.0, x_next);
         };
 
         for (; iter < MAX_ITER; ++iter) {
@@ -165,9 +191,13 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, 
         res.iteraciones = iter + 1;
         res.error_final = error;
         res.convergio = error < TOL;
-        res.mensaje = res.convergio
-            ? "Balance de masa convergido con recirculación en " + std::to_string(iter + 1) + " iteraciones"
-            : "No convergió después de " + std::to_string(MAX_ITER) + " iteraciones (error=" + std::to_string(error) + ")";
+        if (res.convergio) {
+            res.mensaje = "Balance de masa convergido con recirculación en " + std::to_string(iter + 1) + " iteraciones";
+        } else if (!std::isfinite(error) || error > 1e6) {
+            res.mensaje = "No convergió: divergencia numérica detectada (error=" + std::to_string(error) + ")";
+        } else {
+            res.mensaje = "No convergió: iteraciones agotadas después de " + std::to_string(MAX_ITER) + " iteraciones (error=" + std::to_string(error) + ")";
+        }
     }
 
     // ── Restaurar metadatos de corrientes, desglose por fases y entalpía ──
@@ -305,15 +335,13 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
                            : (nodo.params.count("P") ? nodo.params.at("P") : nucleo::STP_PRES));
             for (auto& [k, v] : nodo.params) {
                 if (k.rfind("flujo_", 0) == 0 || k.rfind("flow_", 0) == 0) {
-                    try {
-                        size_t pref = (k.rfind("flujo_", 0) == 0) ? 6 : 5;
-                        size_t pos;
-                        int64_t sid = std::stoll(k.substr(pref), &pos);
-                        if (sid > 0 && pos == k.size() - pref) {
-                            double val = std::max(0.0, v);
-                            salida.flujo_molar[sid] = val;
-                        }
-                    } catch (...) {}
+                    const size_t pref = (k.rfind("flujo_", 0) == 0) ? 6 : 5;
+                    const std::string sub = k.substr(pref);
+                    int64_t sid = 0;
+                    if (parse_id_especie(sub, sid)) {
+                        double val = std::max(0.0, v);
+                        salida.flujo_molar[sid] = val;
+                    }
                 }
             }
             if (nodo.params.count("agua_kg_h")) {
@@ -367,12 +395,11 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
             std::map<int64_t, double> remocion;
             for (auto& [k, v] : nodo.params) {
                 if (k.rfind("remover_", 0) == 0) {
-                    try {
-                        size_t pos;
-                        int64_t sid = std::stoll(k.substr(8), &pos);
-                        if (sid > 0 && pos == k.size() - 8)
-                            remocion[sid] = v;
-                    } catch (...) {}
+                    const std::string sub = k.substr(8);
+                    int64_t sid = 0;
+                    if (parse_id_especie(sub, sid)) {
+                        remocion[sid] = v;
+                    }
                 }
             }
             for (const auto& [sid, n] : entradas[0].flujo_molar) {

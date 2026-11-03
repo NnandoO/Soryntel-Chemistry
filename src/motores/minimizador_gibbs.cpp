@@ -202,9 +202,13 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     std::vector<bool> es_gas(NS);
     std::vector<int> fase_id(NS, 0); // 0 = pura condensada, 1 = gas, >=2 = fase de solución condensada
     Eigen::VectorXd cvec(static_cast<int>(NS));
+    std::vector<std::string> advertencias_rango;
     for (size_t j = 0; j < NS; ++j) {
         int64_t sid = activas[j];
         const auto& species = db.at(sid);
+        if (!species.en_rango_temperatura(T_K)) {
+            advertencias_rango.push_back(species.comprobar_rango(T_K).advertencia);
+        }
         es_gas[j] = species.fase_std == nucleo::Fase::Gas || species.fase_std == nucleo::Fase::Mixto;
         if (es_gas[j]) {
             fase_id[j] = 1;
@@ -250,6 +254,21 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
         return Eigen::VectorXd(grad / cost_scale);
     };
     double mu = 0.1;
+    auto barrier_obj = [&](const Eigen::VectorXd& amounts) {
+        double obj = cvec.dot(amounts);
+        std::map<int, double> phase_totals;
+        for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) phase_totals[fase_id[j]] += amounts(static_cast<int>(j));
+        for (size_t j = 0; j < NS; ++j) if (fase_id[j] >= 1) {
+            double nj = std::max(amounts(static_cast<int>(j)), N_FLOOR);
+            double ptot = std::max(phase_totals[fase_id[j]], N_FLOOR);
+            obj += nj * std::log(nj / ptot);
+        }
+        obj /= cost_scale;
+        for (size_t j = 0; j < NS; ++j) {
+            obj -= mu * std::log(std::max(amounts(static_cast<int>(j)), N_FLOOR));
+        }
+        return obj + 10.0 * (br - Ar * amounts).norm() / b_scale;
+    };
     bool solved = false;
     for (int stage = 0; stage < 15; ++stage) {
         for (int iter = 0; iter < 300; ++iter) {
@@ -297,15 +316,19 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
             for (int j = 0; j < n.size(); ++j) if (dn(j) < 0)
                 step = std::min(step, -0.99 * n(j) / dn(j));
             const double merit = dual.cwiseProduct(n).norm() / amount_scale + primal.norm() / b_scale;
+            const double b_obj = barrier_obj(n);
             bool accepted = false;
             for (int search = 0; search < 60; ++search) {
                 const Eigen::VectorXd next = n + step * dn;
                 const Eigen::VectorXd next_pi = pi + step * dpi;
-                const Eigen::VectorXd next_dual = gradient(next) - Ar.transpose() * next_pi - (mu * next.cwiseInverse()).eval();
-                const double next_merit = next_dual.cwiseProduct(next).norm() / amount_scale + (br - Ar * next).norm() / b_scale;
-                if (next.allFinite() && next.minCoeff() > 0 && std::isfinite(next_merit) &&
-                    next_merit <= (1 - 1e-4 * step) * merit) {
-                    n = next; pi = next_pi; accepted = true; break;
+                if (next.allFinite() && next.minCoeff() > 0) {
+                    const Eigen::VectorXd next_dual = gradient(next) - Ar.transpose() * next_pi - (mu * next.cwiseInverse()).eval();
+                    const double next_merit = next_dual.cwiseProduct(next).norm() / amount_scale + (br - Ar * next).norm() / b_scale;
+                    const double next_b_obj = barrier_obj(next);
+                    if ((std::isfinite(next_merit) && next_merit <= (1 - 1e-4 * step) * merit) ||
+                        (std::isfinite(next_b_obj) && next_b_obj < b_obj - 1e-12 * step)) {
+                        n = next; pi = next_pi; accepted = true; break;
+                    }
                 }
                 step *= 0.5;
             }
@@ -366,9 +389,21 @@ ResultadoGibbs MinimizadorGibbs::minimizar(
     }
 
     res.energia_gibbs_total = total_G;
-    if (res.mensaje.empty()) res.mensaje = res.convergio
+    res.advertencias = advertencias_rango;
+    std::string base_msg = res.convergio
         ? "Minimización Gibbs convergió en " + std::to_string(res.iteraciones) + " iteraciones."
         : "No convergió completamente tras " + std::to_string(res.iteraciones) + " iteraciones.";
+    if (!advertencias_rango.empty()) {
+        std::string warn_msg = " [ADVERTENCIA: Extrapolacion termica detectada (";
+        for (size_t i = 0; i < advertencias_rango.size(); ++i) {
+            if (i > 0) warn_msg += "; ";
+            warn_msg += advertencias_rango[i];
+        }
+        warn_msg += ")]";
+        res.mensaje = base_msg + warn_msg;
+    } else {
+        res.mensaje = base_msg;
+    }
 
     // Exportar la solución como semilla para warm starts
     if (n_inout && res.convergio) {
