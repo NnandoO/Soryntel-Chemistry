@@ -1436,29 +1436,79 @@ int main() {
             return nullptr;
         };
 
-        // ── T-04: Metano CH4 Cp vs NIST Shomate en 298.15 K, 375.67 K, 500 K y 1000 K
+        // ── T-04: Metano CH4: Calibración NIST, límites térmicos y detección de extrapolación
         {
             const auto* ch4 = por_formula("CH4");
             CHECK(ch4 != nullptr);
             if (ch4) {
-                // NIST Shomate de referencia: 298.15 K -> 35.69 J/(mol K)
+                // Dominio de validez térmica calibrado frente a NIST Shomate
+                CHECK(ch4->T_min == 298.15);
+                CHECK(ch4->T_max == 1300.0);
+                CHECK(ch4->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+
+                // 1. Evaluación dentro de 298.15–1300 K
+                CHECK(ch4->en_rango_temperatura(298.15));
+                CHECK(ch4->comprobar_rango(298.15).en_rango);
                 double cp_298 = ch4->cp(298.15);
                 CHECK(std::abs(cp_298 - 35.69) / 35.69 < 0.01);
 
                 // 375.67 K -> punto de máximo error relativo empírico frente a NIST Shomate (~1.314%)
+                CHECK(ch4->en_rango_temperatura(375.67));
                 double cp_375 = ch4->cp(375.67);
                 CHECK(near(cp_375, 39.68, 0.05));
-                // NIST Shomate a 375.67 K: 39.1666 J/(mol K) -> error relativo < 1.35% (1.314%)
                 CHECK(std::abs(cp_375 - 39.1666) / 39.1666 < 0.0135);
 
                 // 500 K -> 46.54 J/(mol K)
+                CHECK(ch4->en_rango_temperatura(500.0));
                 double cp_500 = ch4->cp(500.0);
                 CHECK(std::abs(cp_500 - 46.54) / 46.54 < 0.015);
 
                 // 1000 K -> 71.79 J/(mol K) (corrección del defecto -14.79%)
+                CHECK(ch4->en_rango_temperatura(1000.0));
                 double cp_1000 = ch4->cp(1000.0);
                 CHECK(cp_1000 > 70.0);
                 CHECK(std::abs(cp_1000 - 71.79) / 71.79 < 0.025);
+
+                // 2. Límite exacto de 1300 K
+                CHECK(ch4->en_rango_temperatura(1300.0));
+                CHECK(ch4->comprobar_rango(1300.0).en_rango);
+                double cp_1300 = ch4->cp(1300.0);
+                CHECK(near(cp_1300, 81.25, 0.05));
+                CHECK(std::abs(cp_1300 - 81.738) / 81.738 < 0.01);
+
+                // 3. Evaluación justo por encima de 1300 K (detección de extrapolación)
+                CHECK(!ch4->en_rango_temperatura(1300.1));
+                auto st_1300_1 = ch4->comprobar_rango(1300.1);
+                CHECK(!st_1300_1.en_rango);
+                CHECK(!st_1300_1.advertencia.empty());
+
+                // 4. Evaluación a 1500 y 2000 K (confirmación de caída anómala fuera de dominio)
+                CHECK(!ch4->en_rango_temperatura(1500.0));
+                CHECK(!ch4->en_rango_temperatura(2000.0));
+                auto st_2000 = ch4->comprobar_rango(2000.0);
+                CHECK(!st_2000.en_rango);
+                CHECK(!st_2000.advertencia.empty());
+                double cp_1500 = ch4->cp(1500.0);
+                CHECK(near(cp_1500, 83.04, 0.05));
+                double cp_2000 = ch4->cp(2000.0);
+                CHECK(near(cp_2000, 65.12, 0.05)); // Caída del polinomio cúbico vs 94.38 NIST
+
+                // 5. Comportamiento cuando no existe modelo válido o rangos invertidos
+                cma::nucleo::Especie sp_inv;
+                sp_inv.T_min = 1000.0;
+                sp_inv.T_max = 500.0;
+                CHECK(!sp_inv.en_rango_temperatura(700.0));
+                CHECK(!sp_inv.comprobar_rango(700.0).en_rango);
+                CHECK(sp_inv.cp(0.0) == 0.0);
+                CHECK(sp_inv.cp(-100.0) == 0.0);
+
+                // 6. Consistencia termodinámica de H, S y G en el estado estándar (298.15 K)
+                CHECK(near(ch4->entalpia_ref(298.15), 0.0, 1e-9));
+                CHECK(near(ch4->entropia_ref(298.15), 0.0, 1e-9));
+                CHECK(near(ch4->entalpia_abs(298.15), ch4->h_formacion, 1e-9));
+                CHECK(near(ch4->entropia_abs(298.15), ch4->s_formacion, 1e-9));
+                double g_std = ch4->h_formacion - 298.15 * ch4->s_formacion / 1000.0;
+                CHECK(near(ch4->energia_gibbs(298.15), g_std, 1e-9));
             }
         }
 

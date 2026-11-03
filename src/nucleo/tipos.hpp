@@ -78,6 +78,33 @@ struct Especie {
 
     bool es_curada() const { return id > 0 && id <= 445; }
 
+    bool en_rango_temperatura(double T_K) const {
+        return (T_min < T_max) && (T_K >= (T_min - 1e-4)) && (T_K <= (T_max + 1e-4));
+    }
+
+    struct EstadoEvaluacionTermo {
+        bool en_rango = true;
+        std::string advertencia;
+    };
+
+    EstadoEvaluacionTermo comprobar_rango(double T_K) const {
+        EstadoEvaluacionTermo st;
+        if (T_min >= T_max) {
+            st.en_rango = false;
+            st.advertencia = "Rango de temperatura no valido [T_min=" + std::to_string(T_min) +
+                             ", T_max=" + std::to_string(T_max) + "] para " + formula;
+        } else if (T_K < (T_min - 1e-4)) {
+            st.en_rango = false;
+            st.advertencia = "Temperatura " + std::to_string(T_K) + " K inferior a T_min (" +
+                             std::to_string(T_min) + " K) para " + formula;
+        } else if (T_K > (T_max + 1e-4)) {
+            st.en_rango = false;
+            st.advertencia = "Temperatura " + std::to_string(T_K) + " K superior a T_max (" +
+                             std::to_string(T_max) + " K) para " + formula;
+        }
+        return st;
+    }
+
     double cp(double T_K) const {
         if (T_K <= 0.0) return (modelo_cp == ModeloCp::CONSTANTE) ? cp_a : 0.0;
         switch (modelo_cp) {
