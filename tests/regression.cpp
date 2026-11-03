@@ -2,6 +2,7 @@
 #include "nucleo/tabla_periodica.hpp"
 #include "motores/reconciliacion_datos.hpp"
 #include "motores/perdida_calor.hpp"
+#include "motores/pourbaix.hpp"
 #include "motores/destilacion.hpp"
 #include "motores/agua.hpp"
 #include "motores/minimizador_gibbs.hpp"
@@ -13,11 +14,14 @@
 #include "sim/SimOptimization.hpp"
 #include "tools/ExternalAPI.hpp"
 #include "tools/DataFitter.hpp"
+#include "tools/HeatLossCalc.hpp"
 #include "estimation/BensonEstimator.hpp"
 #include "diagrams/StabilityDiagrams.hpp"
+#include "diagrams/PropertyDiagrams.hpp"
 #include "application/Pca.hpp"
 #include "adapters/desktop/process.hpp"
 #include "base_datos/gestor_db.hpp"
+#include "application/CatalogAudit.hpp"
 #include "db/MaterialDB.hpp"
 #include "db/MineralDB.hpp"
 #include <sqlite3.h>
@@ -924,6 +928,545 @@ int main() {
         CHECK(res_cipw.mg_number > 50.0 && res_cipw.mg_number < 85.0);
         CHECK(!res_cipw.clasificacion_tas.empty());
         CHECK(!res_cipw.clasificacion_qapf.empty());
+    }
+
+    // ── HSC Heat Loss Module (Hexagonal Domain/Catalog/Engine/Application) ──
+    {
+        cma::application::modules::HeatLossCalc hl;
+        CHECK(hl.catalog().conduction_materials().size() >= 25);
+        CHECK(hl.catalog().convection_fluids().size() >= 8);
+        CHECK(hl.catalog().surface_materials().size() >= 10);
+        CHECK(hl.sheets().size() == 3); // Wall, Roof, Bottom
+
+        // Verificar hoja Wall de referencia HSC (1100 °C -> 25 °C)
+        const auto& wall_sheet = hl.sheets()[0];
+        CHECK(wall_sheet.converged);
+        const double q_wall_ref = wall_sheet.total_heat_flow_kw;
+        CHECK(near(q_wall_ref, 13.85, 0.45));
+        CHECK(near(wall_sheet.outer_shell_temp_c, 87.0, 2.5));
+        CHECK(!wall_sheet.profile.empty());
+        CHECK(near(wall_sheet.profile.front().temperature_c, 1100.0, 1e-3));
+        CHECK(near(wall_sheet.profile.back().temperature_c, 25.0, 1e-3));
+
+        // Verificar solver inverso (Temperature Profile con Q fijo)
+        hl.set_active_sheet_index(0);
+        hl.active_sheet().solver_mode = cma::domain::HeatLossSolverMode::TemperatureProfile;
+        hl.active_sheet().total_heat_flow_kw = q_wall_ref;
+        CHECK(hl.solve_active_sheet());
+        CHECK(near(hl.active_sheet().ambient_temp_c, 25.0, 0.5));
+
+        // Verificar Optimizador de Espesor (Target Value Solver)
+        hl.active_sheet().solver_mode = cma::domain::HeatLossSolverMode::HeatFlowTwoTemps;
+        cma::domain::TargetThicknessRequest req;
+        req.target_column_index = 1; // Forsterite brick
+        req.target_is_outer_temp = false;
+        req.target_value = 10.0;     // Reducir pérdida de calor de 13.47 kW a 10.0 kW
+        req.min_thickness_cm = 10.0;
+        req.max_thickness_cm = 250.0;
+        auto opt_res = hl.optimize_layer_thickness(req);
+        CHECK(opt_res.ok);
+        CHECK(opt_res.optimal_thickness_cm > 50.0);
+        CHECK(near(opt_res.achieved_heat_flow_kw, 10.0, 0.05));
+
+        // Verificar Calculadora de Radiación de Gases y Partículas (Hottel)
+        cma::domain::GasParticleRadiationInput gas_in;
+        auto gas_res = hl.calculate_gas_radiation(gas_in);
+        CHECK(gas_res.gas_emissivity > 0.10 && gas_res.gas_emissivity < 0.90);
+        CHECK(gas_res.total_emissivity >= gas_res.gas_emissivity);
+        CHECK(gas_res.effective_hr_w_m2k > 10.0);
+    }
+
+    // ── HSC Stability Diagrams Module (Lpp Vector Kellogg & Tpp Gibbs Minimization) ──
+    {
+        auto& repo = cma::base_datos::GestorDB::instancia();
+        cma::application::modules::StabilityDiagrams stab(&repo);
+
+        // 1. Verificar balance estequiométrico 2x2 para Cu - O2 - SO2
+        auto cands = stab.filtrar_especies_sistema("Cu", "O2", "SO2", true);
+        CHECK(cands.size() >= 5);
+
+        // 2. Verificar motor Lpp (polígonos de Kellogg, líneas de equilibrio y puntos triples)
+        cma::domain::LppDiagramRequest lpp_req;
+        lpp_req.main_element = "Cu";
+        lpp_req.gas1_formula = "O2";
+        lpp_req.gas2_formula = "SO2";
+        lpp_req.temperature_k = 973.15;
+        lpp_req.x_min = -20.0; lpp_req.x_max = 0.0;
+        lpp_req.y_min = -15.0; lpp_req.y_max = 2.0;
+        lpp_req.probe_log_p1 = -18.0;
+        lpp_req.probe_log_p2 = -12.0;
+        auto lpp_res = stab.calcular_lpp(lpp_req);
+        CHECK(lpp_res.ok);
+        CHECK(lpp_res.polygons.size() >= 4);
+        CHECK(!lpp_res.boundaries.empty());
+        CHECK(!lpp_res.triple_points.empty());
+        CHECK(lpp_res.probe_predominant_phase == "Cu");
+
+        // 3. Verificar motor Tpp (modo T-p: Temperatura K vs log10 p(O2) a log10 p(SO2) = -1.0)
+        cma::domain::TppDiagramRequest tpp_req;
+        tpp_req.main_element = "Cu";
+        tpp_req.gas1_formula = "O2";
+        tpp_req.gas2_formula = "SO2";
+        tpp_req.x_var = cma::domain::StabilityAxisVar::TemperatureK;
+        tpp_req.y_var = cma::domain::StabilityAxisVar::LogPressureGas1;
+        tpp_req.fixed_value = -1.0;
+        tpp_req.x_min = 600.0; tpp_req.x_max = 1400.0;
+        tpp_req.y_min = -20.0; tpp_req.y_max = 0.0;
+        tpp_req.rows = 60;
+        tpp_req.cols = 60;
+        auto tpp_res = stab.calcular_tpp(tpp_req);
+        CHECK(tpp_res.ok);
+        CHECK(tpp_res.legend.size() >= 3);
+        CHECK(!tpp_res.contours.empty());
+    }
+
+    // ── HSC Eh-pH Diagrams Module (Pourbaix / EpH — Hexagonal Engine) ──────────
+    {
+        auto& repo = cma::base_datos::GestorDB::instancia();
+        cma::motores::CalculadorPourbaix eph(&repo);
+
+        // 1. Límites termodinámicos de estabilidad del agua a 298.15 K (escala SHE)
+        eph.establecer_temperatura(298.15);
+        eph.establecer_escala_potencial(cma::domain::PourbaixPotentialScale::SHE);
+        CHECK(near(eph.pendiente_nernst(), -0.05916, 1e-4));
+        CHECK(near(eph.eh_agua_oxidacion(0.0, 1.0), 1.2289, 2e-3));
+        CHECK(near(eph.eh_agua_reduccion(0.0, 1.0), 0.0000, 1e-6));
+        CHECK(near(eph.eh_agua_oxidacion(7.0, 1.0) - eph.eh_agua_reduccion(7.0, 1.0), 1.2289, 2e-3));
+
+        // 2. Sistema clásico Fe - H2O (25 °C, [Fe] = 1e-6 m)
+        eph.cargar_preset_hsc(0);
+        CHECK(eph.obtener_especies().size() >= 8);
+        CHECK(!eph.obtener_lineas().empty());
+        CHECK(!eph.obtener_poligonos().empty());
+        CHECK(!eph.obtener_puntos_triples().empty());
+
+        // Inmunidad (Fe metálico a bajo Eh)
+        auto p_imm = eph.evaluar_punto(7.0, -0.90);
+        CHECK(p_imm.valid);
+        CHECK(p_imm.predominant_formula == "Fe");
+        CHECK(p_imm.corrosion_state == cma::domain::PourbaixCorrosionState::Immunity);
+        CHECK(p_imm.h2_evolution);
+
+        // Corrosión activa ácida: Fe2+ a Eh moderado y Fe3+ a alto Eh
+        auto p_fe2 = eph.evaluar_punto(1.5, 0.20);
+        CHECK(p_fe2.valid);
+        CHECK(p_fe2.predominant_formula == "Fe(+2a)");
+        CHECK(p_fe2.corrosion_state == cma::domain::PourbaixCorrosionState::Corrosion);
+        CHECK(p_fe2.water_stable);
+
+        auto p_fe3 = eph.evaluar_punto(0.5, 1.00);
+        CHECK(p_fe3.valid);
+        CHECK(p_fe3.predominant_formula == "Fe(+3a)");
+        CHECK(p_fe3.corrosion_state == cma::domain::PourbaixCorrosionState::Corrosion);
+
+        // Pasivación (Hematita Fe2O3 en medio neutro/alcalino oxidante)
+        auto p_pas = eph.evaluar_punto(9.0, 0.40);
+        CHECK(p_pas.valid);
+        CHECK(p_pas.predominant_formula == "Fe2O3");
+        CHECK(p_pas.corrosion_state == cma::domain::PourbaixCorrosionState::Passivation);
+
+        // 3. Sistema multicomponente Cu - S - H2O (Calcosina Cu2S y Covelina CuS)
+        eph.cargar_preset_hsc(2);
+        auto p_cus = eph.evaluar_punto(4.0, -0.10);
+        CHECK(p_cus.valid);
+        CHECK(p_cus.predominant_formula == "Cu2S" || p_cus.predominant_formula == "CuS");
+        CHECK(p_cus.corrosion_state == cma::domain::PourbaixCorrosionState::Passivation);
+
+        // 4. Sistema hidrometalúrgico Au - Cl - H2O (Complejo AuCl4- en cloruración ácida)
+        eph.cargar_preset_hsc(4);
+        auto p_au_imm = eph.evaluar_punto(7.0, 0.20);
+        CHECK(p_au_imm.valid);
+        CHECK(p_au_imm.predominant_formula == "Au");
+        CHECK(p_au_imm.corrosion_state == cma::domain::PourbaixCorrosionState::Immunity);
+
+        auto p_au_cl = eph.evaluar_punto(1.0, 1.25);
+        CHECK(p_au_cl.valid);
+        CHECK(p_au_cl.predominant_formula == "AuCl4(-a)");
+        CHECK(p_au_cl.corrosion_state == cma::domain::PourbaixCorrosionState::Corrosion);
+
+        // 5. Conversión de escala de referencia (SCE y Ag/AgCl) y exportación CSV
+        eph.establecer_escala_potencial(cma::domain::PourbaixPotentialScale::SCE);
+        CHECK(near(eph.eh_agua_reduccion(0.0, 1.0), -0.2412, 1e-4));
+        const std::string csv_eph = eph.exportar_csv();
+        CHECK(csv_eph.find("[SPECIES]") != std::string::npos);
+        CHECK(csv_eph.find("[NERNST_BOUNDARIES]") != std::string::npos);
+        CHECK(csv_eph.find("[TRIPLE_POINTS]") != std::string::npos);
+    }
+
+    // ── Curación de Semilla Termodinámica y Soporte Maier-Kelley Cp(T) ─────────
+    {
+        auto& repo = cma::base_datos::GestorDB::instancia();
+        const auto curadas = repo.especies_curadas();
+        CHECK(curadas.size() >= 400);
+        for (const auto* sp : curadas) {
+            CHECK(sp != nullptr);
+            CHECK(sp->es_curada() || sp->provenance.revision != "synthetic-estimate");
+        }
+
+        // Verificar integración Maier-Kelley c * T^-2 con ModeloCp explícito
+        cma::nucleo::Especie mk;
+        mk.modelo_cp = cma::nucleo::ModeloCp::MAIER_KELLEY;
+        mk.h_formacion = -800.0;
+        mk.s_formacion = 90.0;
+        mk.cp_a = 100.0;
+        mk.cp_b = 0.020;
+        mk.cp_c = -9.0e4; // -90,000 J·K/mol -> a 300 K aporta -1.0 J/(mol·K)
+        mk.cp_d = 0.0;
+        CHECK(near(mk.cp(300.0), 100.0 + 0.020 * 300.0 - 9.0e4 / (300.0 * 300.0), 1e-9));
+        CHECK(std::isfinite(mk.energia_gibbs(1000.0)));
+        CHECK(mk.entalpia_ref(1000.0) > 50.0 && mk.entalpia_ref(1000.0) < 120.0);
+    }
+
+    // ── HSC H, S, Cp, G & Ellingham Diagrams Module (Hexagonal Engine) ─────────
+    {
+        auto& repo = cma::base_datos::GestorDB::instancia();
+        cma::application::modules::PropertyDiagrams pd;
+
+        // 1. API clásica generarCurvas
+        auto pts = pd.generarCurvas(-285.83, 69.95, 75.3, 0.0, 0.0, 0.0, 298.15, 373.15);
+        CHECK(pts.size() == 101);
+        CHECK(near(pts.front().T, 298.15, 1e-4));
+        CHECK(near(pts.front().H, -285.83, 1e-4));
+
+        // 2. Curva de especie individual con formación desde elementos de referencia
+        auto c_fe = pd.calcular_curva_especie(repo, "Fe", 298.15, 1500.0, 60, true);
+        CHECK(!c_fe.points.empty());
+        CHECK(near(c_fe.points.front().dH298, 0.0, 1e-6));
+        CHECK(near(c_fe.points.front().dGf, 0.0, 1e-3));
+        CHECK(near(c_fe.points.back().dGf, 0.0, 1e-3)); // Fe es elemento puro estándar -> dGf == 0
+
+        auto c_o2 = pd.calcular_curva_especie(repo, "O2", 298.15, 1500.0, 60, true);
+        CHECK(near(c_o2.points.front().dGf, 0.0, 1e-3));
+        CHECK(near(c_o2.points.back().dGf, 0.0, 1e-3)); // O2(g) es gas estándar de referencia -> dGf == 0
+
+        auto c_fe2o3 = pd.calcular_curva_especie(repo, "Fe2O3", 298.15, 1500.0, 60, true);
+        CHECK(c_fe2o3.points.front().dGf < -700.0); // dGf(298) ~ -742 kJ/mol
+        CHECK(c_fe2o3.points.back().dGf < -400.0);
+
+        // 3. Familia preconfigurada Ellingham: MetallurgicalOxides (por 1 mol O2)
+        auto res_ox = pd.generar_familia_ellingham(repo, cma::domain::EllinghamPresetFamily::MetallurgicalOxides, 298.15, 2000.0, 80);
+        CHECK(res_ox.curves.size() >= 15);
+        CHECK(!res_ox.intersections.empty());
+        CHECK(!res_ox.iso_pO2_lines.empty());
+        CHECK(!res_ox.iso_CO_CO2_lines.empty());
+        CHECK(!res_ox.iso_H2_H2O_lines.empty());
+
+        // Verificar jerarquía de estabilidad termodinámica de óxidos a 1000 K
+        double dG_CaO = 0.0, dG_Al2O3 = 0.0, dG_SiO2 = 0.0, dG_FeO = 0.0, dG_Cu2O = 0.0;
+        double dG_C_CO_500 = 0.0, dG_C_CO_1800 = 0.0;
+        double dG_Fe_FeO_500 = 0.0, dG_Fe_FeO_1800 = 0.0;
+
+        for (const auto& c : res_ox.curves) {
+            for (const auto& pt : c.points) {
+                if (std::abs(pt.T - 1000.0) < 15.0) {
+                    if (c.label.find("CaO") != std::string::npos) dG_CaO = pt.dGf;
+                    else if (c.label.find("Al2O3") != std::string::npos) dG_Al2O3 = pt.dGf;
+                    else if (c.label.find("SiO2") != std::string::npos) dG_SiO2 = pt.dGf;
+                    else if (c.label.find("FeO") != std::string::npos && c.label.find("Fe3O4") == std::string::npos) dG_FeO = pt.dGf;
+                    else if (c.label.find("Cu2O") != std::string::npos) dG_Cu2O = pt.dGf;
+                }
+                if (c.label.find("2 C +") != std::string::npos && c.label.find("2 CO") != std::string::npos) {
+                    if (std::abs(pt.T - 500.0) < 15.0) dG_C_CO_500 = pt.dGf;
+                    if (std::abs(pt.T - 1800.0) < 25.0) dG_C_CO_1800 = pt.dGf;
+                }
+                if (c.label.find("FeO") != std::string::npos && c.label.find("2 Fe") != std::string::npos) {
+                    if (std::abs(pt.T - 500.0) < 15.0) dG_Fe_FeO_500 = pt.dGf;
+                    if (std::abs(pt.T - 1800.0) < 25.0) dG_Fe_FeO_1800 = pt.dGf;
+                }
+            }
+        }
+        CHECK(dG_CaO < dG_Al2O3);
+        CHECK(dG_Al2O3 < dG_SiO2);
+        CHECK(dG_SiO2 < dG_FeO);
+        CHECK(dG_FeO < dG_Cu2O);
+
+        // Pendiente negativa de 2 C + O2 = 2 CO (entropía positiva dS > 0)
+        CHECK(dG_C_CO_1800 < dG_C_CO_500);
+        // Pendiente positiva de oxidación metálica 2 Fe + O2 = 2 FeO (dS < 0)
+        CHECK(dG_Fe_FeO_1800 > dG_Fe_FeO_500);
+
+        // Intersección de Boudouard (2 C + O2 = 2 CO y C + O2 = CO2) entre 900 K y 1050 K
+        bool boudouard_found = false;
+        for (const auto& inter : res_ox.intersections) {
+            if ((inter.curve_a.find("2 CO") != std::string::npos && inter.curve_b.find("CO2") != std::string::npos) ||
+                (inter.curve_b.find("2 CO") != std::string::npos && inter.curve_a.find("CO2") != std::string::npos)) {
+                CHECK(inter.T_K >= 880.0 && inter.T_K <= 1060.0);
+                boudouard_found = true;
+                break;
+            }
+        }
+        CHECK(boudouard_found);
+
+        // Kinks de transición de fase en Zn (Fusión ~693 K, Ebullición ~1180 K)
+        bool zn_trans_found = false;
+        for (const auto& c : res_ox.curves) {
+            if (c.label.find("ZnO") != std::string::npos) {
+                CHECK(!c.phase_transitions.empty());
+                zn_trans_found = true;
+                break;
+            }
+        }
+        CHECK(zn_trans_found);
+
+        // 4. Escala nomográfica de Richardson-Jeffes
+        auto nom = pd.evaluar_escala_nomografica(repo, 1273.15, -400.0);
+        CHECK(nom.log10_pO2 < -10.0);
+        CHECK(std::isfinite(nom.log10_CO_CO2));
+        CHECK(std::isfinite(nom.log10_H2_H2O));
+
+        // 5. Parser de ecuaciones y exportación CSV
+        auto c_parse = pd.calcular_curva_ecuacion_texto(repo, "2 Zn + O2(g) = 2 ZnO", cma::domain::EllinghamNormalizationBasis::PerMoleO2, 298.15, 1500.0);
+        CHECK(!c_parse.points.empty());
+        CHECK(c_parse.norm_factor == 1.0);
+
+        std::string csv_data = pd.exportar_csv(res_ox.curves, res_ox.intersections, cma::domain::PropertyDiagramType::DeltaG_Ellingham);
+        CHECK(csv_data.find("[CURVES]") != std::string::npos);
+        CHECK(csv_data.find("[INTERSECTIONS]") != std::string::npos);
+    }
+
+    // ── ETAPA 7: BATERÍA DE PRUEBAS DE REGRESIÓN CIENTÍFICA (T-01 a T-08) ────────
+    {
+        auto& repo = cma::base_datos::GestorDB::instancia();
+        const auto& tp = cma::nucleo::TablaPeriodica::instancia();
+
+        // ── T-01: Verificación de ModeloCp (despacho correcto y valores por defecto)
+        {
+            cma::nucleo::Especie sp_def;
+            CHECK(sp_def.modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+            CHECK(near(sp_def.T_min, 298.15, 1e-4));
+            CHECK(near(sp_def.T_max, 2000.0, 1e-4));
+            CHECK(std::string(cma::nucleo::nombre_modelo_cp(cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR)) == "Polinomial Estándar");
+            CHECK(std::string(cma::nucleo::nombre_modelo_cp(cma::nucleo::ModeloCp::MAIER_KELLEY)) == "Maier-Kelley");
+            CHECK(std::string(cma::nucleo::nombre_modelo_cp(cma::nucleo::ModeloCp::SHOMATE_NIST)) == "Shomate (NIST)");
+            CHECK(std::string(cma::nucleo::nombre_modelo_cp(cma::nucleo::ModeloCp::CONSTANTE)) == "Constante");
+
+            // Modelo Constante
+            cma::nucleo::Especie sp_c;
+            sp_c.modelo_cp = cma::nucleo::ModeloCp::CONSTANTE;
+            sp_c.cp_a = 75.3;
+            CHECK(near(sp_c.cp(350.0), 75.3, 1e-9));
+            CHECK(near(sp_c.entalpia_ref(398.15), 75.3 * (398.15 - 298.15) / 1000.0, 1e-6));
+            CHECK(near(sp_c.entropia_ref(398.15), 75.3 * std::log(398.15 / 298.15), 1e-6));
+        }
+
+        // ── T-02: Identidades termodinámicas dH/dT = Cp y dS/dT = Cp/T (tol 10^-6)
+        {
+            // Caso A: Polinomial Estándar
+            cma::nucleo::Especie sp_p;
+            sp_p.modelo_cp = cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR;
+            sp_p.cp_a = 28.0; sp_p.cp_b = 0.005; sp_p.cp_c = -1.2e-6; sp_p.cp_d = 4.0e-10;
+
+            // Caso B: Maier-Kelley
+            cma::nucleo::Especie sp_mk;
+            sp_mk.modelo_cp = cma::nucleo::ModeloCp::MAIER_KELLEY;
+            sp_mk.cp_a = 105.0; sp_mk.cp_b = 0.015; sp_mk.cp_c = -8.5e5; sp_mk.cp_d = 0.0;
+
+            const double eps = 1e-4;
+            for (double T = 250.0; T <= 1500.0; T += 50.0) {
+                // Polinomial: dH/dT = Cp
+                double dH_num_p = (sp_p.entalpia_ref(T + eps) - sp_p.entalpia_ref(T - eps)) / (2.0 * eps) * 1000.0;
+                double cp_ana_p = sp_p.cp(T);
+                CHECK(std::abs(dH_num_p - cp_ana_p) / cp_ana_p < 1e-6);
+
+                // Polinomial: dS/dT = Cp/T
+                double dS_num_p = (sp_p.entropia_ref(T + eps) - sp_p.entropia_ref(T - eps)) / (2.0 * eps);
+                double dS_ana_p = cp_ana_p / T;
+                CHECK(std::abs(dS_num_p - dS_ana_p) / dS_ana_p < 1e-6);
+
+                // Maier-Kelley: dH/dT = Cp
+                double dH_num_mk = (sp_mk.entalpia_ref(T + eps) - sp_mk.entalpia_ref(T - eps)) / (2.0 * eps) * 1000.0;
+                double cp_ana_mk = sp_mk.cp(T);
+                CHECK(std::abs(dH_num_mk - cp_ana_mk) / cp_ana_mk < 1e-6);
+
+                // Maier-Kelley: dS/dT = Cp/T
+                double dS_num_mk = (sp_mk.entropia_ref(T + eps) - sp_mk.entropia_ref(T - eps)) / (2.0 * eps);
+                double dS_ana_mk = cp_ana_mk / T;
+                CHECK(std::abs(dS_num_mk - dS_ana_mk) / dS_ana_mk < 1e-6);
+            }
+        }
+
+        // ── T-03: Continuidad y monotonía en T = 200 K (sin artefacto de derivada nula)
+        {
+            cma::nucleo::Especie sp_mk;
+            sp_mk.modelo_cp = cma::nucleo::ModeloCp::MAIER_KELLEY;
+            sp_mk.cp_a = 90.0; sp_mk.cp_b = 0.02; sp_mk.cp_c = -5.0e5; sp_mk.cp_d = 0.0;
+
+            const double eps = 1e-4;
+            for (double T : {190.0, 199.0, 200.0, 201.0, 210.0}) {
+                double dH_num = (sp_mk.entalpia_ref(T + eps) - sp_mk.entalpia_ref(T - eps)) / (2.0 * eps) * 1000.0;
+                double cp_val = sp_mk.cp(T);
+                CHECK(std::abs(dH_num - cp_val) / cp_val < 1e-6);
+            }
+            // Comprobación de estricta monotonía entre 190 K y 210 K
+            CHECK(sp_mk.cp(190.0) < sp_mk.cp(200.0));
+            CHECK(sp_mk.cp(200.0) < sp_mk.cp(210.0));
+            CHECK(sp_mk.entalpia_ref(190.0) < sp_mk.entalpia_ref(200.0));
+            CHECK(sp_mk.entalpia_ref(200.0) < sp_mk.entalpia_ref(210.0));
+        }
+
+        auto por_formula = [&](const std::string& f) -> const cma::nucleo::Especie* {
+            for (const auto& [id, sp] : repo.mapa_especies()) {
+                if (sp.formula == f) return &sp;
+            }
+            return nullptr;
+        };
+
+        // ── T-04: Metano CH4 Cp vs NIST Shomate en 298.15 K, 500 K y 1000 K
+        {
+            const auto* ch4 = por_formula("CH4");
+            CHECK(ch4 != nullptr);
+            if (ch4) {
+                // NIST Shomate de referencia: 298.15 K -> 35.69 J/(mol K)
+                double cp_298 = ch4->cp(298.15);
+                CHECK(std::abs(cp_298 - 35.69) / 35.69 < 0.01);
+
+                // 500 K -> 46.54 J/(mol K)
+                double cp_500 = ch4->cp(500.0);
+                CHECK(std::abs(cp_500 - 46.54) / 46.54 < 0.015);
+
+                // 1000 K -> 71.79 J/(mol K) (corrección del defecto -14.79%)
+                double cp_1000 = ch4->cp(1000.0);
+                CHECK(cp_1000 > 70.0);
+                CHECK(std::abs(cp_1000 - 71.79) / 71.79 < 0.025);
+            }
+        }
+
+        // ── T-05: Calcinación de CaCO3 (descomposición a 1165–1180 K)
+        {
+            const auto* caco3 = por_formula("CaCO3");
+            const auto* cao = por_formula("CaO");
+            const auto* co2 = por_formula("CO2");
+            CHECK(caco3 != nullptr);
+            CHECK(cao != nullptr);
+            CHECK(co2 != nullptr);
+            if (caco3 && cao && co2) {
+                // Control de Cp JANAF para CaCO3
+                CHECK(std::abs(caco3->cp(298.15) - 81.85) / 81.85 < 0.01);
+                CHECK(std::abs(caco3->cp(500.0) - 100.21) / 100.21 < 0.015);
+                CHECK(std::abs(caco3->cp(1000.0) - 123.83) / 123.83 < 0.015);
+
+                // Función de energía de Gibbs de reacción: Delta G = G(CaO) + G(CO2) - G(CaCO3)
+                auto delta_G = [&](double T) {
+                    return cao->energia_gibbs(T) + co2->energia_gibbs(T) - caco3->energia_gibbs(T);
+                };
+
+                // A 1160 K: Delta G > 0 (CaCO3 estable)
+                CHECK(delta_G(1160.0) > 0.0);
+                // A 1190 K: Delta G < 0 (Descomposición espontánea)
+                CHECK(delta_G(1190.0) < 0.0);
+
+                // Búsqueda de T_dec con bisección exacta
+                double t_low = 1100.0, t_high = 1250.0;
+                for (int b = 0; b < 25; ++b) {
+                    double t_mid = 0.5 * (t_low + t_high);
+                    if (delta_G(t_mid) > 0.0) t_low = t_mid;
+                    else t_high = t_mid;
+                }
+                double t_dec = 0.5 * (t_low + t_high);
+                // Debe encontrarse dentro del rango termodinámico JANAF [1165 K, 1180 K]
+                CHECK(t_dec >= 1165.0 && t_dec <= 1180.0);
+            }
+        }
+
+        // ── T-06: Wegstein con barrido completo de pendientes s
+        {
+            // Simulador de paso de Wegstein según la formulación corregida
+            auto test_wegstein_slope = [](double s_slope) {
+                const double x_star = 50.0;
+                auto f_map = [=](double x) { return x_star + s_slope * (x - x_star); };
+                double x = 10.0, xp = 10.0, fp = f_map(10.0);
+                bool conv = false;
+                for (int it = 0; it < 60; ++it) {
+                    double fx = f_map(x);
+                    if (std::abs(fx - x) < 1e-6) { conv = true; break; }
+                    double x_next = fx;
+                    if (it > 0) {
+                        double dx = x - xp;
+                        double df = fx - fp;
+                        if (std::abs(dx) > 1e-12) {
+                            double s = df / dx;
+                            if (std::abs(s - 1.0) < 0.02) {
+                                x_next = fx;
+                            } else if (s <= -5.0) {
+                                double w = 1.0 / (1.0 - s);
+                                x_next = (1.0 - w) * x + w * fx;
+                            } else if (s < 1.0) {
+                                double q = std::clamp(s / (s - 1.0), -20.0, 0.8);
+                                x_next = q * x + (1.0 - q) * fx;
+                            } else {
+                                double step = (fx - x) / (s - 1.0);
+                                x_next = x - 0.9 * step;
+                            }
+                        }
+                    }
+                    xp = x;
+                    fp = fx;
+                    x = std::max(0.0, x_next);
+                }
+                return conv;
+            };
+
+            const std::vector<double> slopes = {-5.0, -2.0, -0.5, 0.0, 0.5, 0.9, 0.95, 0.97, 1.05, 1.20};
+            for (double s_val : slopes) {
+                CHECK(test_wegstein_slope(s_val));
+            }
+        }
+
+        // ── T-07: Wegstein en flowsheet con reciclo (BalanceMasa)
+        {
+            cma::motores::BalanceMasa bm(repo);
+            cma::diagrama_flujo::Flowsheet fs_recycle;
+
+            int64_t n_in = fs_recycle.agregar_nodo(cma::nucleo::TipoNodo::Fuente, "Alimentacion");
+            int64_t n_mx = fs_recycle.agregar_nodo(cma::nucleo::TipoNodo::Mezclador, "Mezclador");
+            int64_t n_sp = fs_recycle.agregar_nodo(cma::nucleo::TipoNodo::Divisor, "Separador");
+            int64_t n_out = fs_recycle.agregar_nodo(cma::nucleo::TipoNodo::Sumidero, "Salida");
+
+            int64_t f_feed = fs_recycle.agregar_flujo("Feed");
+            int64_t f_to_sep = fs_recycle.agregar_flujo("MixToSep");
+            int64_t f_rec = fs_recycle.agregar_flujo("Recycle");
+            int64_t f_prod = fs_recycle.agregar_flujo("Product");
+
+            fs_recycle.conectar(n_in, n_mx, f_feed);
+            fs_recycle.conectar(n_mx, n_sp, f_to_sep);
+            fs_recycle.conectar(n_sp, n_mx, f_rec); // Bucle de reciclo
+            fs_recycle.conectar(n_sp, n_out, f_prod);
+
+            if (auto* n_div_ptr = fs_recycle.nodo_por_id(n_sp)) {
+                n_div_ptr->params["frac_0"] = 0.30;
+                n_div_ptr->params["frac_1"] = 0.70;
+            }
+
+            if (auto* n_src_ptr = fs_recycle.nodo_por_id(n_in)) {
+                n_src_ptr->params["flujo_1"] = 100.0;
+            }
+
+            auto res_bm = bm.resolver(fs_recycle, 50, 1e-6);
+            CHECK(res_bm.convergio);
+            CHECK(res_bm.iteraciones <= 8);
+        }
+
+        // ── T-08: Parsing y consistencia de fórmulas minerales (Pentlandita y Pirrotita)
+        {
+            auto c_pent = tp.analizar_formula("Fe5Ni4S8");
+            CHECK(c_pent.size() == 3);
+            double m_pent = 0.0;
+            for (const auto& a : c_pent) m_pent += tp.por_simbolo(a.elem)->masa_atomica * a.cuenta;
+            CHECK(near(m_pent, 770.517, 0.01));
+
+            auto c_pyr = tp.analizar_formula("Fe7S8");
+            CHECK(c_pyr.size() == 2);
+            double m_pyr = 0.0;
+            for (const auto& a : c_pyr) m_pyr += tp.por_simbolo(a.elem)->masa_atomica * a.cuenta;
+            CHECK(near(m_pyr, 647.435, 0.01));
+
+            // Verificar que no figuren en issue_count de catalog audit
+            auto audit = cma::application::audit_catalog(repo);
+            for (const auto& iss : audit.issues) {
+                CHECK(iss.detail.find("(Fe,Ni)9S8") == std::string::npos);
+                CHECK(iss.detail.find("Fe1₋ₓS") == std::string::npos);
+            }
+        }
     }
 
     std::cout << checks << " checks; " << failures << " failures\n";

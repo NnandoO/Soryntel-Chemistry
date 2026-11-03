@@ -71,17 +71,27 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, 
         auto wegstein_step = [](double x_val, double f_val, double& xp, double& fp, int it_idx) {
             double x_next = f_val;
             if (it_idx > 0) {
-                double dx = x_val - xp;
-                double df = f_val - fp;
+                const double dx = x_val - xp;
+                const double df = f_val - fp;
                 if (std::abs(dx) > 1e-12) {
-                    double s = std::clamp(df / dx, -5.0, -0.1);
-                    double q = s / (s - 1.0);
-                    x_next = std::max(0.0, q * x_val + (1.0 - q) * f_val);
+                    const double s = df / dx;
+                    if (std::abs(s - 1.0) < 0.02) {
+                        x_next = f_val;
+                    } else if (s <= -5.0) {
+                        const double w = 1.0 / (1.0 - s);
+                        x_next = (1.0 - w) * x_val + w * f_val;
+                    } else if (s < 1.0) {
+                        const double q = std::clamp(s / (s - 1.0), -20.0, 0.8);
+                        x_next = q * x_val + (1.0 - q) * f_val;
+                    } else {
+                        const double step = (f_val - x_val) / (s - 1.0);
+                        x_next = x_val - 0.9 * step;
+                    }
                 }
             }
             xp = x_val;
             fp = f_val;
-            return x_next;
+            return std::max(0.0, x_next);
         };
 
         for (; iter < MAX_ITER; ++iter) {
@@ -305,15 +315,14 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
                            : (nodo.params.count("P") ? nodo.params.at("P") : nucleo::STP_PRES));
             for (auto& [k, v] : nodo.params) {
                 if (k.rfind("flujo_", 0) == 0 || k.rfind("flow_", 0) == 0) {
-                    try {
-                        size_t pref = (k.rfind("flujo_", 0) == 0) ? 6 : 5;
-                        size_t pos;
-                        int64_t sid = std::stoll(k.substr(pref), &pos);
-                        if (sid > 0 && pos == k.size() - pref) {
-                            double val = std::max(0.0, v);
-                            salida.flujo_molar[sid] = val;
-                        }
-                    } catch (...) {}
+                    const size_t pref = (k.rfind("flujo_", 0) == 0) ? 6 : 5;
+                    const std::string sub = k.substr(pref);
+                    char* endp = nullptr;
+                    const long long sid = std::strtoll(sub.c_str(), &endp, 10);
+                    if (sid > 0 && endp == sub.c_str() + sub.size()) {
+                        double val = std::max(0.0, v);
+                        salida.flujo_molar[static_cast<int64_t>(sid)] = val;
+                    }
                 }
             }
             if (nodo.params.count("agua_kg_h")) {
@@ -367,12 +376,12 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
             std::map<int64_t, double> remocion;
             for (auto& [k, v] : nodo.params) {
                 if (k.rfind("remover_", 0) == 0) {
-                    try {
-                        size_t pos;
-                        int64_t sid = std::stoll(k.substr(8), &pos);
-                        if (sid > 0 && pos == k.size() - 8)
-                            remocion[sid] = v;
-                    } catch (...) {}
+                    const std::string sub = k.substr(8);
+                    char* endp = nullptr;
+                    const long long sid = std::strtoll(sub.c_str(), &endp, 10);
+                    if (sid > 0 && endp == sub.c_str() + sub.size()) {
+                        remocion[static_cast<int64_t>(sid)] = v;
+                    }
                 }
             }
             for (const auto& [sid, n] : entradas[0].flujo_molar) {

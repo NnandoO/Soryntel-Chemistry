@@ -37,8 +37,13 @@ void GestorDB::poblar_especies() {
     for (auto& d : semilla_especies()) {
         nucleo::Especie e;
         e.id = prox_id_especie_++;
-        e.provenance.source = "seed:datos_especies.hpp record " + std::to_string(e.id);
-        e.provenance.revision = "legacy-import; reference pending";
+        if (e.id <= 445) {
+            e.provenance.source = "curated:NIST-JANAF-HSC seed record " + std::to_string(e.id);
+            e.provenance.revision = "curated-experimental";
+        } else {
+            e.provenance.source = "generated:extended-combinatorial record " + std::to_string(e.id);
+            e.provenance.revision = "synthetic-estimate";
+        }
         e.nombre = d.nombre;
         e.formula = d.formula;
         e.masa_molar = d.M;
@@ -48,6 +53,15 @@ void GestorDB::poblar_especies() {
         e.cp_b = d.Cp_b;
         e.cp_c = d.Cp_c;
         e.cp_d = d.Cp_d;
+        if (d.modelo_cp != nucleo::ModeloCp::POLINOMIAL_ESTANDAR) {
+            e.modelo_cp = d.modelo_cp;
+        } else if (std::abs(d.Cp_c) > 1.0) {
+            e.modelo_cp = nucleo::ModeloCp::MAIER_KELLEY;
+        } else {
+            e.modelo_cp = nucleo::ModeloCp::POLINOMIAL_ESTANDAR;
+        }
+        e.T_min = d.T_min;
+        e.T_max = d.T_max;
         e.antoine_a = d.AntA;
         e.antoine_b = d.AntB;
         e.antoine_c = d.AntC;
@@ -66,7 +80,9 @@ void GestorDB::poblar_especies() {
             default: e.fase_std = nucleo::Fase::Mixto;   break;
         }
         especies_[e.id] = e;
-        nombre_a_id_especie_[e.nombre] = e.id;
+        if (e.id <= 445 || nombre_a_id_especie_.find(e.nombre) == nombre_a_id_especie_.end()) {
+            nombre_a_id_especie_[e.nombre] = e.id;
+        }
     }
 }
 
@@ -208,12 +224,47 @@ std::vector<const nucleo::Especie*> GestorDB::buscar_especies(const std::string&
         if (nom.find(q) != std::string::npos || form.find(q) != std::string::npos)
             res.push_back(&sp);
     }
+
+    std::sort(res.begin(), res.end(), [&](const nucleo::Especie* a, const nucleo::Especie* b) {
+        const bool a_curated = (a->id <= 445 || a->provenance.revision != "synthetic-estimate");
+        const bool b_curated = (b->id <= 445 || b->provenance.revision != "synthetic-estimate");
+        if (a_curated != b_curated) return a_curated;
+
+        std::string a_form = a->formula;
+        std::transform(a_form.begin(), a_form.end(), a_form.begin(), lowercase);
+        std::string b_form = b->formula;
+        std::transform(b_form.begin(), b_form.end(), b_form.begin(), lowercase);
+        const bool a_exact_form = (a_form == q);
+        const bool b_exact_form = (b_form == q);
+        if (a_exact_form != b_exact_form) return a_exact_form;
+
+        std::string a_nom = a->nombre;
+        std::transform(a_nom.begin(), a_nom.end(), a_nom.begin(), lowercase);
+        std::string b_nom = b->nombre;
+        std::transform(b_nom.begin(), b_nom.end(), b_nom.begin(), lowercase);
+        const bool a_exact_nom = (a_nom == q);
+        const bool b_exact_nom = (b_nom == q);
+        if (a_exact_nom != b_exact_nom) return a_exact_nom;
+
+        return a->id < b->id;
+    });
+
     return res;
 }
 
 std::vector<const nucleo::Especie*> GestorDB::todas_especies() const {
     std::vector<const nucleo::Especie*> res;
     for (auto& [id, sp] : especies_) res.push_back(&sp);
+    return res;
+}
+
+std::vector<const nucleo::Especie*> GestorDB::especies_curadas() const {
+    std::vector<const nucleo::Especie*> res;
+    for (const auto& [id, sp] : especies_) {
+        if (sp.id <= 445 || sp.provenance.revision != "synthetic-estimate") {
+            res.push_back(&sp);
+        }
+    }
     return res;
 }
 

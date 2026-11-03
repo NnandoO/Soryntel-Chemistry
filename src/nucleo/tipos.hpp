@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <sstream>
+#include <algorithm>
 #include "domain/DataProvenance.hpp"
 
 namespace cma { namespace nucleo {
@@ -34,6 +35,24 @@ constexpr const char* nombre_fase(Fase f) {
     }
 }
 
+// ── Modelos de capacidad calorífica Cp(T) ──────────────────────────────────
+enum class ModeloCp : uint8_t {
+    POLINOMIAL_ESTANDAR = 0, // Cp = a + b*T + c*T^2 + d*T^3
+    MAIER_KELLEY        = 1, // Cp = a + b*T + c*T^-2 + d*T^-3
+    SHOMATE_NIST        = 2, // Cp = A + B*t + C*t^2 + D*t^3 + E/t^2 (t = T/1000)
+    CONSTANTE           = 3  // Cp = a
+};
+
+constexpr const char* nombre_modelo_cp(ModeloCp m) {
+    switch (m) {
+        case ModeloCp::POLINOMIAL_ESTANDAR: return "Polinomial Estándar";
+        case ModeloCp::MAIER_KELLEY:        return "Maier-Kelley";
+        case ModeloCp::SHOMATE_NIST:        return "Shomate (NIST)";
+        case ModeloCp::CONSTANTE:           return "Constante";
+        default:                            return "Desconocido";
+    }
+}
+
 // ── Especie química ─────────────────────────────────────────────────────────
 struct Especie {
     domain::DataProvenance provenance;
@@ -44,6 +63,10 @@ struct Especie {
     double      h_formacion  = 0.0;   // kJ/mol a 298.15 K
     double      s_formacion  = 0.0;   // J/(mol·K) a 298.15 K
     double      cp_a = 0.0, cp_b = 0.0, cp_c = 0.0, cp_d = 0.0; // Cp [J/(mol·K)]
+    double      cp_e = 0.0;           // Coeficiente E para Shomate
+    ModeloCp    modelo_cp = ModeloCp::POLINOMIAL_ESTANDAR;
+    double      T_min = 298.15;       // K
+    double      T_max = 2000.0;       // K
 
     // Coeficientes Antoine: log10(P_sat) = A - B/(C + T) [P en mmHg, T en °C]
     double      antoine_a = 0.0, antoine_b = 0.0, antoine_c = 0.0;
@@ -53,16 +76,72 @@ struct Especie {
     Fase        fase_std = Fase::Gas;
     std::map<std::string, int> composicion_elemental;
 
+    bool es_curada() const { return id > 0 && id <= 445; }
+
     double cp(double T_K) const {
-        return cp_a + cp_b*T_K + cp_c*T_K*T_K + cp_d*T_K*T_K*T_K;
+        if (T_K <= 0.0) return (modelo_cp == ModeloCp::CONSTANTE) ? cp_a : 0.0;
+        switch (modelo_cp) {
+            case ModeloCp::POLINOMIAL_ESTANDAR: {
+                return cp_a + cp_b * T_K + cp_c * T_K * T_K + cp_d * T_K * T_K * T_K;
+            }
+            case ModeloCp::MAIER_KELLEY: {
+                double Tk = std::max(T_K, 1e-6);
+                double invT = 1.0 / Tk;
+                double invT2 = invT * invT;
+                return cp_a + cp_b * Tk + cp_c * invT2 + cp_d * invT2 * invT;
+            }
+            case ModeloCp::SHOMATE_NIST: {
+                double Tk = std::max(T_K, 1e-6);
+                double t = Tk / 1000.0;
+                return cp_a + cp_b * t + cp_c * t * t + cp_d * t * t * t + cp_e / (t * t);
+            }
+            case ModeloCp::CONSTANTE: {
+                return cp_a;
+            }
+            default:
+                return cp_a + cp_b * T_K + cp_c * T_K * T_K + cp_d * T_K * T_K * T_K;
+        }
     }
 
     double entalpia_ref(double T_K) const {
         double Tr = STP_TEMP;
-        return (cp_a*(T_K - Tr)
-              + cp_b*(T_K*T_K - Tr*Tr)/2.0
-              + cp_c*(T_K*T_K*T_K - Tr*Tr*Tr)/3.0
-              + cp_d*(T_K*T_K*T_K*T_K - Tr*Tr*Tr*Tr)/4.0) / 1000.0;
+        if (T_K <= 0.0) T_K = 1e-6;
+        switch (modelo_cp) {
+            case ModeloCp::POLINOMIAL_ESTANDAR: {
+                return (cp_a * (T_K - Tr)
+                      + cp_b * (T_K * T_K - Tr * Tr) / 2.0
+                      + cp_c * (T_K * T_K * T_K - Tr * Tr * Tr) / 3.0
+                      + cp_d * (T_K * T_K * T_K * T_K - Tr * Tr * Tr * Tr) / 4.0) / 1000.0;
+            }
+            case ModeloCp::MAIER_KELLEY: {
+                double Tk = std::max(T_K, 1e-6);
+                double c_term = -cp_c * (1.0 / Tk - 1.0 / Tr);
+                double d_term = -0.5 * cp_d * (1.0 / (Tk * Tk) - 1.0 / (Tr * Tr));
+                return (cp_a * (Tk - Tr)
+                      + cp_b * (Tk * Tk - Tr * Tr) / 2.0
+                      + c_term
+                      + d_term) / 1000.0;
+            }
+            case ModeloCp::SHOMATE_NIST: {
+                double Tk = std::max(T_K, 1e-6);
+                double t = Tk / 1000.0;
+                double tr = Tr / 1000.0;
+                return (cp_a * (t - tr)
+                      + cp_b * (t * t - tr * tr) / 2.0
+                      + cp_c * (t * t * t - tr * tr * tr) / 3.0
+                      + cp_d * (t * t * t * t - tr * tr * tr * tr) / 4.0
+                      - cp_e * (1.0 / t - 1.0 / tr));
+            }
+            case ModeloCp::CONSTANTE: {
+                return (cp_a * (T_K - Tr)) / 1000.0;
+            }
+            default: {
+                return (cp_a * (T_K - Tr)
+                      + cp_b * (T_K * T_K - Tr * Tr) / 2.0
+                      + cp_c * (T_K * T_K * T_K - Tr * Tr * Tr) / 3.0
+                      + cp_d * (T_K * T_K * T_K * T_K - Tr * Tr * Tr * Tr) / 4.0) / 1000.0;
+            }
+        }
     }
 
     double entalpia_abs(double T_K) const {
@@ -71,11 +150,43 @@ struct Especie {
 
     double entropia_ref(double T_K) const {
         double Tr = STP_TEMP;
-        if (T_K <= 0) return 0;
-        return cp_a * std::log(T_K/Tr)
-             + cp_b * (T_K - Tr)
-             + cp_c * (T_K*T_K - Tr*Tr)/2.0
-             + cp_d * (T_K*T_K*T_K - Tr*Tr*Tr)/3.0;
+        if (T_K <= 0.0) return 0.0;
+        switch (modelo_cp) {
+            case ModeloCp::POLINOMIAL_ESTANDAR: {
+                return cp_a * std::log(T_K / Tr)
+                     + cp_b * (T_K - Tr)
+                     + cp_c * (T_K * T_K - Tr * Tr) / 2.0
+                     + cp_d * (T_K * T_K * T_K - Tr * Tr * Tr) / 3.0;
+            }
+            case ModeloCp::MAIER_KELLEY: {
+                double Tk = std::max(T_K, 1e-6);
+                double c_term = -0.5 * cp_c * (1.0 / (Tk * Tk) - 1.0 / (Tr * Tr));
+                double d_term = -(1.0 / 3.0) * cp_d * (1.0 / (Tk * Tk * Tk) - 1.0 / (Tr * Tr * Tr));
+                return cp_a * std::log(Tk / Tr)
+                     + cp_b * (Tk - Tr)
+                     + c_term
+                     + d_term;
+            }
+            case ModeloCp::SHOMATE_NIST: {
+                double Tk = std::max(T_K, 1e-6);
+                double t = Tk / 1000.0;
+                double tr = Tr / 1000.0;
+                return cp_a * std::log(t / tr)
+                     + cp_b * (t - tr)
+                     + cp_c * (t * t - tr * tr) / 2.0
+                     + cp_d * (t * t * t - tr * tr * tr) / 3.0
+                     - 0.5 * cp_e * (1.0 / (t * t) - 1.0 / (tr * tr));
+            }
+            case ModeloCp::CONSTANTE: {
+                return cp_a * std::log(T_K / Tr);
+            }
+            default: {
+                return cp_a * std::log(T_K / Tr)
+                     + cp_b * (T_K - Tr)
+                     + cp_c * (T_K * T_K - Tr * Tr) / 2.0
+                     + cp_d * (T_K * T_K * T_K - Tr * Tr * Tr) / 3.0;
+            }
+        }
     }
 
     double entropia_abs(double T_K) const {
