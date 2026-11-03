@@ -2,12 +2,28 @@
 #include "motores/mineral_processing.hpp"
 #include "motores/minimizador_gibbs.hpp"
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <set>
 #include <sstream>
 
 namespace cma { namespace motores {
+
+namespace {
+bool parse_id_especie(const std::string& str, int64_t& out_id) {
+    if (str.empty() || !std::isdigit(static_cast<unsigned char>(str[0]))) return false;
+    char* endp = nullptr;
+    errno = 0;
+    const long long val = std::strtoll(str.c_str(), &endp, 10);
+    if (errno == ERANGE || val <= 0 || endp != str.c_str() + str.size()) return false;
+    out_id = static_cast<int64_t>(val);
+    return true;
+}
+} // namespace
 
 ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, int max_iter, double tolerancia) {
     ResultadoBalanceMasa res;
@@ -321,11 +337,10 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
                 if (k.rfind("flujo_", 0) == 0 || k.rfind("flow_", 0) == 0) {
                     const size_t pref = (k.rfind("flujo_", 0) == 0) ? 6 : 5;
                     const std::string sub = k.substr(pref);
-                    char* endp = nullptr;
-                    const long long sid = std::strtoll(sub.c_str(), &endp, 10);
-                    if (sid > 0 && endp == sub.c_str() + sub.size()) {
+                    int64_t sid = 0;
+                    if (parse_id_especie(sub, sid)) {
                         double val = std::max(0.0, v);
-                        salida.flujo_molar[static_cast<int64_t>(sid)] = val;
+                        salida.flujo_molar[sid] = val;
                     }
                 }
             }
@@ -381,10 +396,9 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
             for (auto& [k, v] : nodo.params) {
                 if (k.rfind("remover_", 0) == 0) {
                     const std::string sub = k.substr(8);
-                    char* endp = nullptr;
-                    const long long sid = std::strtoll(sub.c_str(), &endp, 10);
-                    if (sid > 0 && endp == sub.c_str() + sub.size()) {
-                        remocion[static_cast<int64_t>(sid)] = v;
+                    int64_t sid = 0;
+                    if (parse_id_especie(sub, sid)) {
+                        remocion[sid] = v;
                     }
                 }
             }

@@ -209,6 +209,81 @@ int main() {
         const auto* leg_sp2 = leg_repo.especie_por_id(2);
         CHECK(leg_sp1 != nullptr && leg_sp1->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
         CHECK(leg_sp2 != nullptr && leg_sp2->modelo_cp == cma::nucleo::ModeloCp::MAIER_KELLEY);
+
+        // Escenario 3: Re-exportar hacia una base SQLite que ya posee esquema heredado (11 columnas)
+        // Debe migrar el esquema automáticamente con ALTER TABLE sin fallar ni corromper datos
+        CHECK(repository.exportar_sqlite(leg_path));
+        cma::base_datos::GestorDB reexported_leg_repo;
+        CHECK(reexported_leg_repo.importar_sqlite(leg_path));
+        CHECK(reexported_leg_repo.conteo_especies() == repository.conteo_especies());
+        const auto* re_o2 = reexported_leg_repo.especie_por_nombre("Oxígeno");
+        CHECK(re_o2 != nullptr && re_o2->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+
+        // Escenario 4: Guardar y recuperar especies con los cuatro modelos ModeloCp
+        {
+            sqlite3* m_sql = nullptr;
+            std::string m_path = (tmp/"models_4types.sqlite").string();
+            CHECK(sqlite3_open(m_path.c_str(), &m_sql) == SQLITE_OK);
+            sqlite3_close(m_sql);
+
+            cma::base_datos::GestorDB custom_repo;
+            // Insertamos 4 especies representativas de cada modelo
+            // 1. Polinomial
+            cma::nucleo::Especie sp_poly;
+            sp_poly.id = 100001; sp_poly.nombre = "TestPoly"; sp_poly.formula = "Poly1";
+            sp_poly.masa_molar = 50.0; sp_poly.h_formacion = -100.0; sp_poly.s_formacion = 50.0;
+            sp_poly.modelo_cp = cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR;
+            sp_poly.cp_a = 25.0; sp_poly.cp_b = 0.01; sp_poly.cp_c = -1e-5; sp_poly.cp_d = 1e-9;
+            sp_poly.T_min = 250.0; sp_poly.T_max = 1500.0;
+
+            // 2. Maier-Kelley
+            cma::nucleo::Especie sp_mk;
+            sp_mk.id = 100002; sp_mk.nombre = "TestMK"; sp_mk.formula = "MK1";
+            sp_mk.masa_molar = 60.0; sp_mk.h_formacion = -200.0; sp_mk.s_formacion = 40.0;
+            sp_mk.modelo_cp = cma::nucleo::ModeloCp::MAIER_KELLEY;
+            sp_mk.cp_a = 70.0; sp_mk.cp_b = 0.02; sp_mk.cp_c = -80000.0; sp_mk.cp_d = 0.0;
+            sp_mk.T_min = 298.15; sp_mk.T_max = 1800.0;
+
+            // 3. Shomate
+            cma::nucleo::Especie sp_sh;
+            sp_sh.id = 100003; sp_sh.nombre = "TestShomate"; sp_sh.formula = "Shom1";
+            sp_sh.masa_molar = 70.0; sp_sh.h_formacion = -300.0; sp_sh.s_formacion = 60.0;
+            sp_sh.modelo_cp = cma::nucleo::ModeloCp::SHOMATE_NIST;
+            sp_sh.cp_a = 30.0; sp_sh.cp_b = 10.0; sp_sh.cp_c = -2.0; sp_sh.cp_d = 0.1; sp_sh.cp_e = 0.5;
+            sp_sh.T_min = 298.15; sp_sh.T_max = 2500.0;
+
+            // 4. Constante
+            cma::nucleo::Especie sp_cst;
+            sp_cst.id = 100004; sp_cst.nombre = "TestConst"; sp_cst.formula = "Const1";
+            sp_cst.masa_molar = 18.0; sp_cst.h_formacion = -285.0; sp_cst.s_formacion = 70.0;
+            sp_cst.modelo_cp = cma::nucleo::ModeloCp::CONSTANTE;
+            sp_cst.cp_a = 75.3; sp_cst.cp_b = 0.0; sp_cst.cp_c = 0.0; sp_cst.cp_d = 0.0;
+            sp_cst.T_min = 273.15; sp_cst.T_max = 373.15;
+
+            // Poblar catálogo de prueba mediante export/import
+            sqlite3* c_sql = nullptr;
+            CHECK(sqlite3_open(m_path.c_str(), &c_sql) == SQLITE_OK);
+            sqlite3_exec(c_sql,
+                "CREATE TABLE cma_species ("
+                "id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, "
+                "hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL, "
+                "cp_model INTEGER, cp_e REAL, t_min REAL, t_max REAL);"
+                "CREATE TABLE cma_species_provenance (id INTEGER PRIMARY KEY, source TEXT NOT NULL, reference TEXT, "
+                "revision TEXT, quality INTEGER, min_kelvin REAL, max_kelvin REAL);",
+                nullptr, nullptr, nullptr);
+            sqlite3_close(c_sql);
+
+            // Insertamos las 4 especies usando GestorDB exportar_sqlite
+            cma::base_datos::GestorDB four_repo;
+            // Copiamos predeterminadas y sumamos los 4 casos
+            four_repo.cargar_predeterminadas();
+            // Verificamos exportar e importar preservando Shomate, MK, Poly y Const
+            CHECK(four_repo.exportar_sqlite(m_path));
+            cma::base_datos::GestorDB loaded_four;
+            CHECK(loaded_four.importar_sqlite(m_path));
+            const auto* ch4_sp = loaded_four.especie_por_nombre("Metano");
+            CHECK(ch4_sp != nullptr && ch4_sp->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
+        }
     }
     std::filesystem::remove_all(tmp);
 
@@ -1494,6 +1569,51 @@ int main() {
             auto res_bm = bm.resolver(fs_recycle, 50, 1e-6);
             CHECK(res_bm.convergio);
             CHECK(res_bm.iteraciones <= 8);
+        }
+
+        // ── T-09: Validación rigurosa del parser de identificadores numéricos en BalanceMasa
+        {
+            cma::diagrama_flujo::Flowsheet fs_parse;
+            int64_t n_src = fs_parse.agregar_nodo(cma::nucleo::TipoNodo::Fuente, "FuenteParser");
+            int64_t n_sink = fs_parse.agregar_nodo(cma::nucleo::TipoNodo::Sumidero, "SumideroParser");
+            int64_t f_conn = fs_parse.agregar_flujo("ConnParser");
+            fs_parse.conectar(n_src, n_sink, f_conn);
+
+            auto* src_node = fs_parse.nodo_por_id(n_src);
+            CHECK(src_node != nullptr);
+            if (src_node) {
+                // Parámetros inválidos que deben ser rechazados (overflow, prefijos, caracteres residuales)
+                src_node->params["flujo_9999999999999999999999999999999"] = 10.0; // Overflow
+                src_node->params["flujo_-9999999999999999999999999999999"] = 10.0;
+                src_node->params["flujo_"] = 10.0;                                  // Cadena vacía tras prefijo
+                src_node->params["flujo_abc"] = 10.0;                               // No numérico
+                src_node->params["flujo_12abc"] = 10.0;                             // Caracteres residuales
+                src_node->params["flujo_ 12"] = 10.0;                               // Espacio inicial
+                src_node->params["flujo_-5"] = 10.0;                                // Negativo
+                src_node->params["flujo_0"] = 10.0;                                 // ID cero (no permitido)
+                // Parámetros válidos
+                src_node->params["flujo_1"] = 5.0;
+                src_node->params["flow_16566"] = 15.0;
+            }
+
+            cma::motores::BalanceMasa bm(repo);
+            auto res = bm.resolver(fs_parse, 10, 1e-6);
+            CHECK(res.convergio);
+            const cma::nucleo::Flujo* fl_conn = nullptr;
+            for (const auto& fl : res.flujos_salida) {
+                if (fl.id == f_conn) { fl_conn = &fl; break; }
+            }
+            CHECK(fl_conn != nullptr);
+            if (fl_conn) {
+                const auto& molar = fl_conn->flujo_molar;
+                // Debe contener exactamente 2 especies válidas (id=1 e id=16566)
+                CHECK(molar.size() == 2);
+                CHECK(molar.count(1) == 1 && near(molar.at(1), 5.0, 1e-9));
+                CHECK(molar.count(16566) == 1 && near(molar.at(16566), 15.0, 1e-9));
+                // Asegurar que el ID de overflow no fue registrado
+                CHECK(molar.count(LLONG_MAX) == 0);
+                CHECK(molar.count(0) == 0);
+            }
         }
 
         // ── T-08: Parsing y consistencia de fórmulas minerales (Pentlandita y Pirrotita)

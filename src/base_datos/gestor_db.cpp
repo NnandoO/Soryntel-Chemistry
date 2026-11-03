@@ -307,8 +307,32 @@ bool GestorDB::exportar_sqlite(const std::string& ruta) const {
     if (sqlite3_open(ruta.c_str(), &raw) != SQLITE_OK) { if (raw) sqlite3_close(raw); return false; }
     std::unique_ptr<sqlite3, decltype(&sqlite3_close)> db(raw, sqlite3_close);
     auto exec = [&](const char* sql) { return sqlite3_exec(raw, sql, nullptr, nullptr, nullptr) == SQLITE_OK; };
-    if (!exec("BEGIN IMMEDIATE; "
-              "CREATE TABLE IF NOT EXISTS cma_species ("
+    if (!exec("BEGIN IMMEDIATE;")) {
+        return false;
+    }
+
+    // Asegurar migración de esquema si la tabla cma_species ya existía en formato legacy (11 columnas)
+    sqlite3_stmt* check_stmt = nullptr;
+    if (sqlite3_prepare_v2(raw, "PRAGMA table_info(cma_species)", -1, &check_stmt, nullptr) == SQLITE_OK) {
+        bool has_table = false;
+        bool has_cp_model = false;
+        while (sqlite3_step(check_stmt) == SQLITE_ROW) {
+            has_table = true;
+            const unsigned char* col_name = sqlite3_column_text(check_stmt, 1);
+            if (col_name && std::string(reinterpret_cast<const char*>(col_name)) == "cp_model") {
+                has_cp_model = true;
+            }
+        }
+        sqlite3_finalize(check_stmt);
+        if (has_table && !has_cp_model) {
+            exec("ALTER TABLE cma_species ADD COLUMN cp_model INTEGER DEFAULT 0; "
+                 "ALTER TABLE cma_species ADD COLUMN cp_e REAL DEFAULT 0.0; "
+                 "ALTER TABLE cma_species ADD COLUMN t_min REAL DEFAULT 298.15; "
+                 "ALTER TABLE cma_species ADD COLUMN t_max REAL DEFAULT 2000.0;");
+        }
+    }
+
+    if (!exec("CREATE TABLE IF NOT EXISTS cma_species ("
               "id INTEGER PRIMARY KEY, name TEXT, formula TEXT, molar_mass REAL, "
               "hf REAL, sf REAL, phase INTEGER, cp_a REAL, cp_b REAL, cp_c REAL, cp_d REAL, "
               "cp_model INTEGER DEFAULT 0, cp_e REAL DEFAULT 0.0, "
