@@ -1436,7 +1436,7 @@ int main() {
             return nullptr;
         };
 
-        // ── T-04: Metano CH4 Cp vs NIST Shomate en 298.15 K, 500 K y 1000 K
+        // ── T-04: Metano CH4 Cp vs NIST Shomate en 298.15 K, 375.67 K, 500 K y 1000 K
         {
             const auto* ch4 = por_formula("CH4");
             CHECK(ch4 != nullptr);
@@ -1444,6 +1444,12 @@ int main() {
                 // NIST Shomate de referencia: 298.15 K -> 35.69 J/(mol K)
                 double cp_298 = ch4->cp(298.15);
                 CHECK(std::abs(cp_298 - 35.69) / 35.69 < 0.01);
+
+                // 375.67 K -> punto de máximo error relativo empírico frente a NIST Shomate (~1.314%)
+                double cp_375 = ch4->cp(375.67);
+                CHECK(near(cp_375, 39.68, 0.05));
+                // NIST Shomate a 375.67 K: 39.1666 J/(mol K) -> error relativo < 1.35% (1.314%)
+                CHECK(std::abs(cp_375 - 39.1666) / 39.1666 < 0.0135);
 
                 // 500 K -> 46.54 J/(mol K)
                 double cp_500 = ch4->cp(500.0);
