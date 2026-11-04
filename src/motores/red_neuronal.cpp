@@ -442,7 +442,9 @@ std::string RedNeuronal::a_json() const {
     os << "],\"w\":[";
     bool primero = true;
     for (auto& capa : W_) for (auto& fila : capa) for (double v : fila) {
-        if (!primero) os << ","; os << v; primero = false;
+        if (!primero) os << ",";
+        os << v;
+        primero = false;
     }
     os << "],\"b\":[";
     primero = true;

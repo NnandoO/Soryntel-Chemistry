@@ -382,7 +382,7 @@ void PanelPropiedades::renderizar_editor_unidad() {
 
             // ── Pestaña 3: Dist (Elemental & Phase Distribution Model) ──
             if (ImGui::BeginTabItem("Dist")) {
-                ImGui::TextWrapped("Distribución por Elementos y Especies hacia Salida 1 (Stream 1 % vs Stream 2 %).");
+                ImGui::TextWrapped("Distribución por Elementos y Especies hacia Salida 1 (Stream 1 %% vs Stream 2 %%).");
                 const char* common_elems[] = { "Fe", "Cu", "Ti", "Al", "Si", "O", "S", "C", "Cl", "Na", "H", "Ca" };
                 if (ImGui::BeginTable("ElemDistTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
                     ImGui::TableSetupColumn("Element", ImGuiTableColumnFlags_WidthFixed, 90.0f);

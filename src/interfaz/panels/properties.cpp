@@ -340,8 +340,10 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
         case nucleo::TipoNodo::Reactor: {
             dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
             double conv = nodo.conversion();
+            const double min_conversion = 0.0;
+            const double max_conversion = 1.0;
             if (ImGui::SliderScalar("Conversión (X)", ImGuiDataType_Double, &conv,
-                                    & (const double&){0.0}, & (const double&){1.0}, "%.3f")) {
+                                    &min_conversion, &max_conversion, "%.3f")) {
                 nodo.params["conversion"] = std::clamp(conv, 0.0, 1.0);
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }

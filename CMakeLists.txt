@@ -136,7 +136,6 @@ if(CMA_BUILD_GUI)
     FetchContent_Declare(implot3d
         GIT_REPOSITORY https://github.com/brenocq/implot3d.git
         GIT_TAG 7913cf11684730119bd284fd8e7052d140e72f61
-        GIT_SHALLOW TRUE
     )
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -153,8 +152,9 @@ if(CMA_BUILD_GUI)
         ${implot_SOURCE_DIR}/implot.cpp ${implot_SOURCE_DIR}/implot_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d.cpp ${implot3d_SOURCE_DIR}/implot3d_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp)
-    target_include_directories(cma_graphics PUBLIC SYSTEM ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
-        SYSTEM ${implot_SOURCE_DIR} SYSTEM ${implot3d_SOURCE_DIR})
+    target_include_directories(cma_graphics SYSTEM PUBLIC
+        ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+        ${implot_SOURCE_DIR} ${implot3d_SOURCE_DIR})
     target_link_libraries(cma_graphics PUBLIC glfw OpenGL::GL ${CMAKE_DL_LIBS})
     file(GLOB CMA_PANEL_SOURCES CONFIGURE_DEPENDS src/interfaz/panels/*.cpp
         src/interfaz/application/*.cpp src/interfaz/canvas/*.cpp)
@@ -162,13 +162,15 @@ if(CMA_BUILD_GUI)
         src/interfaz/paneles.cpp src/interfaz/lienzo.cpp src/utils/i18n.cpp ${CMA_PANEL_SOURCES})
     target_link_libraries(cma_chemistry PRIVATE cma_graphics cma_domain cma_persistence cma_platform
         cma_sim cma_thermo cma_diagrams cma_aqueous cma_db cma_estimation cma_tools cma_advanced_aqueous Threads::Threads)
-    target_compile_options(cma_chemistry PRIVATE
-        -Wno-old-style-cast
-        -Wno-sign-conversion
-        -Wno-float-conversion
-        -Wno-shadow
-        -Wno-conversion
-    )
+    if(NOT CMA_WARNINGS_AS_ERRORS)
+        target_compile_options(cma_chemistry PRIVATE
+            -Wno-old-style-cast
+            -Wno-sign-conversion
+            -Wno-float-conversion
+            -Wno-shadow
+            -Wno-conversion
+        )
+    endif()
     include(GNUInstallDirs)
     target_compile_definitions(cma_chemistry PRIVATE CMA_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/cma-chemistry")
     install(TARGETS cma_chemistry DESTINATION ${CMAKE_INSTALL_BINDIR})

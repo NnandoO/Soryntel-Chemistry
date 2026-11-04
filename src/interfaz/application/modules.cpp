@@ -366,15 +366,15 @@ void Aplicacion::renderizar_modulos() {
         css::draw_module_banner("SIM", "HSC Sim Flowsheet Convergence & Diagnostics", "Topological tear-stream analysis and Wegstein recycle acceleration", IM_COL32(42, 128, 76, 255));
 
         auto& fs = flowsheet_;
-        int total_nodos = (int)fs->conteo_nodos();
-        int total_flujos = (int)fs->conteo_flujos();
+        int total_nodos = static_cast<int>(fs->conteo_nodos());
+        int total_flujos = static_cast<int>(fs->conteo_flujos());
         int total_conexiones = 0;
         bool tiene_ciclo = fs->detectar_ciclo();
 
         // Contar conexiones y clasificar nodos
         int n_fuentes = 0, n_sumideros = 0, n_reactores = 0, n_equipos = 0;
         for (const auto& nodo : fs->nodos()) {
-            total_conexiones += (int)nodo.ids_flujos_salida.size();
+            total_conexiones += static_cast<int>(nodo.ids_flujos_salida.size());
             switch (nodo.tipo) {
                 case nucleo::TipoNodo::Fuente: n_fuentes++; break;
                 case nucleo::TipoNodo::Sumidero: n_sumideros++; break;
@@ -486,7 +486,7 @@ void Aplicacion::renderizar_modulos() {
                 for (const auto& nodo : fs->nodos()) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%lld", (long long)nodo.id);
+                    ImGui::Text("%lld", static_cast<long long>(nodo.id));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::TextUnformatted(nodo.nombre.c_str());
                     ImGui::TableSetColumnIndex(2);

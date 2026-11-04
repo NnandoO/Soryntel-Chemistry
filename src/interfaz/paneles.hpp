@@ -910,7 +910,7 @@ private:
     int celda_colo_ = 0;        // columna activa (índice de columna RULE)
     int foco_fila_ = -1;         // objetivo de foco teclado pendiente (Enter/Tab)
     int foco_colo_ = -1;
-    char nombre_celda_buf_[12] = "A1";
+    char nombre_celda_buf_[24] = "A1";
     int nombre_fila_prev_ = -1, nombre_colo_prev_ = -1;
 
     void cargar_ejemplo_hsc();
