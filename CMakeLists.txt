@@ -32,8 +32,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(sqlite3
         GIT_REPOSITORY https://github.com/azadkuh/sqlite-amalgamation.git
-        GIT_TAG 15d0ff10ebc7e7225eced1de84bb52137000899b
-        GIT_SHALLOW TRUE)
+        GIT_TAG 15d0ff10ebc7e7225eced1de84bb52137000899b)
     FetchContent_MakeAvailable(sqlite3)
     add_library(sqlite3_amalgamation STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
     target_include_directories(sqlite3_amalgamation PUBLIC ${sqlite3_SOURCE_DIR})
@@ -127,6 +126,22 @@ if(BUILD_TESTING)
         ${CMAKE_SOURCE_DIR}/tests/check_architecture.py ${CMAKE_SOURCE_DIR})
     add_test(NAME source_structure COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_structure.py)
     add_test(NAME external_reference_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/reference_data.py)
+    add_custom_target(format
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/run_clang_format.py --apply
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-format (.clang-format) across hexagonal C++ sources")
+    add_custom_target(format-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/run_clang_format.py --check
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Checking C++ formatting and #include layer order via clang-format")
+    add_custom_target(tidy-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_clang_tidy.py -p ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-tidy AST static analysis on hexagonal core")
+    add_custom_target(arch-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/check_architecture.py ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Validating Hexagonal Architecture include graph and CMake target isolation")
 endif()
 if(CMA_BUILD_GUI)
     include(FetchContent)

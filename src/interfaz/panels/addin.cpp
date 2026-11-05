@@ -12,7 +12,8 @@ void cma::interfaz::PanelAddIn::evaluar_fila(cma::interfaz::PanelAddIn::FilaAddI
     std::string arg1_str = trim_str(fila.arg1);
     if (arg1_str.empty()) return;
 
-    auto& gestor = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& gestor =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
 
     auto calcular_propiedad = [&](const cma::nucleo::Reaccion& rxn, double T_K, int prop_tipo) -> double {
         double val_total = 0.0;
@@ -49,14 +50,14 @@ void cma::interfaz::PanelAddIn::evaluar_fila(cma::interfaz::PanelAddIn::FilaAddI
         if (arg1_str.find('=') == std::string::npos && arg1_str.find("->") == std::string::npos) {
             arg1_str += " = " + arg1_str; // Hack: 1 Reactivo = 1 Producto anula el resto, pero queremos evaluar
             // Mejor: parseamos como si fuera Reactivo = (nada) y le cambiamos el signo, o simplemente lo forzamos manual.
-            const auto* esp = buscar_especie_por_nombre_o_formula(trim_str(fila.arg1));
+            const auto* esp = buscar_especie_por_nombre_o_formula(trim_str(fila.arg1), &gestor);
             if (!esp) {
                 fila.mensaje = "Especie no encontrada.";
                 return;
             }
             rxn.estequiometria[esp->id] = 1.0; // Producto ficticio para que calcule positivo
         } else {
-            if (!parse_chemical_equation(arg1_str, rxn, err)) {
+            if (!parse_chemical_equation(arg1_str, rxn, err, &gestor)) {
                 fila.mensaje = err;
                 return;
             }
@@ -83,7 +84,7 @@ void cma::interfaz::PanelAddIn::evaluar_fila(cma::interfaz::PanelAddIn::FilaAddI
     } 
     else if (fila.func_idx == 5) {
         // TATH (Temperature at given enthalpy)
-        const auto* esp = buscar_especie_por_nombre_o_formula(arg1_str);
+        const auto* esp = buscar_especie_por_nombre_o_formula(arg1_str, &gestor);
         if (!esp) {
             fila.mensaje = "Especie no encontrada.";
             return;

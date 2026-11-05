@@ -65,18 +65,35 @@ void Aplicacion::scroll_cb(GLFWwindow*, double, double) {}
 Aplicacion::Aplicacion(base_datos::GestorDB& repository, application::FileDialog& file_dialog,
                        const domain::AqueousDatabase& aqueous_database,const domain::AqueousEngine& aqueous_engine)
     : repository_(repository), file_dialog_(file_dialog), panel_native_aqueous_(aqueous_database),
-      panel_advanced_aqueous_(aqueous_engine), panel_mineral_processing_(file_dialog), panel_catalog_audit_(repository,file_dialog), panel_estimacion_(repository),
+      panel_advanced_aqueous_(aqueous_engine), panel_mineral_processing_(file_dialog), panel_catalog_audit_(repository,file_dialog),
+      panel_estabilidad_(repository), panel_lpp_(repository), panel_estimacion_(repository),
       panel_reaction_solver_(repository), panel_pourbaix_(repository), panel_material_db_(repository) {
     instancia_global = this;
     flowsheet_ = std::make_unique<diagrama_flujo::Flowsheet>();
 
     lienzo_.establecer_flowsheet(flowsheet_.get());
+    lienzo_.establecer_repositorio(&repository);
+    ModalBuscadorDB::instancia().establecer_gestor_db(&repository);
     panel_propiedades_.establecer_flowsheet(flowsheet_.get());
+    panel_propiedades_.establecer_gestor_db(&repository);
+    panel_especies_.establecer_gestor_db(&repository);
+    panel_calculadora_.establecer_gestor_db(&repository);
+    panel_diagramas_termo_.establecer_repositorio(&repository);
+    panel_convertidor_.establecer_repositorio(&repository);
+    panel_equilibrium_calc_.establecer_repositorio(&repository);
+    panel_addin_.establecer_repositorio(&repository);
+    panel_geo_.establecer_repositorio(&repository);
     panel_herramientas_.establecer_flowsheet(flowsheet_.get());
     panel_material_db_.establecer_flowsheet(flowsheet_.get());
     panel_material_db_.al_enviar_a_balance = [this](const cma::application::modules::RegistroMaterial&, double, double) {
         mostrar_balance_hoja_ = true;
     };
+    panel_perdida_calor_.establecer_flowsheet(flowsheet_.get());
+    panel_perdida_calor_.al_enviar_a_balance = [this](double, const std::string&) {
+        mostrar_balance_hoja_ = true;
+    };
+    panel_balance_hoja_.establecer_repositorio(&repository);
+    panel_lca_.establecer_repositorio(&repository);
 
     panel_herramientas_.al_agregar_nodo = [this](nucleo::TipoNodo tipo) {
         lienzo_.guardar_estado();
@@ -177,6 +194,10 @@ bool Aplicacion::iniciar(int argc, char** argv) {
         mostrar_material_db_=review_panel_=="material";
         mostrar_lca_=review_panel_=="lca";
         mostrar_geo_mineralogical_=review_panel_=="geo";
+        mostrar_diagramas_termo_=(review_panel_=="diagrams" || review_panel_=="ellingham");
+        mostrar_perdida_calor_=review_panel_=="heat_loss";
+        mostrar_estabilidad_=review_panel_=="stability";
+        mostrar_pourbaix_=review_panel_=="pourbaix";
         ImGui::GetIO().IniFilename=nullptr;
     }
     if (smoke_test_) {

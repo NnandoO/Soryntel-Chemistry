@@ -209,6 +209,7 @@ std::vector<int> ReconciliacionDatos::detectar_outliers(
     for (const auto& m : datos) if (!std::isfinite(m.valor_medido)) return outliers;
 
     std::vector<double> vals;
+    vals.reserve(datos.size());
     for (auto& m : datos) vals.push_back(m.valor_medido);
 
     double med = media(vals);

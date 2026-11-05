@@ -18,7 +18,7 @@ static double valor_visualizacion_flujo(const nucleo::Flujo& flujo, int modo,
 void Lienzo::renderizar_flujos(const ImVec2&) {
     if (!flowsheet_) return;
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    const auto& db = base_datos::GestorDB::instancia().mapa_especies();
+    const auto& db = repo_ ? repo_->mapa_especies() : base_datos::GestorDB::instancia().mapa_especies();
 
     // Pre-cálculo del valor máximo absoluto para escalar el diagrama de Sankey
     double max_abs_val = 0.0;

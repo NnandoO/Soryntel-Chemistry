@@ -524,7 +524,8 @@ void PanelEstimacionProp::renderizar() {
     
     if (mostrar_grafico_) {
         if (!grafico_calculado_) {
-            auto& db = base_datos::GestorDB::instancia();
+            const domain::ThermoRepository& db =
+                repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
             auto especies = db.todas_especies();
             std::vector<double> errors;
             for (const auto* e : especies) {

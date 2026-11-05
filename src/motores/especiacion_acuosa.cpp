@@ -87,7 +87,8 @@ SpeciationResult AqueousSpeciation::solve(const SpeciationInput& input) const {
                 const double maximum=step.cwiseAbs().maxCoeff();
                 if (maximum>2) step*=2/maximum;
                 bool accepted=false;
-                for (double alpha=1;alpha>1e-10;alpha*=0.5) {
+                double alpha=1.0;
+                for (int ls=0;ls<34;++ls,alpha*=0.5) {
                     const Eigen::VectorXd trial=logs+alpha*step;
                     Eigen::VectorXd next; evaluate(trial,next,nullptr);
                     if (next.allFinite() && next.norm()<residual.norm()) { logs=trial; accepted=true; break; }

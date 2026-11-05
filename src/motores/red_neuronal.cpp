@@ -33,10 +33,12 @@ void RedNeuronal::inicializar(int n_entrada, const ConfigANN& cfg, int n_salida)
     W_.clear();
     B_.clear();
     normalizado_ = false;
-    x_min_.assign(n_ent_, -0.9);
-    x_max_.assign(n_ent_, 0.9);
-    y_min_.assign(n_sal_, -0.9);
-    y_max_.assign(n_sal_, 0.9);
+    const auto n_ent_sz = static_cast<size_t>(std::max(0, n_ent_));
+    const auto n_sal_sz = static_cast<size_t>(std::max(0, n_sal_));
+    x_min_.assign(n_ent_sz, -0.9);
+    x_max_.assign(n_ent_sz, 0.9);
+    y_min_.assign(n_sal_sz, -0.9);
+    y_max_.assign(n_sal_sz, 0.9);
 
     std::mt19937 rng(static_cast<unsigned>(cfg.semilla));
     auto xavier = [&rng](int fin, int fout) {
@@ -48,16 +50,19 @@ void RedNeuronal::inicializar(int n_entrada, const ConfigANN& cfg, int n_salida)
     int prev = n_ent_;
     for (int h : cfg.ocultas) {
         if (h <= 0) continue;
-        std::vector<std::vector<double>> w(h, std::vector<double>(prev));
+        const auto h_sz = static_cast<size_t>(h);
+        const auto prev_sz = static_cast<size_t>(std::max(0, prev));
+        std::vector<std::vector<double>> w(h_sz, std::vector<double>(prev_sz));
         for (auto& fila : w) for (auto& v : fila) v = xavier(prev, h);
         W_.push_back(std::move(w));
-        B_.push_back(std::vector<double>(h, 0.0));
+        B_.push_back(std::vector<double>(h_sz, 0.0));
         prev = h;
     }
-    std::vector<std::vector<double>> w(n_sal_, std::vector<double>(prev));
+    const auto prev_sz = static_cast<size_t>(std::max(0, prev));
+    std::vector<std::vector<double>> w(n_sal_sz, std::vector<double>(prev_sz));
     for (auto& fila : w) for (auto& v : fila) v = xavier(prev, n_sal_);
     W_.push_back(std::move(w));
-    B_.push_back(std::vector<double>(n_sal_, 0.0));
+    B_.push_back(std::vector<double>(n_sal_sz, 0.0));
 }
 
 std::vector<double> RedNeuronal::normalizar_x(const std::vector<double>& x_raw) const {
@@ -106,7 +111,7 @@ void RedNeuronal::forward(const std::vector<double>& x,
 std::vector<double> RedNeuronal::predecir_normalizado(const std::vector<double>& entrada) const {
     if (W_.empty()) return {};
     std::vector<std::vector<double>> a(W_.size() + 1);
-    a[0].resize(n_ent_);
+    a[0].resize(static_cast<size_t>(std::max(0, n_ent_)));
     for (size_t l = 0; l < W_.size(); ++l) a[l + 1].resize(W_[l].size());
     forward(normalizar_x(entrada), a);
     return a.back();
@@ -143,7 +148,7 @@ std::vector<int> RedNeuronal::topologia() const {
     std::vector<int> t;
     if (W_.empty()) return t;
     t.push_back(n_ent_);
-    for (size_t l = 0; l + 1 < W_.size(); ++l) t.push_back((int)W_[l].size());
+    for (size_t l = 0; l + 1 < W_.size(); ++l) t.push_back(static_cast<int>(W_[l].size()));
     t.push_back(n_sal_);
     return t;
 }
@@ -162,20 +167,23 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
         return res;
     }
 
+    const auto n_ent_sz = static_cast<size_t>(std::max(0, n_ent_));
+    const auto n_sal_sz = static_cast<size_t>(std::max(0, n_sal_));
+
     // ── Escalado Min-Max a [-0.9, 0.9] como en HSC Data ──
     std::vector<std::vector<double>> X = X_raw;
     std::vector<std::vector<double>> Y = Y_raw;
     if (cfg_.normalizar) {
-        x_min_.assign(n_ent_, 1e300);
-        x_max_.assign(n_ent_, -1e300);
-        y_min_.assign(n_sal_, 1e300);
-        y_max_.assign(n_sal_, -1e300);
+        x_min_.assign(n_ent_sz, 1e300);
+        x_max_.assign(n_ent_sz, -1e300);
+        y_min_.assign(n_sal_sz, 1e300);
+        y_max_.assign(n_sal_sz, -1e300);
         for (size_t r = 0; r < X_raw.size(); ++r) {
-            for (int d = 0; d < n_ent_ && d < (int)X_raw[r].size(); ++d) {
+            for (size_t d = 0; d < n_ent_sz && d < X_raw[r].size(); ++d) {
                 x_min_[d] = std::min(x_min_[d], X_raw[r][d]);
                 x_max_[d] = std::max(x_max_[d], X_raw[r][d]);
             }
-            for (int m = 0; m < n_sal_ && m < (int)Y_raw[r].size(); ++m) {
+            for (size_t m = 0; m < n_sal_sz && m < Y_raw[r].size(); ++m) {
                 y_min_[m] = std::min(y_min_[m], Y_raw[r][m]);
                 y_max_[m] = std::max(y_max_[m], Y_raw[r][m]);
             }
@@ -190,7 +198,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
     }
 
     std::vector<std::vector<double>> eval_a(W_.size() + 1);
-    eval_a[0].resize(n_ent_);
+    eval_a[0].resize(n_ent_sz);
     for (size_t l = 0; l < W_.size(); ++l) eval_a[l + 1].resize(W_[l].size());
 
     auto mse_de = [&](const std::vector<int>& idx) {
@@ -198,19 +206,20 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
         double s = 0.0;
         size_t cuenta = 0;
         for (int i : idx) {
-            forward(X[i], eval_a);
+            const auto i_sz = static_cast<size_t>(i);
+            forward(X[i_sz], eval_a);
             const auto& y = eval_a.back();
-            for (size_t j = 0; j < y.size() && j < Y[i].size(); ++j) {
-                double d = y[j] - Y[i][j];
+            for (size_t j = 0; j < y.size() && j < Y[i_sz].size(); ++j) {
+                double d = y[j] - Y[i_sz][j];
                 s += d * d;
                 ++cuenta;
             }
         }
-        return cuenta ? (s / (double)cuenta) : 0.0;
+        return cuenta ? (s / static_cast<double>(cuenta)) : 0.0;
     };
 
     auto registrar_punto = [&](int epoca_num, double mse_e, double mse_v) {
-        res.epoca_hist.push_back((double)epoca_num);
+        res.epoca_hist.push_back(static_cast<double>(epoca_num));
         res.mse_ent_hist.push_back(mse_e);
         res.mse_val_hist.push_back(mse_v);
         res.rmse_ent_hist.push_back(std::sqrt(std::max(0.0, mse_e)));
@@ -223,7 +232,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
         std::uniform_real_distribution<double> u(0.0, 1.0);
         std::uniform_real_distribution<double> u_sym(-0.8, 0.8);
         const size_t NP = total_params();
-        const int S = std::max(10, cfg_.particulas_pso);
+        const size_t S = static_cast<size_t>(std::max(10, cfg_.particulas_pso));
         const double w_inercia = 0.72, c1 = 1.49, c2 = 1.49;
         const double v_max = 0.5;
 
@@ -234,7 +243,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             return mse_de(idx_ent);
         };
         auto base = obtener_params();
-        for (int s = 0; s < S; ++s) {
+        for (size_t s = 0; s < S; ++s) {
             pos[s] = base;
             if (s > 0) {
                 for (auto& v : pos[s]) v += u_sym(rng); // perturba pesos Y sesgos con cambio de signo
@@ -244,15 +253,15 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             pbest[s] = pos[s];
             pbest_fit[s] = fit[s];
         }
-        int gbest = 0;
-        for (int s = 1; s < S; ++s) if (fit[s] < fit[gbest]) gbest = s;
+        size_t gbest = 0;
+        for (size_t s = 1; s < S; ++s) if (fit[s] < fit[gbest]) gbest = s;
         std::vector<double> gbest_pos = pos[gbest];
         double gbest_fit = fit[gbest];
 
         const int registrar_cada = std::max(1, max_epocas / 500);
         for (int it = 0; it < max_epocas; ++it) {
             if (cancelar.load()) { res.cancelado = true; break; }
-            for (int s = 0; s < S; ++s) {
+            for (size_t s = 0; s < S; ++s) {
                 for (size_t k = 0; k < NP; ++k) {
                     vel[s][k] = w_inercia * vel[s][k]
                         + c1 * u(rng) * (pbest[s][k] - pos[s][k])
@@ -269,7 +278,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             if (it % registrar_cada == 0 || it == max_epocas - 1 || gbest_fit < mse_objetivo) {
                 registrar_punto(res.epocas, gbest_fit, idx_val.empty() ? gbest_fit : mse_de(idx_val));
             }
-            if (progreso) progreso((float)it / (float)max_epocas);
+            if (progreso) progreso(static_cast<float>(it) / static_cast<float>(max_epocas));
             if (gbest_fit < mse_objetivo) break;
         }
         fijar_params(gbest_pos);
@@ -298,7 +307,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             if (cancelar.load()) { res.cancelado = true; break; }
             std::vector<double> p = mejor_p;
             // Perturbar un subconjunto aleatorio de pesos (~25% o al menos 4 parámetros)
-            double prob = std::max(4.0 / std::max<size_t>(1, NP), 0.25);
+            double prob = std::max(4.0 / static_cast<double>(std::max<size_t>(1, NP)), 0.25);
             for (size_t k = 0; k < NP; ++k) {
                 if (u01(rng) <= prob) {
                     p[k] += gauss(rng) * radio;
@@ -319,7 +328,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             if (it % registrar_cada == 0 || it == max_epocas - 1 || mejor < mse_objetivo) {
                 registrar_punto(res.epocas, mejor, idx_val.empty() ? mejor : mse_de(idx_val));
             }
-            if (progreso) progreso((float)it / (float)max_epocas);
+            if (progreso) progreso(static_cast<float>(it) / static_cast<float>(max_epocas));
             if (mejor < mse_objetivo) break;
         }
         fijar_params(mejor_p);
@@ -333,10 +342,10 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
     }
 
     // ── FFNN backpropagation con mini-batch SGD, momento y decaimiento ──
-    const int L = (int)W_.size();
+    const size_t L = W_.size();
     std::vector<std::vector<std::vector<double>>> gW(L), mW(L);
     std::vector<std::vector<double>> gB(L), mB(L);
-    for (int l = 0; l < L; ++l) {
+    for (size_t l = 0; l < L; ++l) {
         gW[l].assign(W_[l].size(), std::vector<double>(W_[l][0].size(), 0.0));
         mW[l] = gW[l];
         gB[l].assign(B_[l].size(), 0.0);
@@ -346,12 +355,12 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
     std::vector<int> orden = idx_ent;
     std::mt19937 rng(static_cast<unsigned>(cfg_.semilla));
     std::vector<std::vector<double>> a(L + 1), delta(L + 1);
-    for (int l = 0; l <= L; ++l) {
-        a[l].resize(l == 0 ? n_ent_ : (int)W_[l - 1].size());
+    for (size_t l = 0; l <= L; ++l) {
+        a[l].resize(l == 0 ? n_ent_sz : W_[l - 1].size());
         delta[l].resize(a[l].size());
     }
 
-    const int batch_sz = std::clamp(cfg_.batch_size, 1, (int)orden.size());
+    const int batch_sz = std::clamp(cfg_.batch_size, 1, static_cast<int>(orden.size()));
     const int registrar_cada = std::max(1, std::min(max_epocas / 400, 10));
     int step_count = 0;
 
@@ -364,7 +373,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
         for (auto& gb : gB) std::fill(gb.begin(), gb.end(), 0.0);
 
         for (size_t pos_idx = 0; pos_idx < orden.size(); ++pos_idx) {
-            int idx = orden[pos_idx];
+            const auto idx = static_cast<size_t>(orden[pos_idx]);
             forward(X[idx], a);
             // delta de salida (MSE): dE/dz = (y_pred - y_true) * f'(z)
             for (size_t j = 0; j < delta[L].size(); ++j) {
@@ -372,7 +381,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
                 delta[L][j] = (a[L][j] - t) * activar_deriv(0.0, a[L][j], cfg_.act_salida);
             }
 
-            for (int l = L - 1; l >= 0; --l) {
+            for (size_t l = L; l-- > 0;) {
                 for (size_t j = 0; j < delta[l + 1].size(); ++j) {
                     gB[l][j] += delta[l + 1][j];
                     for (size_t i = 0; i < W_[l][j].size(); ++i)
@@ -392,10 +401,10 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
 
             ++b_count;
             if (b_count >= batch_sz || pos_idx + 1 == orden.size()) {
-                double lr = cfg_.tasa / (1.0 + cfg_.decaimiento * (double)step_count);
+                double lr = cfg_.tasa / (1.0 + cfg_.decaimiento * static_cast<double>(step_count));
                 ++step_count;
-                double inv_b = 1.0 / (double)b_count;
-                for (int l = 0; l < L; ++l) {
+                double inv_b = 1.0 / static_cast<double>(b_count);
+                for (size_t l = 0; l < L; ++l) {
                     for (size_t j = 0; j < W_[l].size(); ++j) {
                         for (size_t i = 0; i < W_[l][j].size(); ++i) {
                             double g = std::clamp(gW[l][j][i] * inv_b, -10.0, 10.0);
@@ -419,7 +428,7 @@ ResultadoANN RedNeuronal::entrenar(const std::vector<std::vector<double>>& X_raw
             double mse_v_actual = idx_val.empty() ? mse_e_actual : mse_de(idx_val);
             registrar_punto(res.epocas, mse_e_actual, mse_v_actual);
         }
-        if (progreso) progreso((float)ep / (float)max_epocas);
+        if (progreso) progreso(static_cast<float>(ep) / static_cast<float>(max_epocas));
         if (mse_e_actual < mse_objetivo) break;
     }
 
@@ -442,13 +451,21 @@ std::string RedNeuronal::a_json() const {
     os << "],\"w\":[";
     bool primero = true;
     for (auto& capa : W_) for (auto& fila : capa) for (double v : fila) {
-        if (!primero) os << ",";
+        if (!primero) {
+            os << ",";
+        }
         os << v;
         primero = false;
     }
     os << "],\"b\":[";
     primero = true;
-    for (auto& b : B_) for (double v : b) { if (!primero) os << ","; os << v; primero = false; }
+    for (auto& b : B_) for (double v : b) {
+        if (!primero) {
+            os << ",";
+        }
+        os << v;
+        primero = false;
+    }
     os << "]";
     if (normalizado_) {
         auto write_arr = [&](const char* key, const std::vector<double>& arr) {
@@ -479,7 +496,10 @@ bool RedNeuronal::desde_json(const std::string& texto) {
         while (i < cuerpo.size()) {
             size_t coma = cuerpo.find(',', i);
             if (coma == std::string::npos) coma = cuerpo.size();
-            try { out.push_back(std::stod(cuerpo.substr(i, coma - i))); } catch (...) {}
+            const std::string tok = cuerpo.substr(i, coma - i);
+            char* endp = nullptr;
+            const double val = std::strtod(tok.c_str(), &endp);
+            if (endp != tok.c_str()) out.push_back(val);
             i = coma + 1;
         }
         return out;
@@ -489,22 +509,23 @@ bool RedNeuronal::desde_json(const std::string& texto) {
     auto w = extraer("w");
     auto b = extraer("b");
     if (topo_v.size() < 2) return false;
-    n_ent_ = (int)topo_v.front();
-    n_sal_ = (int)topo_v.back();
+    n_ent_ = static_cast<int>(topo_v.front());
+    n_sal_ = static_cast<int>(topo_v.back());
     cfg_.ocultas.clear();
     for (size_t i = 1; i + 1 < topo_v.size(); ++i)
-        cfg_.ocultas.push_back((int)topo_v[i]);
+        cfg_.ocultas.push_back(static_cast<int>(topo_v[i]));
     if (meta_v.size() >= 2) {
-        cfg_.act_oculta = (int)meta_v[0];
-        cfg_.act_salida = (int)meta_v[1];
+        cfg_.act_oculta = static_cast<int>(meta_v[0]);
+        cfg_.act_salida = static_cast<int>(meta_v[1]);
     }
-    if (meta_v.size() >= 3) cfg_.tipo = (int)meta_v[2];
-    if (meta_v.size() >= 4) cfg_.batch_size = std::max(1, (int)meta_v[3]);
+    if (meta_v.size() >= 3) cfg_.tipo = static_cast<int>(meta_v[2]);
+    if (meta_v.size() >= 4) cfg_.batch_size = std::max(1, static_cast<int>(meta_v[3]));
     W_.clear();
     B_.clear();
     size_t k = 0, kb = 0;   // índices independientes para pesos (w) y sesgos (b)
     for (size_t l = 0; l + 1 < topo_v.size(); ++l) {
-        int fout = (int)topo_v[l + 1], fin = (int)topo_v[l];
+        const auto fout = static_cast<size_t>(std::max(0.0, topo_v[l + 1]));
+        const auto fin = static_cast<size_t>(std::max(0.0, topo_v[l]));
         std::vector<std::vector<double>> capa(fout, std::vector<double>(fin));
         for (auto& fila : capa) for (auto& v : fila) v = (k < w.size()) ? w[k++] : 0.0;
         W_.push_back(capa);
@@ -516,8 +537,10 @@ bool RedNeuronal::desde_json(const std::string& texto) {
     auto xmax = extraer("xmax");
     auto ymin = extraer("ymin");
     auto ymax = extraer("ymax");
-    if (xmin.size() == (size_t)n_ent_ && xmax.size() == (size_t)n_ent_ &&
-        ymin.size() == (size_t)n_sal_ && ymax.size() == (size_t)n_sal_) {
+    const auto n_ent_sz = static_cast<size_t>(std::max(0, n_ent_));
+    const auto n_sal_sz = static_cast<size_t>(std::max(0, n_sal_));
+    if (xmin.size() == n_ent_sz && xmax.size() == n_ent_sz &&
+        ymin.size() == n_sal_sz && ymax.size() == n_sal_sz) {
         x_min_ = std::move(xmin);
         x_max_ = std::move(xmax);
         y_min_ = std::move(ymin);

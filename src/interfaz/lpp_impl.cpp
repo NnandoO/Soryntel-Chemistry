@@ -1,256 +1,317 @@
 #include "utils/i18n.h"
-struct Vec2d { double x, y; };
-static std::vector<Vec2d> ClipPolygon(const std::vector<Vec2d>& poly, double A, double B, double C_const) {
-    if (poly.empty()) return poly;
-    std::vector<Vec2d> res;
-    auto dist = [=](const Vec2d& pt) { return A * pt.x + B * pt.y + C_const; };
-    for (size_t i = 0; i < poly.size(); ++i) {
-        Vec2d cur = poly[i];
-        Vec2d prev = poly[(i == 0) ? poly.size() - 1 : i - 1];
-        double d_cur = dist(cur);
-        double d_prev = dist(prev);
-        double eps = 1e-12;
-        if (d_cur <= eps) {
-            if (d_prev > eps) {
-                double t = d_prev / (d_prev - d_cur);
-                res.push_back({prev.x + t * (cur.x - prev.x), prev.y + t * (cur.y - prev.y)});
-            }
-            res.push_back(cur);
-        } else {
-            if (d_prev <= eps) {
-                double t = d_prev / (d_prev - d_cur);
-                res.push_back({prev.x + t * (cur.x - prev.x), prev.y + t * (cur.y - prev.y)});
-            }
-        }
+
+PanelDiagramasLpp::PanelDiagramasLpp(const domain::ThermoRepository& repository)
+    : repo_(repository), service_(&repository)
+{
+    cargar_preset(0);
+}
+
+void PanelDiagramasLpp::cargar_preset(int idx) {
+    preset_idx_ = idx;
+    use_celsius_ = true;
+    if (idx == 0) {
+        std::strncpy(main_element_, "Cu", sizeof(main_element_) - 1);
+        std::strncpy(gas1_element_, "O2", sizeof(gas1_element_) - 1);
+        std::strncpy(gas2_element_, "SO2", sizeof(gas2_element_) - 1);
+        T_input_ = 700.0;
+        x_min_ = -20.0; x_max_ = 0.0;
+        y_min_ = -15.0; y_max_ = 2.0;
+        probe_x_ = -7.5; probe_y_ = -1.0;
+    } else if (idx == 1) {
+        std::strncpy(main_element_, "Fe", sizeof(main_element_) - 1);
+        std::strncpy(gas1_element_, "O2", sizeof(gas1_element_) - 1);
+        std::strncpy(gas2_element_, "SO2", sizeof(gas2_element_) - 1);
+        T_input_ = 700.0;
+        x_min_ = -25.0; x_max_ = 0.0;
+        y_min_ = -15.0; y_max_ = 2.0;
+        probe_x_ = -10.0; probe_y_ = -1.0;
+    } else if (idx == 2) {
+        std::strncpy(main_element_, "Ni", sizeof(main_element_) - 1);
+        std::strncpy(gas1_element_, "O2", sizeof(gas1_element_) - 1);
+        std::strncpy(gas2_element_, "SO2", sizeof(gas2_element_) - 1);
+        T_input_ = 750.0;
+        x_min_ = -22.0; x_max_ = 0.0;
+        y_min_ = -15.0; y_max_ = 2.0;
+        probe_x_ = -9.0; probe_y_ = -1.0;
+    } else if (idx == 3) {
+        std::strncpy(main_element_, "Zn", sizeof(main_element_) - 1);
+        std::strncpy(gas1_element_, "O2", sizeof(gas1_element_) - 1);
+        std::strncpy(gas2_element_, "SO2", sizeof(gas2_element_) - 1);
+        T_input_ = 850.0;
+        x_min_ = -24.0; x_max_ = 0.0;
+        y_min_ = -15.0; y_max_ = 2.0;
+        probe_x_ = -8.0; probe_y_ = -1.0;
+    } else {
+        std::strncpy(main_element_, "Pb", sizeof(main_element_) - 1);
+        std::strncpy(gas1_element_, "O2", sizeof(gas1_element_) - 1);
+        std::strncpy(gas2_element_, "SO2", sizeof(gas2_element_) - 1);
+        T_input_ = 700.0;
+        x_min_ = -24.0; x_max_ = 0.0;
+        y_min_ = -15.0; y_max_ = 2.0;
+        probe_x_ = -9.0; probe_y_ = -1.0;
     }
-    return res;
+    actualizar_especies_sistema();
+    recalcular();
+}
+
+void PanelDiagramasLpp::actualizar_especies_sistema() {
+    candidates_ = service_.filtrar_especies_sistema(main_element_, gas1_element_, gas2_element_, true);
 }
 
 void PanelDiagramasLpp::recalcular() {
-    poligonos_.clear();
-    auto db_especies = base_datos::GestorDB::instancia().todas_especies();
-    
-    auto parser = nucleo::TablaPeriodica::instancia();
-    auto main_atoms = parser.analizar_formula(main_element_);
-    auto g1_atoms = parser.analizar_formula(gas1_element_);
-    auto g2_atoms = parser.analizar_formula(gas2_element_);
-    
-    std::string m_el = main_atoms.empty() ? main_element_ : main_atoms[0].elem;
-    
-    double g1_factor = g1_atoms.empty() ? 1.0 : g1_atoms[0].cuenta;
-    if (g1_factor == 0) g1_factor = 1.0;
-    
-    double g2_factor = g2_atoms.empty() ? 1.0 : g2_atoms[0].cuenta;
-    if (g2_factor == 0) g2_factor = 1.0;
-    
-    std::string g1_el = g1_atoms.empty() ? "" : g1_atoms[0].elem;
-    std::string g2_el = g2_atoms.empty() ? "" : g2_atoms[0].elem;
+    if (candidates_.empty()) {
+        actualizar_especies_sistema();
+    }
+    domain::LppDiagramRequest req;
+    req.main_element = main_element_;
+    req.gas1_formula = gas1_element_;
+    req.gas2_formula = gas2_element_;
+    req.temperature_k = use_celsius_ ? (T_input_ + 273.15) : T_input_;
+    req.x_min = x_min_;
+    req.x_max = x_max_;
+    req.y_min = y_min_;
+    req.y_max = y_max_;
+    req.probe_log_p1 = probe_x_;
+    req.probe_log_p2 = probe_y_;
+    req.candidates = candidates_;
 
-    const nucleo::Especie* esp_g1 = nullptr;
-    const nucleo::Especie* esp_g2 = nullptr;
-    for (const auto* e : db_especies) {
-        if (e->formula == gas1_element_ && e->fase_std == nucleo::Fase::Gas) esp_g1 = e;
-        if (e->formula == gas2_element_ && e->fase_std == nucleo::Fase::Gas) esp_g2 = e;
-    }
-    if (!esp_g1) { for (const auto* e : db_especies) if (e->formula == gas1_element_) { esp_g1 = e; break; } }
-    if (!esp_g2) { for (const auto* e : db_especies) if (e->formula == gas2_element_) { esp_g2 = e; break; } }
-    
-    if (!esp_g1 || !esp_g2) {
-        if (!esp_g1) ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.0f, 1.0f), "⚠ Advertencia: Gas 1 (%s) no encontrado. Asumiendo gas ideal estándar.", gas1_element_);
-        if (!esp_g2) ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.0f, 1.0f), "⚠ Advertencia: Gas 2 (%s) no encontrado. Asumiendo gas ideal estándar.", gas2_element_);
-    }
-
-    struct SpeciePlane {
-        int64_t id;
-        std::string formula;
-        ImU32 color;
-        double Z, A, B; 
-    };
-    std::vector<SpeciePlane> planes;
-    
-    double mu0_g1 = esp_g1 ? esp_g1->energia_gibbs(T_) : 0.0;
-    double mu0_g2 = esp_g2 ? esp_g2->energia_gibbs(T_) : 0.0;
-    double R_kJ = 0.008314462618;
-    double log_conv = 2.302585093 * R_kJ * T_;
-    
-    for (auto& par : especies_seleccionadas_) {
-        if (!par.second) continue;
-        const nucleo::Especie* esp = nullptr;
-        for (const auto* e : db_especies) {
-            if (e->id == par.first) { esp = e; break; }
-        }
-        if (!esp) continue;
-        
-        auto atoms = parser.analizar_formula(esp->formula);
-        double nm = 0, ng1 = 0, ng2 = 0;
-        for (const auto& at : atoms) {
-            if (at.elem == m_el) nm += at.cuenta;
-            else if (at.elem == g1_el) ng1 += at.cuenta;
-            else if (at.elem == g2_el) ng2 += at.cuenta;
-        }
-        if (nm <= 0) continue;
-        
-        double Gf = esp->energia_gibbs(T_);
-        SpeciePlane p;
-        p.id = esp->id;
-        p.formula = esp->formula;
-        p.color = ImGui::ColorConvertFloat4ToU32(color_from_id(esp->id));
-        
-        p.Z = (Gf - (ng1 / g1_factor) * mu0_g1 - (ng2 / g2_factor) * mu0_g2) / nm;
-        p.A = - (ng1 / g1_factor) * log_conv / nm;
-        p.B = - (ng2 / g2_factor) * log_conv / nm;
-        
-        planes.push_back(p);
-    }
-    
-    std::vector<Vec2d> bbox = {
-        {x_min_ - 10, y_min_ - 10}, {x_max_ + 10, y_min_ - 10},
-        {x_max_ + 10, y_max_ + 10}, {x_min_ - 10, y_max_ + 10}
-    };
-    
-    for (size_t i = 0; i < planes.size(); ++i) {
-        auto poly = bbox;
-        const auto& pi = planes[i];
-        for (size_t j = 0; j < planes.size(); ++j) {
-            if (i == j) continue;
-            const auto& pj = planes[j];
-            poly = ClipPolygon(poly, pi.A - pj.A, pi.B - pj.B, pi.Z - pj.Z);
-            if (poly.empty()) break;
-        }
-        
-        if (!poly.empty()) {
-            PoligonoFase pf;
-            pf.id = pi.id;
-            pf.formula = pi.formula;
-            pf.color = pi.color;
-            double cx = 0, cy = 0;
-            double area = 0;
-            for (size_t k = 0; k < poly.size(); ++k) {
-                pf.vertices.push_back(ImVec2((float)poly[k].x, (float)poly[k].y));
-                size_t next = (k + 1) % poly.size();
-                double a = poly[k].x * poly[next].y - poly[next].x * poly[k].y;
-                area += a;
-                cx += (poly[k].x + poly[next].x) * a;
-                cy += (poly[k].y + poly[next].y) * a;
-            }
-            if (std::abs(area) > 1e-9) {
-                area *= 0.5;
-                pf.centroide = ImVec2((float)(cx / (6.0 * area)), (float)(cy / (6.0 * area)));
-            } else {
-                pf.centroide = pf.vertices[0];
-            }
-            poligonos_.push_back(pf);
-        }
-    }
-    calculado_ = true;
+    result_ = service_.calcular_lpp(req);
+    calculado_ = result_.ok;
+    status_msg_ = result_.message;
 }
 
 void PanelDiagramasLpp::renderizar() {
-    auto db_especies = base_datos::GestorDB::instancia().todas_especies();
-    
     ImGui::Columns(2, "LppLayout", true);
-    ImGui::SetColumnWidth(0, 320.0f);
-    
-    ImGui::Text(tr("Diagram Parameters (Lpp)"));
+    ImGui::SetColumnWidth(0, 355.0f);
+
+    // ── Columna Izquierda: Configuración del Sistema Lpp ──
+    ImGui::TextColored(cma::interfaz::AdaptiveColor(0.5f, 0.8f, 1.0f, 1.0f),
+                       tr("Parámetros del Diagrama Lpp (Kellogg Vectorial)"));
     ImGui::Separator();
-    
-    ImGui::InputText(tr("Main Element"), main_element_, sizeof(main_element_));
-    ImGui::InputText(tr("Gas 1 (X axis)"), gas1_element_, sizeof(gas1_element_));
-    ImGui::InputText(tr("Gas 2 (Y axis)"), gas2_element_, sizeof(gas2_element_));
-    
+
+    const char* presets[] = {
+        "1. Cu - O2 - SO2 (Tostación/Fusión Cobre 700 °C)",
+        "2. Fe - O2 - SO2 (Tostación Sulfatante Hierro 700 °C)",
+        "3. Ni - O2 - SO2 (Tostación Níquel 750 °C)",
+        "4. Zn - O2 - SO2 (Tostación Esfalerita 850 °C)",
+        "5. Pb - O2 - SO2 (Sinterización Galena 700 °C)"
+    };
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::Combo("##lpp_preset", &preset_idx_, presets, 5)) {
+        cargar_preset(preset_idx_);
+    }
+
+    bool sys_changed = false;
+    sys_changed |= ImGui::InputText(tr("Main Element"), main_element_, sizeof(main_element_));
+    sys_changed |= ImGui::InputText(tr("Gas 1 (X axis)"), gas1_element_, sizeof(gas1_element_));
+    sys_changed |= ImGui::InputText(tr("Gas 2 (Y axis)"), gas2_element_, sizeof(gas2_element_));
+    if (sys_changed || ImGui::Button(tr("Actualizar Especies del Sistema"), ImVec2(-1, 24))) {
+        actualizar_especies_sistema();
+        recalcular();
+    }
+
     ImGui::Spacing();
-    ImGui::Text(tr("Filtrar Especies por Elementos"));
-    ImGui::BeginChild("SpeciesListLpp", ImVec2(0, 200), true);
-    if (ImGui::BeginTable("LppSpeciesTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+    if (ImGui::SmallButton(tr("Seleccionar Todas"))) {
+        for (auto& c : candidates_) c.selected = true;
+        recalcular();
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Deseleccionar Todas"))) {
+        for (auto& c : candidates_) c.selected = false;
+    }
+
+    ImGui::BeginChild("SpeciesListLpp", ImVec2(0, 185), true);
+    if (ImGui::BeginTable("LppSpeciesTable", 3,
+            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
         ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed, 40.0f);
-        ImGui::TableSetupColumn("Formula", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Act", ImGuiTableColumnFlags_WidthFixed, 32.0f);
+        ImGui::TableSetupColumn("Especie / Fase", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Actividad a_i", ImGuiTableColumnFlags_WidthFixed, 82.0f);
         ImGui::TableHeadersRow();
-        
-        auto parser = nucleo::TablaPeriodica::instancia();
-        auto main_atoms = parser.analizar_formula(main_element_);
-        auto g1_atoms = parser.analizar_formula(gas1_element_);
-        auto g2_atoms = parser.analizar_formula(gas2_element_);
-        
-        std::set<std::string> valid_elements;
-        for (const auto& at : main_atoms) valid_elements.insert(at.elem);
-        for (const auto& at : g1_atoms) valid_elements.insert(at.elem);
-        for (const auto& at : g2_atoms) valid_elements.insert(at.elem);
-        
-        for (const auto* esp : db_especies) {
-            auto atoms = parser.analizar_formula(esp->formula);
-            bool has_other = false;
-            for (const auto& at : atoms) {
-                if (valid_elements.find(at.elem) == valid_elements.end()) has_other = true;
+
+        for (size_t i = 0; i < candidates_.size(); ++i) {
+            auto& c = candidates_[i];
+            ImGui::PushID(static_cast<int>(i));
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (ImGui::Checkbox("##sel", &c.selected)) recalcular();
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", c.formula.c_str());
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1.0f);
+            if (ImGui::InputDouble("##act", &c.activity, 0, 0, "%.3f")) {
+                c.activity = std::clamp(c.activity, 1e-9, 10.0);
+                recalcular();
             }
-            if (!atoms.empty() && !has_other) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                bool selected = especies_seleccionadas_[esp->id];
-                if (ImGui::Checkbox((std::string("##sel") + std::to_string(esp->id)).c_str(), &selected)) {
-                    especies_seleccionadas_[esp->id] = selected;
-                }
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text(tr("%s"), esp->formula.c_str());
-            }
+            ImGui::PopID();
         }
         ImGui::EndTable();
     }
     ImGui::EndChild();
-    
+
     ImGui::Spacing();
-    ImGui::Text(tr("Axes Setup (Isothermal)"));
-    bool changed = false;
-    changed |= ImGui::InputDouble("Temperature (K)", &T_);
-    changed |= ImGui::InputDouble("X Min", &x_min_);
-    changed |= ImGui::InputDouble("X Max", &x_max_);
-    changed |= ImGui::InputDouble("Y Min", &y_min_);
-    changed |= ImGui::InputDouble("Y Max", &y_max_);
-    
-    if (ImGui::Button(tr("Dibujar Diagrama"), ImVec2(-1,30))) {
+    ImGui::Text(tr("Condiciones Isotérmicas y Ejes Log10(P/atm):"));
+    if (ImGui::Checkbox(tr("Temperatura en °C"), &use_celsius_)) {
+        T_input_ = use_celsius_ ? (T_input_ - 273.15) : (T_input_ + 273.15);
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::InputDouble("##t_lpp", &T_input_, 0, 0, "%.1f")) recalcular();
+
+    bool ax_changed = false;
+    ax_changed |= ImGui::InputDouble("X Min", &x_min_, 0, 0, "%.1f");
+    ax_changed |= ImGui::InputDouble("X Max", &x_max_, 0, 0, "%.1f");
+    ax_changed |= ImGui::InputDouble("Y Min", &y_min_, 0, 0, "%.1f");
+    ax_changed |= ImGui::InputDouble("Y Max", &y_max_, 0, 0, "%.1f");
+    if (ax_changed) recalcular();
+
+    ImGui::Checkbox(tr("Rellenar Polígonos"), &fill_polygons_);
+    ImGui::SameLine();
+    ImGui::Checkbox(tr("Puntos Triples"), &show_triple_points_);
+
+    if (ImGui::Button(tr("Dibujar Diagrama Lpp"), ImVec2(-1, 30))) {
         recalcular();
     }
-    
+    if (!status_msg_.empty()) {
+        ImGui::TextWrapped("%s", status_msg_.c_str());
+    }
+
     ImGui::NextColumn();
-    
+
+    // ── Columna Derecha: Gráfico Vectorial + Tablas de Líneas y Puntos Triples ──
     if (calculado_) {
-        std::string title = std::string("Phase Stability Diagram (") + main_element_ + "-" + gas1_element_ + "-" + gas2_element_ + ")";
-        if (ImPlot::BeginPlot(title.c_str(), ImVec2(-1, -1))) {
-            char xlabel[64], ylabel[64];
-            snprintf(xlabel, sizeof(xlabel), "log p(%s)", gas1_element_);
-            snprintf(ylabel, sizeof(ylabel), "log p(%s)", gas2_element_);
-            ImPlot::SetupAxes(xlabel, ylabel);
-            ImPlot::SetupAxisLimits(ImAxis_X1, x_min_, x_max_);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, y_min_, y_max_);
-            
-            for (auto& pf : poligonos_) {
-                if (pf.vertices.empty()) continue;
-                std::vector<float> xs, ys;
-                for (auto v : pf.vertices) { xs.push_back(v.x); ys.push_back(v.y); }
-                
-                ImPlot::SetNextLineStyle(ImVec4(0,0,0,1), 1.5f); // Black border
-                // We add the first vertex to the end to close the line loop
-                xs.push_back(xs[0]);
-                ys.push_back(ys[0]);
-                ImPlot::PlotLine(pf.formula.c_str(), xs.data(), ys.data(), (int)xs.size());
-                
-                // Fill using ImGui draw list for true polygons
-                ImDrawList* draw_list = ImPlot::GetPlotDrawList();
-                std::vector<ImVec2> screen_pts;
-                for (size_t k = 0; k < pf.vertices.size(); ++k) {
-                    screen_pts.push_back(ImPlot::PlotToPixels(pf.vertices[k].x, pf.vertices[k].y));
+        if (ImGui::BeginTabBar("lpp_right_tabs")) {
+            if (ImGui::BeginTabItem(tr("1. Diagrama de Estabilidad Lpp (Vectorial)"))) {
+                ImGui::Text("Sonda: log p(%s) = %.2f, log p(%s) = %.2f  ->  Fase Predominante: %s (G/n_M = %.2f kJ/mol)",
+                            gas1_element_, probe_x_, gas2_element_, probe_y_,
+                            result_.probe_predominant_phase.c_str(), result_.probe_min_potential_kj);
+
+                if (ImPlot::BeginPlot(result_.system_title.c_str(), ImVec2(-1, -1))) {
+                    char xlabel[64], ylabel[64];
+                    std::snprintf(xlabel, sizeof(xlabel), "log10 p(%s) [atm]", gas1_element_);
+                    std::snprintf(ylabel, sizeof(ylabel), "log10 p(%s) [atm]", gas2_element_);
+                    ImPlot::SetupAxes(xlabel, ylabel);
+                    ImPlot::SetupAxisLimits(ImAxis_X1, x_min_, x_max_, ImGuiCond_Once);
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, y_min_, y_max_, ImGuiCond_Once);
+
+                    if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                        const ImPlotPoint mp = ImPlot::GetPlotMousePos();
+                        probe_x_ = mp.x;
+                        probe_y_ = mp.y;
+                        recalcular();
+                    }
+
+                    for (size_t idx = 0; idx < result_.polygons.size(); ++idx) {
+                        const auto& pf = result_.polygons[idx];
+                        if (pf.vertices.empty()) continue;
+
+                        std::vector<double> xs, ys;
+                        for (const auto& v : pf.vertices) {
+                            xs.push_back(v.first);
+                            ys.push_back(v.second);
+                        }
+                        xs.push_back(xs.front());
+                        ys.push_back(ys.front());
+
+                        if (fill_polygons_) {
+                            ImDrawList* dl = ImPlot::GetPlotDrawList();
+                            std::vector<ImVec2> screen_pts;
+                            screen_pts.reserve(pf.vertices.size());
+                            for (const auto& v : pf.vertices) {
+                                screen_pts.push_back(ImPlot::PlotToPixels(v.first, v.second));
+                            }
+                            ImVec4 col_f = color_from_id(static_cast<int>(idx) + 1);
+                            col_f.w = 0.42f;
+                            dl->AddConvexPolyFilled(screen_pts.data(), static_cast<int>(screen_pts.size()),
+                                                    ImGui::ColorConvertFloat4ToU32(col_f));
+                        }
+
+                        ImPlot::SetNextLineStyle(ImVec4(0.10f, 0.12f, 0.16f, 1.0f), 1.8f);
+                        ImPlot::PlotLine(pf.formula.c_str(), xs.data(), ys.data(), static_cast<int>(xs.size()));
+
+                        ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.05f, 0.05f, 0.08f, 1.0f));
+                        ImPlot::PlotText(pf.formula.c_str(), pf.centroid_x, pf.centroid_y);
+                        ImPlot::PopStyleColor();
+                    }
+
+                    if (show_triple_points_ && !result_.triple_points.empty()) {
+                        std::vector<double> tx, ty;
+                        for (const auto& tp : result_.triple_points) {
+                            tx.push_back(tp.log_p_gas1);
+                            ty.push_back(tp.log_p_gas2);
+                        }
+                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 6.0f, ImVec4(0.85f, 0.15f, 0.15f, 1.0f), 1.5f);
+                        ImPlot::PlotScatter("Triple Points", tx.data(), ty.data(), static_cast<int>(tx.size()));
+                    }
+
+                    // Punto de operación (sonda)
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 8.0f, ImVec4(0.95f, 0.25f, 0.10f, 1.0f), 2.0f);
+                    ImPlot::PlotScatter("Operating Point", &probe_x_, &probe_y_, 1);
+
+                    ImPlot::EndPlot();
                 }
-                draw_list->AddConvexPolyFilled(screen_pts.data(), (int)screen_pts.size(), pf.color);
-                
-                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0,0,0,1));
-                ImPlot::PlotText(pf.formula.c_str(), pf.centroide.x, pf.centroide.y);
-                ImPlot::PopStyleColor();
+                ImGui::EndTabItem();
             }
-            
-            ImPlot::EndPlot();
+
+            if (ImGui::BeginTabItem(tr("2. Fronteras de Equilibrio, Puntos Triples y Exportación"))) {
+                ImGui::SetNextItemWidth(240.0f);
+                ImGui::InputText("##lpp_csv", csv_export_path_, sizeof(csv_export_path_));
+                ImGui::SameLine();
+                if (ImGui::Button(tr("Exportar Lpp a CSV"))) {
+                    if (service_.exportar_lpp_csv(csv_export_path_, result_)) {
+                        status_msg_ = std::string("Diagrama Lpp exportado a ") + csv_export_path_;
+                    }
+                }
+
+                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.5f, 0.8f, 1.0f, 1.0f),
+                                   tr("Puntos Triples Invariantes (Coexistencia de 3 Fases Condensadas):"));
+                if (ImGui::BeginTable("lpp_tp_tbl", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, ImVec2(0, 130))) {
+                    ImGui::TableSetupColumn("Fase 1");
+                    ImGui::TableSetupColumn("Fase 2");
+                    ImGui::TableSetupColumn("Fase 3");
+                    ImGui::TableSetupColumn("log10 p(Gas 1)");
+                    ImGui::TableSetupColumn("log10 p(Gas 2)");
+                    ImGui::TableHeadersRow();
+                    for (const auto& tp : result_.triple_points) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn(); ImGui::TextUnformatted(tp.phase_a.c_str());
+                        ImGui::TableNextColumn(); ImGui::TextUnformatted(tp.phase_b.c_str());
+                        ImGui::TableNextColumn(); ImGui::TextUnformatted(tp.phase_c.c_str());
+                        ImGui::TableNextColumn(); ImGui::Text("%.3f", tp.log_p_gas1);
+                        ImGui::TableNextColumn(); ImGui::Text("%.3f", tp.log_p_gas2);
+                    }
+                    ImGui::EndTable();
+                }
+
+                ImGui::Spacing();
+                ImGui::TextColored(cma::interfaz::AdaptiveColor(0.5f, 0.8f, 1.0f, 1.0f),
+                                   tr("Líneas de Equilibrio Bifásico y Reacciones Base:"));
+                if (ImGui::BeginTable("lpp_bnd_tbl", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+                    ImGui::TableSetupScrollFreeze(0, 1);
+                    ImGui::TableSetupColumn("Equilibrio");
+                    ImGui::TableSetupColumn("(X1, Y1)");
+                    ImGui::TableSetupColumn("(X2, Y2)");
+                    ImGui::TableSetupColumn("Pendiente dy/dx");
+                    ImGui::TableSetupColumn("log K(T)");
+                    ImGui::TableHeadersRow();
+                    for (const auto& b : result_.boundaries) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn(); ImGui::TextUnformatted(b.reaction_equation.c_str());
+                        ImGui::TableNextColumn(); ImGui::Text("(%.2f, %.2f)", b.x1, b.y1);
+                        ImGui::TableNextColumn(); ImGui::Text("(%.2f, %.2f)", b.x2, b.y2);
+                        ImGui::TableNextColumn();
+                        if (std::abs(b.slope_dy_dx) > 1e6) ImGui::Text("Vertical (inf)");
+                        else ImGui::Text("%.3f", b.slope_dy_dx);
+                        ImGui::TableNextColumn(); ImGui::Text("%.3f", b.log_k);
+                    }
+                    ImGui::EndTable();
+                }
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
         }
     } else {
-        ImGui::TextColored(ImVec4(0.5,0.5,0.5,1), "Select species and click Draw Diagram.");
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), tr("Seleccione un sistema y pulse Dibujar Diagrama Lpp."));
     }
     ImGui::Columns(1);
 }

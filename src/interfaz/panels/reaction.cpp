@@ -62,7 +62,8 @@ static std::pair<double, std::string> parse_reaction_term(const std::string& ter
     return {coeff, formula};
 }
 
-bool parse_chemical_equation(const std::string& eq_str, cma::nucleo::Reaccion& rxn, std::string& error_msg) {
+bool parse_chemical_equation(const std::string& eq_str, cma::nucleo::Reaccion& rxn, std::string& error_msg,
+                             const domain::ThermoRepository* repo) {
     rxn.estequiometria.clear();
 
     std::string clean_eq = trim_str(eq_str);
@@ -92,7 +93,7 @@ bool parse_chemical_equation(const std::string& eq_str, cma::nucleo::Reaccion& r
         auto [coeff, formula] = parse_reaction_term(term);
         if (formula.empty()) continue;
 
-        const auto* esp = buscar_especie_por_nombre_o_formula(formula);
+        const auto* esp = buscar_especie_por_nombre_o_formula(formula, repo);
         if (!esp) {
             error_msg = "Especie no encontrada en la base de datos: " + formula;
             return false;
@@ -108,7 +109,7 @@ bool parse_chemical_equation(const std::string& eq_str, cma::nucleo::Reaccion& r
         auto [coeff, formula] = parse_reaction_term(term);
         if (formula.empty()) continue;
 
-        const auto* esp = buscar_especie_por_nombre_o_formula(formula);
+        const auto* esp = buscar_especie_por_nombre_o_formula(formula, repo);
         if (!esp) {
             error_msg = "Especie no encontrada en la base de datos: " + formula;
             return false;
@@ -168,11 +169,38 @@ static double calc_Keq_T(const cma::nucleo::Reaccion& rxn, double T_K, const std
 }
 
 // ── Detección de semirreacción electroquímica (presencia de e-) ────────────
-static bool info_electroquimica(const cma::nucleo::Reaccion& rxn, double& n_electrones) {
-    auto& gestor = cma::base_datos::GestorDB::instancia();
+namespace {
+struct DefaultThermoRepo final : domain::ThermoRepository {
+    const nucleo::Especie* especie_por_id(int64_t id) const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).especie_por_id(id);
+    }
+    const nucleo::Especie* especie_por_nombre(const std::string& nombre) const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).especie_por_nombre(nombre);
+    }
+    const nucleo::Reaccion* reaccion_por_id(int64_t id) const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).reaccion_por_id(id);
+    }
+    const std::map<int64_t, nucleo::Especie>& mapa_especies() const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).mapa_especies();
+    }
+    std::vector<const nucleo::Especie*> todas_especies() const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).todas_especies();
+    }
+    std::vector<const nucleo::Especie*> buscar_especies(const std::string& query) const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).buscar_especies(query);
+    }
+    std::vector<const nucleo::Reaccion*> todas_reacciones() const override {
+        return static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()).todas_reacciones();
+    }
+};
+const DefaultThermoRepo kDefaultRepo{};
+} // namespace
+
+static bool info_electroquimica(const cma::nucleo::Reaccion& rxn, double& n_electrones,
+                                const domain::ThermoRepository& repo = kDefaultRepo) {
     n_electrones = 0.0;
     for (auto& [sp_id, coeff] : rxn.estequiometria) {
-        const auto* sp = gestor.especie_por_id(sp_id);
+        const auto* sp = repo.especie_por_id(sp_id);
         if (sp && (sp->formula == "e-" || sp->formula == "e")) {
             n_electrones = std::abs(coeff);
             return n_electrones > 0.0;
@@ -204,12 +232,12 @@ static double carga_de_tag(const std::string& formula) {
 }
 
 // Verificación del balance elemental (y de carga) como hace HSC al calcular
-static bool verificar_balance_reaccion(const cma::nucleo::Reaccion& rxn, std::string& detalle) {
-    auto& gestor = cma::base_datos::GestorDB::instancia();
+static bool verificar_balance_reaccion(const cma::nucleo::Reaccion& rxn, std::string& detalle,
+                                       const domain::ThermoRepository& repo = kDefaultRepo) {
     std::map<std::string, double> tot_el;
     double carga = 0.0;
     for (auto& [sp_id, coeff] : rxn.estequiometria) {
-        const auto* sp = gestor.especie_por_id(sp_id);
+        const auto* sp = repo.especie_por_id(sp_id);
         if (!sp) continue;
         std::string err;
         auto el = parse_formula_elements(sp->formula, err);
@@ -548,8 +576,8 @@ static double valor_eje_especie(int mode, const cma::nucleo::Especie& e, double 
 }
 
 void PanelReactionSolver::dibujar_grafico(const ImVec2& tam, bool para_reaccion) {
-    auto& gestor = base_datos::GestorDB::instancia();
-    auto db = gestor.mapa_especies();
+    const domain::ThermoRepository& repo = repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(kDefaultRepo);
+    const auto& db = repo.mapa_especies();
 
     static const char* ylabels_rxn[5] = {"Log K", "dH (kJ)", "dS (J/K)", "dG (kJ)", "E° vs SHE (V)"};
     static const char* titulos_rxn[5] = {"Equilibrium constant (Log)", "Reaction Enthalpy",
@@ -585,10 +613,10 @@ void PanelReactionSolver::dibujar_grafico(const ImVec2& tam, bool para_reaccion)
                 double tk = tc + 273.15;
                 if (c.para_reaccion) {
                     double n_e = 0.0;
-                    info_electroquimica(c.rxn, n_e);
+                    info_electroquimica(c.rxn, n_e, repo);
                     ys.push_back(valor_eje_rxn(mode, c.rxn, tk, n_e, db));
                 } else {
-                    const auto* sp = gestor.especie_por_id(c.especie_id);
+                    const auto* sp = repo.especie_por_id(c.especie_id);
                     ys.push_back(sp ? valor_eje_especie(mode, *sp, tk) : 0.0);
                 }
             }
@@ -611,18 +639,18 @@ void PanelReactionSolver::renderizar() {
         tabs_inicializados_ = true;
     }
 
-    auto& gestor = base_datos::GestorDB::instancia();
-    auto db = gestor.mapa_especies();
+    const domain::ThermoRepository& repo = repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(kDefaultRepo);
+    const auto& db = repo.mapa_especies();
 
     bool es_reaccion = (strchr(ecuacion_, '=') != nullptr || strstr(ecuacion_, "->") != nullptr);
     const cma::nucleo::Especie* esp_actual = nullptr;
     if (!es_reaccion) {
-        esp_actual = buscar_especie_por_nombre_o_formula(ecuacion_);
+        esp_actual = buscar_especie_por_nombre_o_formula(ecuacion_, &repo);
     }
 
     // Detección de semirreacción electroquímica (e- presente)
     double n_electrones = 0.0;
-    bool es_electroquimica = calculado_ && es_reaccion && info_electroquimica(rxn_actual, n_electrones);
+    bool es_electroquimica = calculado_ && es_reaccion && info_electroquimica(rxn_actual, n_electrones, repo);
 
     // Clamp del selector de eje Y según el modo actual (evita índices fuera de rango)
     int max_mode = es_reaccion ? (es_electroquimica ? 4 : 3) : 3;
@@ -659,7 +687,7 @@ void PanelReactionSolver::renderizar() {
                                 if (es_reaccion) {
                                     fprintf(fp, "Reaction: %s\n", ecuacion_);
                                     double n_e = 0.0;
-                                    bool electro = info_electroquimica(rxn_actual, n_e);
+                                    bool electro = info_electroquimica(rxn_actual, n_e, repo);
                                     if (electro) {
                                         fprintf(fp, "T (°C),dH (kJ),dS (J/K),dG (kJ),K,Log K,E vs SHE (V)\n");
                                     } else {
@@ -770,11 +798,11 @@ void PanelReactionSolver::renderizar() {
         ImGui::SameLine();
         if (ImGui::Button(tr("Calcular"), ImVec2(90, 24))) {
             if (es_reaccion) {
-                error_parsing = !parse_chemical_equation(ecuacion_, rxn_actual, error_msg);
+                error_parsing = !parse_chemical_equation(ecuacion_, rxn_actual, error_msg, &repo);
                 calculado_ = !error_parsing;
                 if (calculado_) {
                     // HSC verifica el balance elemental de la ecuación
-                    balance_ok_ = verificar_balance_reaccion(rxn_actual, balance_detalle_);
+                    balance_ok_ = verificar_balance_reaccion(rxn_actual, balance_detalle_, repo);
                 }
             } else {
                 if (esp_actual) {
