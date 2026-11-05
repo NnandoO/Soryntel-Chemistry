@@ -161,6 +161,13 @@ int main() {
     CHECK(sqlite3_prepare_v2(sql,"SELECT count(*) FROM cma_species",-1,&statement,nullptr)==SQLITE_OK);
     CHECK(sqlite3_step(statement)==SQLITE_ROW && sqlite3_column_int(statement,0)==repository.conteo_especies());
     sqlite3_finalize(statement);
+    CHECK(sqlite3_prepare_v2(sql, "SELECT hf, sf FROM cma_species WHERE formula='CH4'", -1, &statement, nullptr)==SQLITE_OK);
+    CHECK(sqlite3_step(statement)==SQLITE_ROW);
+    if (sqlite3_data_count(statement) == 2) {
+        CHECK(near(sqlite3_column_double(statement, 0), -74.873, 1e-9));
+        CHECK(near(sqlite3_column_double(statement, 1), 186.249, 1e-9));
+    }
+    sqlite3_finalize(statement);
     CHECK(sqlite3_prepare_v2(sql,"SELECT count(*) FROM cma_species_provenance WHERE quality=0 AND min_kelvin IS NULL",-1,&statement,nullptr)==SQLITE_OK);
     CHECK(sqlite3_step(statement)==SQLITE_ROW && sqlite3_column_int(statement,0)==repository.conteo_especies());
     sqlite3_finalize(statement); sqlite3_close(sql);
@@ -175,6 +182,13 @@ int main() {
         CHECK(sp_o2_loaded->modelo_cp == cma::nucleo::ModeloCp::POLINOMIAL_ESTANDAR);
         CHECK(near(sp_o2_loaded->T_min, 298.15, 1e-3));
         CHECK(near(sp_o2_loaded->T_max, 2000.0, 1e-3));
+    }
+    const auto* sp_ch4_loaded = loaded_repo.especie_por_nombre("Metano");
+    CHECK(sp_ch4_loaded != nullptr);
+    if (sp_ch4_loaded) {
+        CHECK(near(sp_ch4_loaded->h_formacion, -74.873, 1e-9));
+        CHECK(near(sp_ch4_loaded->s_formacion, 186.249, 1e-9));
+        CHECK(near(sp_ch4_loaded->energia_gibbs(298.15), -130.40313935, 1e-8));
     }
     const cma::nucleo::Especie* sp_li2o_loaded = nullptr;
     for (const auto& [id, sp] : loaded_repo.mapa_especies()) {
@@ -596,7 +610,7 @@ int main() {
         auto sol_hsc = hmb.temperatura_equilibrio(hsc_ref, false);
         CHECK(sol_hsc.factible && sol_hsc.convergio);
         const double T_gas_C = sol_hsc.temperatura_K - 273.15;
-        CHECK(near(T_gas_C, 1238.938, 0.25));
+        CHECK(near(T_gas_C, 1238.55, 0.25));
         const auto res_hsc = hmb.evaluar(hsc_ref);
         CHECK(near(cma::motores::energia_desde_kJ(
                        res_hsc.h_sensible_salida_kJ - res_hsc.h_sensible_entrada_kJ,
@@ -1459,10 +1473,14 @@ int main() {
                 CHECK(near(cp_375, 39.68, 0.05));
                 CHECK(std::abs(cp_375 - 39.1666) / 39.1666 < 0.0135);
 
-                // 500 K -> 46.54 J/(mol K)
+                // 500 K: evaluación exacta del polinomio declarado
                 CHECK(ch4->en_rango_temperatura(500.0));
                 double cp_500 = ch4->cp(500.0);
-                CHECK(std::abs(cp_500 - 46.54) / 46.54 < 0.015);
+                CHECK(near(ch4->cp_a, 21.566653, 1e-12));
+                CHECK(near(ch4->cp_b, 0.03954531, 1e-12));
+                CHECK(near(ch4->cp_c, 0.0000304854, 1e-12));
+                CHECK(near(ch4->cp_d, -0.0000000196852, 1e-12));
+                CHECK(near(cp_500, 46.500008, 1e-6));
 
                 // 1000 K -> 71.79 J/(mol K) (corrección del defecto -14.79%)
                 CHECK(ch4->en_rango_temperatura(1000.0));
@@ -1510,7 +1528,8 @@ int main() {
                 CHECK(near(ch4->entropia_abs(298.15), ch4->s_formacion, 1e-9));
                 double g_aparente_298 = ch4->h_formacion - 298.15 * ch4->s_formacion / 1000.0;
                 CHECK(near(ch4->energia_gibbs(298.15), g_aparente_298, 1e-9));
-                CHECK(near(g_aparente_298, -130.137, 0.01));
+                CHECK(near(ch4->h_formacion, -74.873, 1e-9));
+                CHECK(near(g_aparente_298, -130.40313935, 1e-8));
 
                 // Semántica de formación: C(grafito) + 2 H2(g) -> CH4(g)
                 const auto* c_graf = por_formula("C");
@@ -1519,9 +1538,9 @@ int main() {
                 if (c_graf && h2_gas) {
                     double g_elems_298 = 1.0 * c_graf->energia_gibbs(298.15) + 2.0 * h2_gas->energia_gibbs(298.15);
                     double delta_f_G_298 = ch4->energia_gibbs(298.15) - g_elems_298;
-                    // Valor calculado en CMA: ~ -50.501 kJ/mol vs NIST-JANAF -50.768 kJ/mol
-                    CHECK(near(delta_f_G_298, -50.50, 0.1));
-                    CHECK(std::abs(delta_f_G_298 - (-50.768)) < 0.35);
+                    // NIST-JANAF: -50.768 kJ/mol; con Sf almacenada (186.249), CMA da -50.76727435.
+                    CHECK(near(delta_f_G_298, -50.76727435, 1e-8));
+                    CHECK(std::abs(delta_f_G_298 - (-50.768)) < 0.001);
                 }
 
                 // Verificación dimensional de derivadas: 1000 * dH/dT = Cp(T) y dS/dT = Cp(T)/T

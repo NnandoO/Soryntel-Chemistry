@@ -12,4 +12,4 @@ struct DataProvenance {
         return min_kelvin > 0 && max_kelvin >= min_kelvin && kelvin >= min_kelvin && kelvin <= max_kelvin;
     }
 };
-}
+} // namespace cma::domain

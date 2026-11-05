@@ -45,7 +45,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_joback(
     double nC = 0, nH = 0, nO = 0, nN = 0, nCl = 0, nF = 0, nBr = 0, nI = 0;
 
     // Parseo simple de fórmula molecular
-    std::string f = formula_smiles;
+    const std::string& f = formula_smiles;
     for (size_t i = 0; i < f.size(); ++i) {
         if (std::isalpha(f[i])) {
             std::string element;
@@ -245,7 +245,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
     };
 
     double nC = 0, nH = 0, nO = 0, nN = 0, nCl = 0;
-    std::string f = formula;
+    const std::string& f = formula;
     for (size_t i = 0; i < f.size(); ++i) {
         if (std::isalpha(static_cast<unsigned char>(f[i]))) {
             std::string element;
@@ -279,7 +279,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
         grupos["Cb-(H)"] = 6;
         benson_identificado = true;
     } else if (nC == 7 && nH == 8 && nO == 0 && nN == 0 && nCl == 0 &&
-               (formula.find("c") != std::string::npos || formula == "C7H8" || formula.find("Ph") != std::string::npos || formula.find("tol") != std::string::npos)) {
+               (formula.find('c') != std::string::npos || formula == "C7H8" || formula.find("Ph") != std::string::npos || formula.find("tol") != std::string::npos)) {
         grupos["Cb-(H)"] = 5;
         grupos["Cb-(C)"] = 1;
         grupos["C-(Cd)(H)3"] = 1;
@@ -319,7 +319,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
         }
         benson_identificado = true;
     } else if (nO == 1 && nN == 0 && nCl == 0 && nH == 2 * nC + 2 &&
-               (formula.find("OH") != std::string::npos || formula.find("ol") != std::string::npos || formula.find("O") != std::string::npos)) {
+               (formula.find("OH") != std::string::npos || formula.find("ol") != std::string::npos || formula.find('O') != std::string::npos)) {
         grupos["O-(C)(H)"] = 1;
         if (nC == 1) {
             grupos["C-(O)(H)3"] = 1;
@@ -358,7 +358,7 @@ PropiedadesEstimadas EstimadorPropiedades::estimar_benson(
         }
         benson_identificado = true;
     } else if (nO == 0 && nN == 1 && nCl == 0 && nH == 2 * nC + 3 &&
-               (formula.find("NH2") != std::string::npos || formula.find("N") != std::string::npos)) {
+               (formula.find("NH2") != std::string::npos || formula.find('N') != std::string::npos)) {
         grupos["N-(C)(H)2"] = 1;
         grupos["C-(C)(N)(H)2"] = 1;
         if (nC == 2) {

@@ -21,42 +21,28 @@ struct ElementData {
 
 // Disposición exacta de la Tabla Periódica de HSC Geo 8.0 (media_1793656361746_21c5f76a.png)
 const ElementData PT_ELEMENTS[] = {
-    {"H", 0, 0, false},  {"He", 0, 17, false},
-    {"Li", 1, 0, false}, {"Be", 1, 1, false},
-    {"B", 1, 12, false}, {"C", 1, 13, true},  {"N", 1, 14, false}, {"O", 1, 15, false}, {"F", 1, 16, false}, {"Ne", 1, 17, false},
-    {"Na", 2, 0, true},  {"Mg", 2, 1, true},
-    {"Al", 2, 12, true}, {"Si", 2, 13, true}, {"P", 2, 14, true},  {"S", 2, 15, true},  {"Cl", 2, 16, true}, {"Ar", 2, 17, false},
-    {"K", 3, 0, true},   {"Ca", 3, 1, true},
-    {"Sc", 3, 2, false}, {"Ti", 3, 3, true},  {"V", 3, 4, true},   {"Cr", 3, 5, true},  {"Mn", 3, 6, true},  {"Fe", 3, 7, true},
-    {"Co", 3, 8, true},  {"Ni", 3, 9, true},  {"Cu", 3, 10, true}, {"Zn", 3, 11, true},
-    {"Ga", 3, 12, false},{"Ge", 3, 13, false},{"As", 3, 14, true}, {"Se", 3, 15, true}, {"Br", 3, 16, false},{"Kr", 3, 17, false},
-    {"Rb", 4, 0, true},  {"Sr", 4, 1, true},
-    {"Y", 4, 2, true},   {"Zr", 4, 3, true},  {"Nb", 4, 4, true},  {"Mo", 4, 5, true},  {"Tc", 4, 6, false}, {"Ru", 4, 7, false},
-    {"Rh", 4, 8, false}, {"Pd", 4, 9, false}, {"Ag", 4, 10, true}, {"Cd", 4, 11, false},
-    {"In", 4, 12, false},{"Sn", 4, 13, true}, {"Sb", 4, 14, true}, {"Te", 4, 15, true}, {"I", 4, 16, false}, {"Xe", 4, 17, false},
-    {"Cs", 5, 0, true},  {"Ba", 5, 1, true},
-    {"Hf", 5, 3, false}, {"Ta", 5, 4, true},  {"W", 5, 5, true},   {"Re", 5, 6, false}, {"Os", 5, 7, false}, {"Ir", 5, 8, false},
-    {"Pt", 5, 9, false}, {"Au", 5, 10, false},{"Hg", 5, 11, false},
-    {"Tl", 5, 12, false},{"Pb", 5, 13, true}, {"Bi", 5, 14, true}, {"Po", 5, 15, false},{"At", 5, 16, false},{"Rn", 5, 17, false},
+    {"H", 0, 0, false},  {"He", 0, 17, false}, {"Li", 1, 0, false}, {"Be", 1, 1, false},
+    {"B", 1, 12, false}, {"C", 1, 13, true},   {"N", 1, 14, false}, {"O", 1, 15, false},  {"F", 1, 16, false},  {"Ne", 1, 17, false},
+    {"Na", 2, 0, true},  {"Mg", 2, 1, true},   {"Al", 2, 12, true}, {"Si", 2, 13, true},  {"P", 2, 14, true},   {"S", 2, 15, true},   {"Cl", 2, 16, true}, {"Ar", 2, 17, false},
+    {"K", 3, 0, true},   {"Ca", 3, 1, true},   {"Sc", 3, 2, false}, {"Ti", 3, 3, true},   {"V", 3, 4, true},    {"Cr", 3, 5, true},   {"Mn", 3, 6, true},  {"Fe", 3, 7, true},
+    {"Co", 3, 8, true},  {"Ni", 3, 9, true},   {"Cu", 3, 10, true}, {"Zn", 3, 11, true},  {"Ga", 3, 12, false}, {"Ge", 3, 13, false}, {"As", 3, 14, true}, {"Se", 3, 15, true}, {"Br", 3, 16, false}, {"Kr", 3, 17, false},
+    {"Rb", 4, 0, true},  {"Sr", 4, 1, true},   {"Y", 4, 2, true},   {"Zr", 4, 3, true},   {"Nb", 4, 4, true},   {"Mo", 4, 5, true},   {"Tc", 4, 6, false}, {"Ru", 4, 7, false},
+    {"Rh", 4, 8, false}, {"Pd", 4, 9, false},  {"Ag", 4, 10, true}, {"Cd", 4, 11, false}, {"In", 4, 12, false}, {"Sn", 4, 13, true},  {"Sb", 4, 14, true}, {"Te", 4, 15, true}, {"I", 4, 16, false},  {"Xe", 4, 17, false},
+    {"Cs", 5, 0, true},  {"Ba", 5, 1, true},   {"Hf", 5, 3, false}, {"Ta", 5, 4, true},   {"W", 5, 5, true},    {"Re", 5, 6, false},  {"Os", 5, 7, false}, {"Ir", 5, 8, false},
+    {"Pt", 5, 9, false}, {"Au", 5, 10, false}, {"Hg", 5, 11, false},{"Tl", 5, 12, false}, {"Pb", 5, 13, true},  {"Bi", 5, 14, true},  {"Po", 5, 15, false},{"At", 5, 16, false},{"Rn", 5, 17, false},
     {"Fr", 6, 0, false}, {"Ra", 6, 1, false},
-    // Lantánidos (fila 7, cols 3..16)
+    // Lantánidos (fila 7, cols 3..17) y Actínidos (fila 8, cols 3..15)
     {"La", 7, 3, true},  {"Ce", 7, 4, false}, {"Pr", 7, 5, false}, {"Nd", 7, 6, false}, {"Pm", 7, 7, false},
     {"Sm", 7, 8, false}, {"Eu", 7, 9, false}, {"Gd", 7, 10, false},{"Tb", 7, 11, false},{"Dy", 7, 12, false},
     {"Ho", 7, 13, false},{"Er", 7, 14, false},{"Tm", 7, 15, false},{"Yb", 7, 16, false},{"Lu", 7, 17, false},
-    // Actínidos (fila 8, cols 3..16)
     {"Ac", 8, 3, false}, {"Th", 8, 4, true},  {"Pa", 8, 5, false}, {"U", 8, 6, true},   {"Np", 8, 7, false},
     {"Pu", 8, 8, false}, {"Am", 8, 9, false}, {"Cm", 8, 10, false},{"Bk", 8, 11, false},{"Cf", 8, 12, false},
     {"Es", 8, 13, false},{"Fm", 8, 14, false},{"Md", 8, 15, false}
 };
 
 static const char* kGeoSourcesList[7] = {
-    "Bruvann.xls - Header",
-    "Bruvann.xls - REE",
-    "Bruvann.xls - PGE",
-    "Bruvann.xls - XRF",
-    "Bruvann.xls - BM",
-    "Bruvann.xls - LECO",
-    "Bruvann.xls - LOI"
+    "Bruvann.xls - Header", "Bruvann.xls - REE", "Bruvann.xls - PGE", "Bruvann.xls - XRF",
+    "Bruvann.xls - BM",     "Bruvann.xls - LECO","Bruvann.xls - LOI"
 };
 
 static const char* kMineralClasses[7] = {
@@ -69,11 +55,7 @@ namespace cma::interfaz {
 
 PanelGeoMineralogical::PanelGeoMineralogical() {
     cargar_fuente_datos(0);
-    entradas_formula_ = {
-        {"Cu", 34.50},
-        {"Fe", 30.55},
-        {"S",  34.95}
-    };
+    entradas_formula_ = {{"Cu", 34.50}, {"Fe", 30.55}, {"S", 34.95}};
     res_formula_ = mineral_db_.calcular_formula_mineral(entradas_formula_, elem_base_norm_, num_atomos_norm_);
     res_cipw_ = mineral_db_.calcular_norma_cipw(roca_oxidos_);
 }
@@ -119,7 +101,8 @@ void PanelGeoMineralogical::ejecutar_calculo_modal() {
 
 void PanelGeoMineralogical::refrescar_datos() {
     if (!flowsheet_) return;
-    auto& gestor = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& gestor =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     for (const auto& [fid, fl] : flowsheet_->mapa_flujos()) {
         for (const auto& [esp_id, mol] : fl.flujo_molar) {
             if (mol <= 0.0) continue;
@@ -150,9 +133,7 @@ void PanelGeoMineralogical::dibujar_ribbon_superior() {
 
     // Pestaña superior "Main" estilo cinta HSC Geo 8.0
     if (ImGui::BeginTabBar("##HSCGeoMainRibbonTab")) {
-        if (ImGui::BeginTabItem("Main")) {
-            ImGui::EndTabItem();
-        }
+        if (ImGui::BeginTabItem("Main")) ImGui::EndTabItem();
         ImGui::EndTabBar();
     }
 
@@ -183,15 +164,13 @@ void PanelGeoMineralogical::dibujar_ribbon_superior() {
             mostrar_resultado_ = true;
         }
     }
-    const float g1_end = ImGui::GetItemRectMax().x;
-    css::draw_ribbon_group_footer(g1_start, g1_end, bar_bottom_y, "Home");
+    css::draw_ribbon_group_footer(g1_start, ImGui::GetItemRectMax().x, bar_bottom_y, "Home");
 
     // ── Grupo Window (Window | Tile Horizontal | Tile Vertical | Cascade) ──
     ImGui::SameLine(0.0f, 12.0f);
     const float g2_start = ImGui::GetCursorScreenPos().x;
     if (css::ribbon_button("geo_win_h", "Tile", "Horizontal", css::RibbonIcon::WindowTileH, 64.0f, 46.0f)) {
-        feature_activa_ = 4;
-        tab_modal_ = 0;
+        feature_activa_ = 4; tab_modal_ = 0;
     }
     ImGui::SameLine(0.0f, 4.0f);
     if (css::ribbon_button("geo_win_v", "Tile", "Vertical", css::RibbonIcon::WindowTileV, 58.0f, 46.0f)) {
@@ -199,11 +178,9 @@ void PanelGeoMineralogical::dibujar_ribbon_superior() {
     }
     ImGui::SameLine(0.0f, 4.0f);
     if (css::ribbon_button("geo_win_c", "Cascade", "", css::RibbonIcon::WindowCascade, 56.0f, 46.0f)) {
-        feature_activa_ = 4;
-        tab_modal_ = 1;
+        feature_activa_ = 4; tab_modal_ = 1;
     }
-    const float g2_end = ImGui::GetItemRectMax().x;
-    css::draw_ribbon_group_footer(g2_start, g2_end, bar_bottom_y, "Window");
+    css::draw_ribbon_group_footer(g2_start, ImGui::GetItemRectMax().x, bar_bottom_y, "Window");
 
     // ── Grupo Help (About) ──
     ImGui::SameLine(0.0f, 12.0f);
@@ -211,8 +188,7 @@ void PanelGeoMineralogical::dibujar_ribbon_superior() {
     if (css::ribbon_button("geo_about", "About", "", css::RibbonIcon::Help, 50.0f, 46.0f)) {
         mostrar_about_ = true;
     }
-    const float g3_end = ImGui::GetItemRectMax().x;
-    css::draw_ribbon_group_footer(g3_start, g3_end, bar_bottom_y, "Help");
+    css::draw_ribbon_group_footer(g3_start, ImGui::GetItemRectMax().x, bar_bottom_y, "Help");
 
     // Resumen rápido a la derecha del Ribbon
     ImGui::SameLine(0.0f, 18.0f);
@@ -225,7 +201,6 @@ void PanelGeoMineralogical::dibujar_ribbon_superior() {
                        ultimo_resultado_modal_.total_mineral_wt,
                        ultimo_resultado_modal_.rmse_elemental);
     ImGui::EndGroup();
-
     css::end_ribbon_bar();
 }
 
@@ -246,26 +221,18 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
     const auto& muestras = mineral_db_.muestras_predefinidas();
     if (ImGui::BeginCombo("##GeoSourceCombo", data_source_)) {
         for (int i = 0; i < static_cast<int>(muestras.size()); ++i) {
-            bool sel = (i == idx_data_source_);
-            if (ImGui::Selectable(muestras[static_cast<size_t>(i)].nombre_fuente.c_str(), sel)) {
+            if (ImGui::Selectable(muestras[static_cast<size_t>(i)].nombre_fuente.c_str(), i == idx_data_source_))
                 cargar_fuente_datos(i);
-            }
         }
         ImGui::EndCombo();
     }
-    if (ImGui::Button("Show Data", ImVec2(-1.0f, 24.0f))) {
-        mostrar_datos_ = true;
-    }
+    if (ImGui::Button("Show Data", ImVec2(-1.0f, 24.0f))) mostrar_datos_ = true;
 
-    ImGui::Spacing();
-    ImGui::Separator();
+    ImGui::Spacing(); ImGui::Separator();
     ImGui::Text("2. Minerals");
-    if (ImGui::Button("Define", ImVec2(-1.0f, 24.0f))) {
-        feature_activa_ = 1; // Abre el selector Find Mineral
-    }
+    if (ImGui::Button("Define", ImVec2(-1.0f, 24.0f))) feature_activa_ = 1; // Abre el selector Find Mineral
 
-    ImGui::Spacing();
-    ImGui::Separator();
+    ImGui::Spacing(); ImGui::Separator();
     ImGui::Text("3. Rules");
     if (ImGui::Button("Export", ImVec2(-1.0f, 24.0f))) {
         std::ofstream ofs("hsc_geo_rules.txt");
@@ -286,12 +253,8 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
         resultado_geo_ = "Catálogo sincronizado con especies sólidas del Flowsheet.";
         mostrar_resultado_ = true;
     }
-    if (ImGui::Button("Wizard", ImVec2(-1.0f, 24.0f))) {
-        mostrar_wizard_ = true;
-    }
-    if (ImGui::Button("Reset", ImVec2(-1.0f, 24.0f))) {
-        cargar_fuente_datos(idx_data_source_);
-    }
+    if (ImGui::Button("Wizard", ImVec2(-1.0f, 24.0f))) mostrar_wizard_ = true;
+    if (ImGui::Button("Reset", ImVec2(-1.0f, 24.0f))) cargar_fuente_datos(idx_data_source_);
     ImGui::EndChild();
 
     ImGui::SameLine(0.0f, 6.0f);
@@ -303,16 +266,14 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
             tab_modal_ = 0;
 
             // Bloque superior: Tabla Periódica HSC Geo + Tabla derecha "Element + SHIFT" (Phase | Element %)
-            const float top_h = 228.0f;
-            ImGui::BeginChild("##PTAndElemShift", ImVec2(0.0f, top_h), true);
+            ImGui::BeginChild("##PTAndElemShift", ImVec2(0.0f, 228.0f), true);
             const float pt_avail_w = ImGui::GetContentRegionAvail().x;
             const float elem_table_w = std::clamp(pt_avail_w * 0.30f, 165.0f, 235.0f);
             const float pt_grid_w = std::max(260.0f, pt_avail_w - elem_table_w - 8.0f);
 
             ImGui::BeginChild("##PTGridChild", ImVec2(pt_grid_w, 0.0f), false, ImGuiWindowFlags_NoScrollbar);
             const float btn_w = std::clamp((pt_grid_w - 12.0f) / 18.0f - 1.5f, 18.0f, 25.0f);
-            const float btn_h = 20.0f;
-            const float sp = 1.5f;
+            const float btn_h = 20.0f, sp = 1.5f;
             ImVec2 start_pos = ImGui::GetCursorPos();
 
             constexpr int n_pt = static_cast<int>(sizeof(PT_ELEMENTS) / sizeof(PT_ELEMENTS[0]));
@@ -320,17 +281,13 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 const auto& el = PT_ELEMENTS[i];
                 if (!el.symbol) continue;
                 float px = start_pos.x + el.col * (btn_w + sp);
-                float py = start_pos.y + el.row * (btn_h + sp);
-                if (el.row >= 7) py += 6.0f;
+                float py = start_pos.y + el.row * (btn_h + sp) + (el.row >= 7 ? 6.0f : 0.0f);
                 ImGui::SetCursorPos(ImVec2(px, py));
 
                 const bool is_active_el = (elemento_activo_pt_ == el.symbol);
                 const bool in_assay = (ensayo_actual_.find(el.symbol) != ensayo_actual_.end());
 
-                // Estilo idéntico a la captura HSC Geo 8.0:
-                // - Elemento activo ("Cu"): gris oscuro con borde de selección
-                // - Elemento en BD/ensayo (white cell): fondo claro con texto negro
-                // - Elemento no usado: fondo gris medio/oscuro
+                // Estilo idéntico a la captura HSC Geo 8.0
                 if (is_active_el) {
                     ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(72, 78, 86, 255));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(88, 96, 108, 255));
@@ -349,7 +306,6 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 if (ImGui::Button(el.symbol, ImVec2(btn_w, btn_h))) {
                     elemento_activo_pt_ = el.symbol;
                     element_selected_[i] = !element_selected_[i];
-                    // Si se presiona con SHIFT o doble clic, agrega el elemento a la ronda activa
                     if (ImGui::GetIO().KeyShift && idx_ronda_activa_ >= 0 &&
                         idx_ronda_activa_ < static_cast<int>(rondas_.size())) {
                         auto& r_elems = rondas_[static_cast<size_t>(idx_ronda_activa_)].elementos;
@@ -375,17 +331,14 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 ImGui::TableSetupColumn("Phase", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableSetupColumn("Element %", ImGuiTableColumnFlags_WidthFixed, 68.0f);
                 ImGui::TableHeadersRow();
-
                 for (const auto& mname : minerales_candidatos_) {
                     const auto* f = mineral_db_.buscar_por_nombre(mname);
                     if (!f) continue;
                     double pct = f->porcentaje_elemento(elemento_activo_pt_);
                     if (pct <= 0.001) continue;
                     ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted(f->nombre_corto.c_str());
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%.2f", pct);
+                    ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(f->nombre_corto.c_str());
+                    ImGui::TableSetColumnIndex(1); ImGui::Text("%.2f", pct);
                 }
                 ImGui::EndTable();
             }
@@ -399,68 +352,51 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 }
             }
             ImGui::EndChild();
-
             ImGui::EndChild(); // Fin PTAndElemShift
 
             // ── Bloque Inferior: "Minerals" (izquierda) + Botones [> < >> << - Eraser] + "Phases and Elements per Rounds" & "Method" (derecha) ──
             const float bot_avail_w = ImGui::GetContentRegionAvail().x;
             const float min_list_w = std::clamp(bot_avail_w * 0.37f, 185.0f, 275.0f);
 
-            // Columna izquierda: "Minerals" + botones de transferencia verticales
             ImGui::BeginChild("##MineralsCandidateBox", ImVec2(min_list_w, 0.0f), true);
             ImGui::Text("Minerals");
             ImGui::Separator();
 
-            const float list_inner_w = ImGui::GetContentRegionAvail().x - 32.0f;
-            ImGui::BeginChild("##MineralsListScroll", ImVec2(list_inner_w, 0.0f), true);
+            ImGui::BeginChild("##MineralsListScroll", ImVec2(ImGui::GetContentRegionAvail().x - 32.0f, 0.0f), true);
             for (int i = 0; i < static_cast<int>(minerales_candidatos_.size()); ++i) {
-                const bool sel = (i == idx_mineral_cand_);
-                if (ImGui::Selectable(minerales_candidatos_[static_cast<size_t>(i)].c_str(), sel)) {
+                if (ImGui::Selectable(minerales_candidatos_[static_cast<size_t>(i)].c_str(), i == idx_mineral_cand_))
                     idx_mineral_cand_ = i;
-                }
             }
             ImGui::EndChild();
 
             ImGui::SameLine(0.0f, 4.0f);
             ImGui::BeginGroup();
-            // [>] Enviar mineral seleccionado a la ronda activa
-            if (ImGui::Button(">", ImVec2(24.0f, 24.0f))) {
-                if (idx_mineral_cand_ >= 0 && idx_mineral_cand_ < static_cast<int>(minerales_candidatos_.size()) &&
-                    idx_ronda_activa_ >= 0 && idx_ronda_activa_ < static_cast<int>(rondas_.size())) {
-                    const std::string& m_sel = minerales_candidatos_[static_cast<size_t>(idx_mineral_cand_)];
-                    auto& fases_r = rondas_[static_cast<size_t>(idx_ronda_activa_)].fases;
-                    if (std::find(fases_r.begin(), fases_r.end(), m_sel) == fases_r.end()) {
-                        fases_r.push_back(m_sel);
-                        ejecutar_calculo_modal();
-                    }
-                }
-            }
-            // [<] Quitar fase seleccionada de la ronda activa
-            if (ImGui::Button("<", ImVec2(24.0f, 24.0f))) {
-                if (idx_ronda_activa_ >= 0 && idx_ronda_activa_ < static_cast<int>(rondas_.size())) {
-                    auto& fases_r = rondas_[static_cast<size_t>(idx_ronda_activa_)].fases;
-                    if (!fases_r.empty()) {
-                        int idx_del = std::clamp(idx_fase_ronda_sel_, 0, static_cast<int>(fases_r.size()) - 1);
-                        fases_r.erase(fases_r.begin() + idx_del);
-                        ejecutar_calculo_modal();
-                    }
-                }
-            }
-            // [>>] Enviar todos los minerales candidatos a la ronda activa
-            if (ImGui::Button(">|", ImVec2(24.0f, 24.0f))) {
-                if (idx_ronda_activa_ >= 0 && idx_ronda_activa_ < static_cast<int>(rondas_.size())) {
-                    rondas_[static_cast<size_t>(idx_ronda_activa_)].fases = minerales_candidatos_;
+            const bool valid_round = (idx_ronda_activa_ >= 0 && idx_ronda_activa_ < static_cast<int>(rondas_.size()));
+            if (ImGui::Button(">", ImVec2(24.0f, 24.0f)) && valid_round &&
+                idx_mineral_cand_ >= 0 && idx_mineral_cand_ < static_cast<int>(minerales_candidatos_.size())) {
+                const std::string& m_sel = minerales_candidatos_[static_cast<size_t>(idx_mineral_cand_)];
+                auto& fases_r = rondas_[static_cast<size_t>(idx_ronda_activa_)].fases;
+                if (std::find(fases_r.begin(), fases_r.end(), m_sel) == fases_r.end()) {
+                    fases_r.push_back(m_sel);
                     ejecutar_calculo_modal();
                 }
             }
-            // [<<] Vaciar fases de la ronda activa
-            if (ImGui::Button("|<", ImVec2(24.0f, 24.0f))) {
-                if (idx_ronda_activa_ >= 0 && idx_ronda_activa_ < static_cast<int>(rondas_.size())) {
-                    rondas_[static_cast<size_t>(idx_ronda_activa_)].fases.clear();
+            if (ImGui::Button("<", ImVec2(24.0f, 24.0f)) && valid_round) {
+                auto& fases_r = rondas_[static_cast<size_t>(idx_ronda_activa_)].fases;
+                if (!fases_r.empty()) {
+                    int idx_del = std::clamp(idx_fase_ronda_sel_, 0, static_cast<int>(fases_r.size()) - 1);
+                    fases_r.erase(fases_r.begin() + idx_del);
                     ejecutar_calculo_modal();
                 }
             }
-            // Botón rojo (-) eliminar mineral de la lista de candidatos
+            if (ImGui::Button(">|", ImVec2(24.0f, 24.0f)) && valid_round) {
+                rondas_[static_cast<size_t>(idx_ronda_activa_)].fases = minerales_candidatos_;
+                ejecutar_calculo_modal();
+            }
+            if (ImGui::Button("|<", ImVec2(24.0f, 24.0f)) && valid_round) {
+                rondas_[static_cast<size_t>(idx_ronda_activa_)].fases.clear();
+                ejecutar_calculo_modal();
+            }
             ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(204, 58, 52, 255));
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255));
             if (ImGui::Button("-##del_cand", ImVec2(24.0f, 24.0f))) {
@@ -472,10 +408,7 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 }
             }
             ImGui::PopStyleColor(2);
-            // Botón borrador (restaurar lista)
-            if (ImGui::Button("C##clr_cand", ImVec2(24.0f, 24.0f))) {
-                cargar_fuente_datos(idx_data_source_);
-            }
+            if (ImGui::Button("C##clr_cand", ImVec2(24.0f, 24.0f))) cargar_fuente_datos(idx_data_source_);
             ImGui::EndGroup();
             ImGui::EndChild();
 
@@ -483,15 +416,12 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
 
             // Columna derecha inferior: "Phases and Elements per Rounds" + "Method"
             ImGui::BeginChild("##RoundsAndMethodCol", ImVec2(0.0f, 0.0f), false);
-
             ImGui::BeginChild("##RoundsBox", ImVec2(0.0f, -108.0f), true);
             ImGui::Text("Phases and Elements per Rounds");
             ImGui::SameLine(ImGui::GetWindowWidth() - 185.0f);
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(46, 148, 62, 255));
             if (ImGui::SmallButton("+ Add Round")) {
-                cma::application::modules::RondaModal nr;
-                nr.nombre = "Round " + std::to_string(rondas_.size() + 1);
-                rondas_.push_back(nr);
+                rondas_.push_back({"Round " + std::to_string(rondas_.size() + 1), {}, {}});
                 idx_ronda_activa_ = static_cast<int>(rondas_.size()) - 1;
             }
             ImGui::PopStyleColor();
@@ -510,33 +440,26 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                     if (ImGui::BeginTabItem(rondas_[static_cast<size_t>(r)].nombre.c_str())) {
                         idx_ronda_activa_ = r;
                         auto& ronda = rondas_[static_cast<size_t>(r)];
+                        const float phases_w = ImGui::GetContentRegionAvail().x * 0.56f;
 
-                        const float r_avail = ImGui::GetContentRegionAvail().x;
-                        const float phases_w = r_avail * 0.56f;
-
-                        // Sub-lista "Phases"
                         ImGui::BeginChild("##RoundPhasesSub", ImVec2(phases_w, 0.0f), true);
                         ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.text_secondary), "Phases");
                         ImGui::Separator();
                         for (int p = 0; p < static_cast<int>(ronda.fases.size()); ++p) {
-                            if (ImGui::Selectable(ronda.fases[static_cast<size_t>(p)].c_str(), idx_fase_ronda_sel_ == p)) {
+                            if (ImGui::Selectable(ronda.fases[static_cast<size_t>(p)].c_str(), idx_fase_ronda_sel_ == p))
                                 idx_fase_ronda_sel_ = p;
-                            }
                         }
                         ImGui::EndChild();
 
                         ImGui::SameLine(0.0f, 6.0f);
 
-                        // Sub-lista "Elements" + botones [-] y [Eraser]
                         ImGui::BeginChild("##RoundElemsSub", ImVec2(0.0f, 0.0f), true);
                         ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.text_secondary), "Elements");
                         ImGui::Separator();
-                        const float el_list_w = ImGui::GetContentRegionAvail().x - 28.0f;
-                        ImGui::BeginChild("##RoundElemsInner", ImVec2(el_list_w, 0.0f), false);
+                        ImGui::BeginChild("##RoundElemsInner", ImVec2(ImGui::GetContentRegionAvail().x - 28.0f, 0.0f), false);
                         for (int e = 0; e < static_cast<int>(ronda.elementos.size()); ++e) {
-                            if (ImGui::Selectable(ronda.elementos[static_cast<size_t>(e)].c_str(), idx_elem_ronda_sel_ == e)) {
+                            if (ImGui::Selectable(ronda.elementos[static_cast<size_t>(e)].c_str(), idx_elem_ronda_sel_ == e))
                                 idx_elem_ronda_sel_ = e;
-                            }
                         }
                         ImGui::EndChild();
                         ImGui::SameLine(0.0f, 3.0f);
@@ -555,7 +478,6 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                         }
                         ImGui::EndGroup();
                         ImGui::EndChild();
-
                         ImGui::EndTabItem();
                     }
                 }
@@ -566,16 +488,13 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
             // Recuadro "Method" con los 4 métodos matemáticos de HSC Geo 8.0
             ImGui::BeginChild("##MethodBox", ImVec2(0.0f, 0.0f), true);
             ImGui::Text("Method");
-            bool m_changed = false;
-            m_changed |= ImGui::RadioButton("Least Square (LS)", &current_method_, 0);
+            bool m_changed = ImGui::RadioButton("Least Square (LS)", &current_method_, 0);
             ImGui::SameLine(230.0f);
             m_changed |= ImGui::RadioButton("Non-negative Least Square (NNLS)", &current_method_, 2);
             m_changed |= ImGui::RadioButton("Weighed Least Square (WLS)", &current_method_, 1);
             ImGui::SameLine(230.0f);
             m_changed |= ImGui::RadioButton("Weighed non-negative Least Square (WNNLS)", &current_method_, 3);
-            if (m_changed) {
-                ejecutar_calculo_modal();
-            }
+            if (m_changed) ejecutar_calculo_modal();
             ImGui::EndChild();
 
             ImGui::EndChild(); // Fin RoundsAndMethodCol
@@ -588,7 +507,6 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                                "Modal Mineralogy & Elemental Back-Calculation Error Analysis (%s)", data_source_);
             ImGui::Separator();
 
-            // Tabla superior: Composición Modal Resuelta (wt-% y vol-%)
             if (ImGui::BeginTable("##ModalResultPhases", 6,
                                   ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
                                   ImVec2(0.0f, 185.0f))) {
@@ -621,17 +539,13 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
                 ImGui::EndTable();
             }
 
-            // Barra apilada visual de fases modales
             std::vector<css::StackedSegment> segs;
-            for (const auto& rf : ultimo_resultado_modal_.fases) {
+            for (const auto& rf : ultimo_resultado_modal_.fases)
                 if (rf.wt_pct > 0.05) segs.push_back({rf.formula, rf.wt_pct});
-            }
-            if (ultimo_resultado_modal_.no_identificado_wt > 0.05) {
+            if (ultimo_resultado_modal_.no_identificado_wt > 0.05)
                 segs.push_back({unidentified_label_, ultimo_resultado_modal_.no_identificado_wt});
-            }
             css::draw_stacked_composition_bar("Modal Mineralogy Distribution (wt-%)", segs, 22.0f);
 
-            // Tabla inferior: Comparación de Ensayo Elemental Medido vs Calculado
             ImGui::Spacing();
             ImGui::Text("Elemental Assay Reconciliation (RMSE = %.4f wt-%% | Chi^2 = %.4f)",
                         ultimo_resultado_modal_.rmse_elemental, ultimo_resultado_modal_.chi_cuadrado);
@@ -688,10 +602,8 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
     ImGui::EndChild();
 
     if (ImGui::Button("Identify structure", ImVec2(-1.0f, 24.0f))) {
-        ejecutar_calculo_modal();
-        tab_modal_ = 1;
-        resultado_geo_ = format_modal_summary();
-        mostrar_resultado_ = true;
+        ejecutar_calculo_modal(); tab_modal_ = 1;
+        resultado_geo_ = format_modal_summary(); mostrar_resultado_ = true;
     }
     ImGui::Checkbox("Use Thesaurus", &use_thesaurus_);
     if (ImGui::Button("Thesaurus", ImVec2(-1.0f, 24.0f))) mostrar_thesaurus_ = true;
@@ -711,9 +623,7 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
     }
     ImGui::SameLine(0.0f, 8.0f);
     if (ImGui::Button("Calculate", ImVec2(95.0f, 24.0f))) {
-        ejecutar_calculo_modal();
-        resultado_geo_ = format_modal_summary();
-        mostrar_resultado_ = true;
+        ejecutar_calculo_modal(); resultado_geo_ = format_modal_summary(); mostrar_resultado_ = true;
     }
     ImGui::SameLine(0.0f, 14.0f);
     ImGui::Text("Rounds = %d", ultimo_resultado_modal_.rondas_ejecutadas);
@@ -723,9 +633,7 @@ void PanelGeoMineralogical::dibujar_vista_modal() {
     if (ImGui::Button("Equations", ImVec2(92.0f, 24.0f))) { ejecutar_calculo_modal(); mostrar_ecuaciones_ = true; }
     ImGui::SameLine(ImGui::GetContentRegionAvail().x - 95.0f);
     if (ImGui::Button("Result >>>", ImVec2(95.0f, 24.0f))) {
-        ejecutar_calculo_modal();
-        resultado_geo_ = format_modal_summary();
-        mostrar_resultado_ = true;
+        ejecutar_calculo_modal(); resultado_geo_ = format_modal_summary(); mostrar_resultado_ = true;
     }
     ImGui::EndChild();
 }
@@ -740,12 +648,10 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
                            : "HSC Geo Mineral Database — Stoichiometric & Literature Catalog");
     ImGui::Separator();
 
-    // Píldoras por clase mineralógica
     for (int c = 0; c < 7; ++c) {
         if (c > 0) ImGui::SameLine(0.0f, 5.0f);
-        if (css::category_pill(kMineralClasses[c], idx_clase_filtro_ == c, tk.accent_blue)) {
+        if (css::category_pill(kMineralClasses[c], idx_clase_filtro_ == c, tk.accent_blue))
             idx_clase_filtro_ = c;
-        }
     }
 
     ImGui::Spacing();
@@ -757,10 +663,8 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
                              filter_query_, sizeof(filter_query_));
     ImGui::SameLine();
     if (ImGui::Button("Clear Filter", ImVec2(130.0f, 0.0f))) {
-        filter_query_[0] = '\0';
-        idx_clase_filtro_ = 0;
-        sg_min_ = 1.0f; sg_max_ = 12.0f;
-        mohs_min_ = 1.0f; mohs_max_ = 10.0f;
+        filter_query_[0] = '\0'; idx_clase_filtro_ = 0;
+        sg_min_ = 1.0f; sg_max_ = 12.0f; mohs_min_ = 1.0f; mohs_max_ = 10.0f;
     }
 
     if (modo_busqueda_avanzada) {
@@ -775,7 +679,6 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
     auto filtrados = mineral_db_.filtrar_minerales(
         filter_query_, kMineralClasses[idx_clase_filtro_], {}, {}, sg_min_, sg_max_, mohs_min_, mohs_max_);
 
-    // Tabla principal del catálogo mineralógico + Inspector inferior de composición estequiométrica
     if (ImGui::BeginTable("##GeoMineralDBTable", 9,
                           ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
                           ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY,
@@ -796,10 +699,8 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
             const auto* m = filtrados[static_cast<size_t>(i)];
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            const bool sel = (idx_mineral_db_sel_ == i);
-            if (ImGui::Selectable(m->nombre.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns)) {
+            if (ImGui::Selectable(m->nombre.c_str(), idx_mineral_db_sel_ == i, ImGuiSelectableFlags_SpanAllColumns))
                 idx_mineral_db_sel_ = i;
-            }
             ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(m->simbolo_ima.c_str());
             ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(m->formula.c_str());
             ImGui::TableSetColumnIndex(3); ImGui::TextUnformatted(m->clase_mineral.c_str());
@@ -812,7 +713,6 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
         ImGui::EndTable();
     }
 
-    // Inspector inferior del mineral seleccionado
     ImGui::BeginChild("##GeoMineralInspector", ImVec2(0.0f, 0.0f), true);
     if (!filtrados.empty()) {
         int idx_ok = std::clamp(idx_mineral_db_sel_, 0, static_cast<int>(filtrados.size()) - 1);
@@ -821,17 +721,14 @@ void PanelGeoMineralogical::dibujar_vista_base_datos(bool modo_busqueda_avanzada
                            "%s [%s] — %s", m->nombre.c_str(), m->simbolo_ima.c_str(), m->formula.c_str());
         ImGui::SameLine(ImGui::GetContentRegionAvail().x - 210.0f);
         if (ImGui::SmallButton("+ Add to Modal Candidates")) {
-            if (std::find(minerales_candidatos_.begin(), minerales_candidatos_.end(), m->nombre) == minerales_candidatos_.end()) {
+            if (std::find(minerales_candidatos_.begin(), minerales_candidatos_.end(), m->nombre) == minerales_candidatos_.end())
                 minerales_candidatos_.push_back(m->nombre);
-            }
         }
         ImGui::Text("Locality: %s  |  Color: %s  |  Reference: %s",
                     m->localidad.c_str(), m->color.c_str(), m->referencia.c_str());
 
         std::vector<css::StackedSegment> segs;
-        for (const auto& [el, wt] : m->elem_wt_pct) {
-            segs.push_back({el, wt});
-        }
+        for (const auto& [el, wt] : m->elem_wt_pct) segs.push_back({el, wt});
         css::draw_stacked_composition_bar("Stoichiometric Elemental Composition (wt-%)", segs, 20.0f);
     }
     ImGui::EndChild();
@@ -846,26 +743,17 @@ void PanelGeoMineralogical::dibujar_vista_formula_mineral() {
     ImGui::Columns(2, "##FormulaCalcCols", true);
     ImGui::BeginChild("##FormulaInputLeft", ImVec2(0.0f, 0.0f), true);
     ImGui::Text("1. Presets & Normalization Basis");
-    if (ImGui::SmallButton("Preset: Chalcopyrite (EPMA)")) {
-        entradas_formula_ = {{"Cu", 34.50}, {"Fe", 30.55}, {"S", 34.95}};
-        std::snprintf(elem_base_norm_, sizeof(elem_base_norm_), "S");
-        num_atomos_norm_ = 2.0;
+    auto apply_preset = [&](std::vector<cma::application::modules::EntradaAnalisisMineral> ent, const char* base, double atoms) {
+        entradas_formula_ = std::move(ent);
+        std::snprintf(elem_base_norm_, sizeof(elem_base_norm_), "%s", base);
+        num_atomos_norm_ = atoms;
         res_formula_ = mineral_db_.calcular_formula_mineral(entradas_formula_, elem_base_norm_, num_atomos_norm_);
-    }
+    };
+    if (ImGui::SmallButton("Preset: Chalcopyrite (EPMA)")) apply_preset({{"Cu", 34.50}, {"Fe", 30.55}, {"S", 34.95}}, "S", 2.0);
     ImGui::SameLine();
-    if (ImGui::SmallButton("Preset: Olivine (Oxides)")) {
-        entradas_formula_ = {{"MgO", 49.20}, {"FeO", 9.80}, {"SiO2", 41.00}};
-        std::snprintf(elem_base_norm_, sizeof(elem_base_norm_), "O");
-        num_atomos_norm_ = 4.0;
-        res_formula_ = mineral_db_.calcular_formula_mineral(entradas_formula_, elem_base_norm_, num_atomos_norm_);
-    }
+    if (ImGui::SmallButton("Preset: Olivine (Oxides)")) apply_preset({{"MgO", 49.20}, {"FeO", 9.80}, {"SiO2", 41.00}}, "O", 4.0);
     ImGui::SameLine();
-    if (ImGui::SmallButton("Preset: Pentlandite")) {
-        entradas_formula_ = {{"Fe", 32.55}, {"Ni", 34.22}, {"S", 33.23}};
-        std::snprintf(elem_base_norm_, sizeof(elem_base_norm_), "S");
-        num_atomos_norm_ = 8.0;
-        res_formula_ = mineral_db_.calcular_formula_mineral(entradas_formula_, elem_base_norm_, num_atomos_norm_);
-    }
+    if (ImGui::SmallButton("Preset: Pentlandite")) apply_preset({{"Fe", 32.55}, {"Ni", 34.22}, {"S", 33.23}}, "S", 8.0);
 
     ImGui::Spacing();
     ImGui::SetNextItemWidth(80.0f);
@@ -887,31 +775,21 @@ void PanelGeoMineralogical::dibujar_vista_formula_mineral() {
             char cbuf[32];
             std::snprintf(cbuf, sizeof(cbuf), "%s", entradas_formula_[i].componente.c_str());
             ImGui::SetNextItemWidth(-1.0f);
-            if (ImGui::InputText("##comp", cbuf, sizeof(cbuf))) {
-                entradas_formula_[i].componente = cbuf;
-                changed = true;
-            }
+            if (ImGui::InputText("##comp", cbuf, sizeof(cbuf))) { entradas_formula_[i].componente = cbuf; changed = true; }
             ImGui::TableSetColumnIndex(1);
             ImGui::SetNextItemWidth(-1.0f);
-            if (ImGui::InputDouble("##wt", &entradas_formula_[i].wt_pct, 0.1, 1.0, "%.3f")) {
-                changed = true;
-            }
+            changed |= ImGui::InputDouble("##wt", &entradas_formula_[i].wt_pct, 0.1, 1.0, "%.3f");
             ImGui::TableSetColumnIndex(2);
             if (ImGui::SmallButton("Del") && entradas_formula_.size() > 1) {
                 entradas_formula_.erase(entradas_formula_.begin() + static_cast<long>(i));
-                changed = true;
-                ImGui::PopID();
-                break;
+                changed = true; ImGui::PopID(); break;
             }
             ImGui::PopID();
         }
         ImGui::EndTable();
     }
 
-    if (ImGui::Button("+ Add Component")) {
-        entradas_formula_.push_back({"SiO2", 1.0});
-        changed = true;
-    }
+    if (ImGui::Button("+ Add Component")) { entradas_formula_.push_back({"SiO2", 1.0}); changed = true; }
     ImGui::SameLine();
     if (ImGui::Button("Calculate Empirical Formula") || changed) {
         res_formula_ = mineral_db_.calcular_formula_mineral(entradas_formula_, elem_base_norm_, num_atomos_norm_);
@@ -922,11 +800,9 @@ void PanelGeoMineralogical::dibujar_vista_formula_mineral() {
     ImGui::BeginChild("##FormulaOutputRight", ImVec2(0.0f, 0.0f), true);
     ImGui::Text("2. Calculated Empirical Formula & Database Match");
     ImGui::Separator();
-    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_green),
-                       "Empirical Formula:  %s", res_formula_.formula_empirica.c_str());
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_green), "Empirical Formula:  %s", res_formula_.formula_empirica.c_str());
     ImGui::Text("Closest Database Mineral:  %s", res_formula_.mineral_mas_cercano.c_str());
-    ImGui::Text("Ideal Stoichiometric Formula:  %s  (Match: %.2f %%)",
-                res_formula_.formula_ideal.c_str(), res_formula_.similitud_pct);
+    ImGui::Text("Ideal Stoichiometric Formula:  %s  (Match: %.2f %%)", res_formula_.formula_ideal.c_str(), res_formula_.similitud_pct);
     ImGui::Text("Analytical Total:  %.2f wt-%%", res_formula_.suma_analisis_wt);
 
     ImGui::Spacing();
@@ -989,14 +865,10 @@ void PanelGeoMineralogical::dibujar_vista_petrologia_cipw() {
     ImGui::BeginChild("##CIPWRight", ImVec2(0.0f, 0.0f), true);
     ImGui::Text("CIPW Normative Mineralogy & Petrological Indices");
     ImGui::Separator();
-    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_green),
-                       "TAS Classification:  %s", res_cipw_.clasificacion_tas.c_str());
-    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_blue),
-                       "QAPF Plutonic Equivalent:  %s", res_cipw_.clasificacion_qapf.c_str());
-    ImGui::Text("Alumina Saturation:  %s  (A/CNK = %.3f)",
-                res_cipw_.saturacion_alumina.c_str(), res_cipw_.indice_acnk);
-    ImGui::Text("Magnesium Number (Mg#):  %.2f   |   Differentiation Index (DI):  %.2f",
-                res_cipw_.mg_number, res_cipw_.indice_diferenciacion);
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_green), "TAS Classification:  %s", res_cipw_.clasificacion_tas.c_str());
+    ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_blue), "QAPF Plutonic Equivalent:  %s", res_cipw_.clasificacion_qapf.c_str());
+    ImGui::Text("Alumina Saturation:  %s  (A/CNK = %.3f)", res_cipw_.saturacion_alumina.c_str(), res_cipw_.indice_acnk);
+    ImGui::Text("Magnesium Number (Mg#):  %.2f   |   Differentiation Index (DI):  %.2f", res_cipw_.mg_number, res_cipw_.indice_diferenciacion);
 
     if (ImGui::BeginTable("##CIPWNormTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, ImVec2(0.0f, 210.0f))) {
         ImGui::TableSetupColumn("Normative Mineral Phase");
@@ -1022,8 +894,7 @@ void PanelGeoMineralogical::dibujar_vista_liberacion() {
     ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.accent_blue),
                        "Mineral Liberation & Grain Size Distribution (Gaudin / King Liberation Model)");
     ImGui::Separator();
-    static float p80_um = 105.0f;
-    static float d0_grain_um = 180.0f;
+    static float p80_um = 105.0f, d0_grain_um = 180.0f;
     ImGui::SetNextItemWidth(180.0f);
     ImGui::SliderFloat("Grind Size P80 (um)", &p80_um, 20.0f, 350.0f, "%.1f um");
     ImGui::SameLine(0.0f, 18.0f);
@@ -1042,14 +913,12 @@ void PanelGeoMineralogical::dibujar_vista_liberacion() {
             if (rf.wt_pct <= 0.01) continue;
             const double ratio = d0_grain_um / std::max(10.0f, p80_um);
             const double lib = std::clamp(100.0 * (1.0 - std::exp(-0.68 * ratio)), 5.0, 99.2);
-            const double bin = (100.0 - lib) * 0.65;
-            const double ter = (100.0 - lib) * 0.35;
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(rf.nombre_mineral.c_str());
             ImGui::TableSetColumnIndex(1); ImGui::Text("%.2f", rf.wt_pct);
             ImGui::TableSetColumnIndex(2); ImGui::TextColored(ImVec4(0.20f, 0.68f, 0.30f, 1.0f), "%.1f %%", lib);
-            ImGui::TableSetColumnIndex(3); ImGui::Text("%.1f %%", bin);
-            ImGui::TableSetColumnIndex(4); ImGui::Text("%.1f %%", ter);
+            ImGui::TableSetColumnIndex(3); ImGui::Text("%.1f %%", (100.0 - lib) * 0.65);
+            ImGui::TableSetColumnIndex(4); ImGui::Text("%.1f %%", (100.0 - lib) * 0.35);
         }
         ImGui::EndTable();
     }
@@ -1059,25 +928,17 @@ void PanelGeoMineralogical::renderizar() {
     css::ScopedHSCTheme hsc_theme;
     const auto tk = css::tokens();
 
-    // 1. Cinta de opciones superior (Main -> Home | Window | Help)
     dibujar_ribbon_superior();
 
-    // 2. Cuerpo central dividido en Panel Izquierdo "Features" + Área de Trabajo Derecha
     ImGui::BeginChild("##GeoFeaturesLeftDock", ImVec2(158.0f, -26.0f), true);
     ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(tk.text_secondary), "Features");
     ImGui::Separator();
-    if (css::feature_nav_button("f_mindb", "Mineral database", css::RibbonIcon::MineralDB, feature_activa_ == 0, 32.0f))
-        feature_activa_ = 0;
-    if (css::feature_nav_button("f_find", "Find mineral", css::RibbonIcon::FindMineral, feature_activa_ == 1, 32.0f))
-        feature_activa_ = 1;
-    if (css::feature_nav_button("f_mins", "Minerals", css::RibbonIcon::Crystal, feature_activa_ == 2, 32.0f))
-        feature_activa_ = 2;
-    if (css::feature_nav_button("f_ident", "Identify mineral", css::RibbonIcon::IdentifyQuestion, feature_activa_ == 3, 32.0f))
-        feature_activa_ = 3;
-    if (css::feature_nav_button("f_modal", "Modal calculations", css::RibbonIcon::ModalBarChart, feature_activa_ == 4, 32.0f))
-        feature_activa_ = 4;
-    if (css::feature_nav_button("f_lib", "Mineral liberation", css::RibbonIcon::Liberation, feature_activa_ == 5, 32.0f))
-        feature_activa_ = 5;
+    if (css::feature_nav_button("f_mindb", "Mineral database", css::RibbonIcon::MineralDB, feature_activa_ == 0, 32.0f)) feature_activa_ = 0;
+    if (css::feature_nav_button("f_find", "Find mineral", css::RibbonIcon::FindMineral, feature_activa_ == 1, 32.0f)) feature_activa_ = 1;
+    if (css::feature_nav_button("f_mins", "Minerals", css::RibbonIcon::Crystal, feature_activa_ == 2, 32.0f)) feature_activa_ = 2;
+    if (css::feature_nav_button("f_ident", "Identify mineral", css::RibbonIcon::IdentifyQuestion, feature_activa_ == 3, 32.0f)) feature_activa_ = 3;
+    if (css::feature_nav_button("f_modal", "Modal calculations", css::RibbonIcon::ModalBarChart, feature_activa_ == 4, 32.0f)) feature_activa_ = 4;
+    if (css::feature_nav_button("f_lib", "Mineral liberation", css::RibbonIcon::Liberation, feature_activa_ == 5, 32.0f)) feature_activa_ = 5;
     ImGui::EndChild();
 
     ImGui::SameLine(0.0f, 6.0f);
@@ -1094,7 +955,6 @@ void PanelGeoMineralogical::renderizar() {
     }
     ImGui::EndChild();
 
-    // 3. Barra de estado inferior estilo Outotec HSC Geo 8.0
     ImGui::BeginChild("##GeoOutotecStatusBar", ImVec2(0.0f, 22.0f), false, ImGuiWindowFlags_NoScrollbar);
     ImGui::TextColored(ImVec4(0.84f, 0.24f, 0.16f, 1.0f), "Outotec |");
     ImGui::SameLine(0.0f, 8.0f);
@@ -1106,8 +966,7 @@ void PanelGeoMineralogical::renderizar() {
     dl->AddRect(ImVec2(p0.x, p0.y + 3.0f), ImVec2(p0.x + 110.0f, p0.y + 16.0f), tk.border_strong, 2.0f);
     ImGui::Dummy(ImVec2(118.0f, 18.0f));
     ImGui::SameLine();
-    ImGui::TextDisabled("Ready — %s | Active Method: %s",
-                        data_source_,
+    ImGui::TextDisabled("Ready — %s | Active Method: %s", data_source_,
                         current_method_ == 0 ? "LS" : (current_method_ == 1 ? "WLS" : (current_method_ == 2 ? "NNLS" : "WNNLS")));
     ImGui::EndChild();
 

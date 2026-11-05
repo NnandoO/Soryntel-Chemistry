@@ -26,6 +26,7 @@ std::map<std::string,double> SpeciesConverter::analisisAEspecies(
     if (input.empty() || targets.empty() || targets.size() > 500) return result;
     for (const auto& [name,value] : input) if (!std::isfinite(value) || value < 0) return result;
     std::vector<std::string> rows;
+    rows.reserve(input.size());
     for (const auto& [name,value] : input) rows.push_back(name);
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(rows.size()),static_cast<Eigen::Index>(targets.size()));
     Eigen::VectorXd b(static_cast<Eigen::Index>(rows.size()));

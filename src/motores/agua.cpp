@@ -75,8 +75,8 @@ PropiedadesAgua Agua::mezcla_saturada(double pressure, double quality) {
         if (!std::isfinite(pressure) || !std::isfinite(quality) || quality < 0 || quality > 1)
             throw std::invalid_argument("Calidad de vapor requiere 0 <= x <= 1");
         const double temperature = IF97::Tsat97(pressure * 1e6);
-        const auto liquid = saturated(temperature,pressure,false);
-        const auto vapor = saturated(temperature,pressure,true);
+        auto liquid = saturated(temperature,pressure,false);
+        auto vapor = saturated(temperature,pressure,true);
         if (quality == 0) return liquid;
         if (quality == 1) return vapor;
         PropiedadesAgua state;

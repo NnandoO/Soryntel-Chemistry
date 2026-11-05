@@ -41,7 +41,7 @@ void Aplicacion::cargar_ejemplo(int ejemplo) {
 }
 
 void Aplicacion::cargar_ejemplo_1() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     // ── Ejemplo 1: Reformado de Metano (SMR) ──
     // CH₄ + H₂O → CO + 3H₂  (Reformador)
@@ -120,7 +120,7 @@ void Aplicacion::cargar_ejemplo_1() {
 }
 
 void Aplicacion::cargar_ejemplo_4() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     // ── Ejemplo 4: SMR con lazo de recirculación de CH₄ ──
     auto id_fuente = flowsheet_->agregar_nodo(nucleo::TipoNodo::Fuente, "CH₄ + Vapor");
@@ -176,7 +176,7 @@ void Aplicacion::cargar_ejemplo_4() {
 }
 
 void Aplicacion::cargar_ejemplo_2() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
     // ── Ejemplo 2: Flotación y Conminución de Cobre (Modo Partículas + Especies) ──
     // Alimentación (mineral con CuFeS₂, FeS₂, SiO₂ + PSD) → Molienda → Hidrociclón → Flotación → Concentrado + Relave
 
@@ -259,7 +259,7 @@ void Aplicacion::cargar_ejemplo_2() {
 }
 
 void Aplicacion::cargar_ejemplo_3() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     // ── Ejemplo 3: Alto Horno de Hierro (Pirometalurgia) ──
     auto id_mineral = flowsheet_->agregar_nodo(nucleo::TipoNodo::Fuente, "Mineral Fe₂O₃");
@@ -344,7 +344,7 @@ void Aplicacion::cargar_ejemplo_3() {
 }
 
 void Aplicacion::cargar_ejemplo_5() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     // ── Ejemplo 5: Proceso Bayer - Producción de Alúmina (HSC-Sim Reference 1) ──
     // Bauxita → Crushing → Screening → Pressure Leaching (+ NaOH) → Clarification
@@ -471,7 +471,7 @@ void Aplicacion::cargar_ejemplo_5() {
 }
 
 void Aplicacion::cargar_ejemplo_6() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     // ── Ejemplo 6: Proceso TiO₂ por Cloración con Reciclo de Cl₂ y Diagrama de Sankey (HSC-Sim Reference 2) ──
     auto* tio2  = gestor.especie_por_nombre("Dióxido de titanio");

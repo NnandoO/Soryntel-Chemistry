@@ -32,8 +32,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(sqlite3
         GIT_REPOSITORY https://github.com/azadkuh/sqlite-amalgamation.git
-        GIT_TAG 15d0ff10ebc7e7225eced1de84bb52137000899b
-        GIT_SHALLOW TRUE)
+        GIT_TAG 15d0ff10ebc7e7225eced1de84bb52137000899b)
     FetchContent_MakeAvailable(sqlite3)
     add_library(sqlite3_amalgamation STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
     target_include_directories(sqlite3_amalgamation PUBLIC ${sqlite3_SOURCE_DIR})
@@ -127,6 +126,22 @@ if(BUILD_TESTING)
         ${CMAKE_SOURCE_DIR}/tests/check_architecture.py ${CMAKE_SOURCE_DIR})
     add_test(NAME source_structure COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_structure.py)
     add_test(NAME external_reference_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/reference_data.py)
+    add_custom_target(format
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/run_clang_format.py --apply
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-format (.clang-format) across hexagonal C++ sources")
+    add_custom_target(format-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/run_clang_format.py --check
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Checking C++ formatting and #include layer order via clang-format")
+    add_custom_target(tidy-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_clang_tidy.py -p ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-tidy AST static analysis on hexagonal core")
+    add_custom_target(arch-check
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/check_architecture.py ${CMAKE_SOURCE_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Validating Hexagonal Architecture include graph and CMake target isolation")
 endif()
 if(CMA_BUILD_GUI)
     include(FetchContent)
@@ -136,7 +151,6 @@ if(CMA_BUILD_GUI)
     FetchContent_Declare(implot3d
         GIT_REPOSITORY https://github.com/brenocq/implot3d.git
         GIT_TAG 7913cf11684730119bd284fd8e7052d140e72f61
-        GIT_SHALLOW TRUE
     )
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -153,8 +167,9 @@ if(CMA_BUILD_GUI)
         ${implot_SOURCE_DIR}/implot.cpp ${implot_SOURCE_DIR}/implot_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d.cpp ${implot3d_SOURCE_DIR}/implot3d_items.cpp
         ${implot3d_SOURCE_DIR}/implot3d_meshes.cpp)
-    target_include_directories(cma_graphics PUBLIC SYSTEM ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
-        SYSTEM ${implot_SOURCE_DIR} SYSTEM ${implot3d_SOURCE_DIR})
+    target_include_directories(cma_graphics SYSTEM PUBLIC
+        ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
+        ${implot_SOURCE_DIR} ${implot3d_SOURCE_DIR})
     target_link_libraries(cma_graphics PUBLIC glfw OpenGL::GL ${CMAKE_DL_LIBS})
     file(GLOB CMA_PANEL_SOURCES CONFIGURE_DEPENDS src/interfaz/panels/*.cpp
         src/interfaz/application/*.cpp src/interfaz/canvas/*.cpp)
@@ -162,13 +177,15 @@ if(CMA_BUILD_GUI)
         src/interfaz/paneles.cpp src/interfaz/lienzo.cpp src/utils/i18n.cpp ${CMA_PANEL_SOURCES})
     target_link_libraries(cma_chemistry PRIVATE cma_graphics cma_domain cma_persistence cma_platform
         cma_sim cma_thermo cma_diagrams cma_aqueous cma_db cma_estimation cma_tools cma_advanced_aqueous Threads::Threads)
-    target_compile_options(cma_chemistry PRIVATE
-        -Wno-old-style-cast
-        -Wno-sign-conversion
-        -Wno-float-conversion
-        -Wno-shadow
-        -Wno-conversion
-    )
+    if(NOT CMA_WARNINGS_AS_ERRORS)
+        target_compile_options(cma_chemistry PRIVATE
+            -Wno-old-style-cast
+            -Wno-sign-conversion
+            -Wno-float-conversion
+            -Wno-shadow
+            -Wno-conversion
+        )
+    endif()
     include(GNUInstallDirs)
     target_compile_definitions(cma_chemistry PRIVATE CMA_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/cma-chemistry")
     install(TARGETS cma_chemistry DESTINATION ${CMAKE_INSTALL_BINDIR})

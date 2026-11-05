@@ -1,0 +1,45 @@
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++17
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 110
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+NamespaceIndentation: None
+FixNamespaceComments: true
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+# Orden de #include por capas de Arquitectura Hexagonal:
+# 1. Dominio y Puertos (nucleo puro, entidades, puertos)
+# 2. Casos de Uso y Motores Cientificos (application, motores, thermo, diagrams, aqueous, estimation, sim, tools, db, diagrama_flujo)
+# 3. Adaptadores Primarios/Secundarios y Persistencia (adapters, base_datos, interfaz, utils)
+# 4. Librerias cientificas / graficas de terceros (Eigen, nlohmann, imgui, implot, GLFW, sqlite3)
+# 5. Libreria Estandar de C++ (STL)
+IncludeCategories:
+  - Regex: '^"(domain|nucleo)/'
+    Priority: 1
+    SortPriority: 1
+  - Regex: '^"(application|motores|thermo|diagrams|aqueous|estimation|sim|tools|db|diagrama_flujo)/'
+    Priority: 2
+    SortPriority: 2
+  - Regex: '^"(adapters|base_datos|interfaz|utils)/'
+    Priority: 3
+    SortPriority: 3
+  - Regex: '^<(Eigen|nlohmann|imgui|implot|GLFW|sqlite3)'
+    Priority: 4
+    SortPriority: 4
+  - Regex: '^<.*>'
+    Priority: 5
+    SortPriority: 5
+  - Regex: '.*'
+    Priority: 6
+    SortPriority: 6

@@ -10,10 +10,39 @@ namespace {
 const char* kModalHMB = "Buscar Especie (HMB)";
 
 ImVec4 color_ok()   { return cma::interfaz::AdaptiveColor(0.30f, 0.85f, 0.40f, 1.0f); }
-ImVec4 color_malo() { return cma::interfaz::AdaptiveColor(0.90f, 0.40f, 0.30f, 1.0f); }
 ImVec4 color_aviso(){ return cma::interfaz::AdaptiveColor(0.95f, 0.75f, 0.25f, 1.0f); }
 ImVec4 color_cabecera_corriente() {
     return cma::interfaz::AdaptiveColor(0.85f, 0.92f, 1.00f, 1.0f);
+}
+
+void popup_autocompletar_especie(const domain::ThermoRepository& repo, char (&formula)[64],
+                                 bool& necesita_recalcular, bool& necesita_resolver) {
+    if (!ImGui::BeginPopup("##autocompletar")) return;
+    std::string q = formula;
+    for (char& c : q) {
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+    }
+    int mostradas = 0;
+    for (const auto* esp : repo.todas_especies()) {
+        if (mostradas >= 8) break;
+        std::string nf = esp->nombre + " " + esp->formula;
+        for (char& c : nf) {
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+        }
+        if (!q.empty() && nf.find(q) == std::string::npos) continue;
+        char etiqueta[192];
+        std::snprintf(etiqueta, sizeof(etiqueta), "%s  (%s)",
+                      esp->nombre.c_str(), esp->formula.c_str());
+        if (ImGui::Selectable(etiqueta)) {
+            copiar_texto(formula, sizeof(formula), esp->formula);
+            necesita_recalcular = true;
+            necesita_resolver = true;
+            ImGui::CloseCurrentPopup();
+        }
+        ++mostradas;
+    }
+    if (mostradas == 0) ImGui::TextDisabled("Sin coincidencias");
+    ImGui::EndPopup();
 }
 
 } // namespace
@@ -22,6 +51,8 @@ ImVec4 color_cabecera_corriente() {
 // Hoja unificada IN1 / OUT1 estilo HSC Heat and Material Balance Calculator
 // ─────────────────────────────────────────────────────────────────────────────
 void PanelBalanceHoja::dibujar_pestana_global_hoja(bool es_salida) {
+    const domain::ThermoRepository& repo =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     auto& grupos = lista(es_salida);
     const auto& motor_grupos = es_salida ? area_.salidas : area_.entradas;
 
@@ -264,26 +295,7 @@ void PanelBalanceHoja::dibujar_pestana_global_hoja(bool es_salida) {
                         accion_pendiente_ = AccionPendiente::BorrarCorriente;
                     ImGui::EndPopup();
                 }
-                if (ImGui::BeginPopup("##autocompletar")) {
-                    auto coincidencias =
-                        base_datos::GestorDB::instancia().buscar_especies(fila.formula);
-                    int mostradas = 0;
-                    for (const auto* esp : coincidencias) {
-                        if (mostradas >= 8) break;
-                        char etiqueta[192];
-                        std::snprintf(etiqueta, sizeof(etiqueta), "%s  (%s)",
-                                      esp->nombre.c_str(), esp->formula.c_str());
-                        if (ImGui::Selectable(etiqueta)) {
-                            copiar_texto(fila.formula, sizeof(fila.formula), esp->formula);
-                            necesita_recalcular = true;
-                            necesita_resolver = true;
-                            ImGui::CloseCurrentPopup();
-                        }
-                        ++mostradas;
-                    }
-                    if (coincidencias.empty()) ImGui::TextDisabled("Sin coincidencias");
-                    ImGui::EndPopup();
-                }
+                popup_autocompletar_especie(repo, fila.formula, necesita_recalcular, necesita_resolver);
 
                 // Columna B: Temperatura
                 ImGui::TableSetColumnIndex(2);
@@ -484,6 +496,8 @@ void PanelBalanceHoja::dibujar_pestana_porcentaje(bool es_salida) {
 void PanelBalanceHoja::dibujar_tabla_corriente(std::vector<CorrienteUI>& grupos, int idx,
                                                bool es_salida) {
     if (idx < 0 || idx >= static_cast<int>(grupos.size())) return;
+    const domain::ThermoRepository& repo =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     CorrienteUI& g = grupos[static_cast<size_t>(idx)];
 
     const std::vector<motores::CorrienteBalance>& motor_grupos =
@@ -570,26 +584,7 @@ void PanelBalanceHoja::dibujar_tabla_corriente(std::vector<CorrienteUI>& grupos,
                 if (ImGui::MenuItem("Bajar")) accion_pendiente_ = AccionPendiente::MoverAbajo;
                 ImGui::EndPopup();
             }
-            if (ImGui::BeginPopup("##autocompletar")) {
-                auto coincidencias =
-                    base_datos::GestorDB::instancia().buscar_especies(fila.formula);
-                int mostradas = 0;
-                for (const auto* esp : coincidencias) {
-                    if (mostradas >= 8) break;
-                    char etiqueta[192];
-                    std::snprintf(etiqueta, sizeof(etiqueta), "%s  (%s)",
-                                  esp->nombre.c_str(), esp->formula.c_str());
-                    if (ImGui::Selectable(etiqueta)) {
-                        copiar_texto(fila.formula, sizeof(fila.formula), esp->formula);
-                        necesita_recalcular = true;
-                        necesita_resolver = true;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ++mostradas;
-                }
-                if (coincidencias.empty()) ImGui::TextDisabled("Sin coincidencias");
-                ImGui::EndPopup();
-            }
+            popup_autocompletar_especie(repo, fila.formula, necesita_recalcular, necesita_resolver);
 
             // Temperatura
             ImGui::TableSetColumnIndex(1);
@@ -861,7 +856,9 @@ void PanelBalanceHoja::dibujar_pestana_target() {
     ImGui::TextColored(cma::interfaz::AdaptiveColor(0.7f, 0.85f, 1.0f, 1.0f),
                        "4. Balance Teórico (Reacción o Equilibrio de Gibbs) y Escalado Industrial");
 
-    const auto& todas_rxn = base_datos::GestorDB::instancia().todas_reacciones();
+    const domain::ThermoRepository& repo =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+    const auto& todas_rxn = repo.todas_reacciones();
     if (!todas_rxn.empty()) {
         rxn_sel_idx_ = std::clamp(rxn_sel_idx_, 0, static_cast<int>(todas_rxn.size()) - 1);
         std::string items_rxn;
@@ -886,7 +883,7 @@ void PanelBalanceHoja::dibujar_pestana_target() {
         if (ImGui::Button("Generar Hoja desde Reacción")) {
             const nucleo::Reaccion* rxn = todas_rxn[static_cast<size_t>(rxn_sel_idx_)];
             motor_.poblar_desde_reaccion(
-                area_, *rxn, base_datos::GestorDB::instancia().mapa_especies(),
+                area_, *rxn, repo.mapa_especies(),
                 rxn_kmol_base_, rxn_conversion_pct_ / 100.0, rxn_exceso_o2_pct_,
                 rxn_incluir_aire_n2_, nucleo::STP_TEMP, nucleo::STP_TEMP);
             entradas_.clear();
@@ -1009,8 +1006,10 @@ void PanelBalanceHoja::calcular_equilibrio_gibbs() {
     const double T_K = std::max(motores::temperatura_a_K(gem_temp_, unidad_temperatura()), 298.15);
     const double P_atm = std::max(gem_pres_bar_ / 1.01325, 0.01);
 
+    const domain::ThermoRepository& repo =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     motores::MinimizadorGibbs minimizador;
-    const auto& db = base_datos::GestorDB::instancia().mapa_especies();
+    const auto& db = repo.mapa_especies();
     const auto res = minimizador.minimizar(alimentacion, T_K, P_atm, db, candidatos);
     if (!res.convergio || res.flujo_molar.empty()) {
         gem_ok_ = false;
@@ -1039,7 +1038,8 @@ void PanelBalanceHoja::calcular_equilibrio_gibbs() {
     // Actualiza cantidades de las especies existentes o reconstruye la corriente
     std::map<int64_t, bool> asignados;
     for (size_t r = 0; r < corr_out.filas.size(); ++r) {
-        const auto* esp = buscar_especie_por_nombre_o_formula(corr_out.filas[r].formula);
+        const auto* esp = repo.especie_por_nombre(corr_out.filas[r].formula);
+        if (!esp) esp = buscar_especie_por_nombre_o_formula(corr_out.filas[r].formula);
         if (esp != nullptr && res.flujo_molar.count(esp->id)) {
             corr_out.filas[r].kmol = res.flujo_molar.at(esp->id);
             corr_out.filas[r].temper = T_disp;

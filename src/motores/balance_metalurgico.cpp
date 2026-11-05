@@ -59,12 +59,12 @@ double gamma_q(double a, double x) {
 bool resolver_lineal(std::vector<std::vector<double>> a,
                      std::vector<double> b,
                      std::vector<double>& x) {
-    const int n = static_cast<int>(b.size());
+    const size_t n = b.size();
     if (n == 0) { x.clear(); return true; }
-    for (int col = 0; col < n; ++col) {
-        int pivote = col;
+    for (size_t col = 0; col < n; ++col) {
+        size_t pivote = col;
         double mejor = std::fabs(a[col][col]);
-        for (int fila = col + 1; fila < n; ++fila) {
+        for (size_t fila = col + 1; fila < n; ++fila) {
             const double v = std::fabs(a[fila][col]);
             if (v > mejor) { mejor = v; pivote = fila; }
         }
@@ -74,17 +74,17 @@ bool resolver_lineal(std::vector<std::vector<double>> a,
             std::swap(b[pivote], b[col]);
         }
         const double p = a[col][col];
-        for (int fila = col + 1; fila < n; ++fila) {
+        for (size_t fila = col + 1; fila < n; ++fila) {
             const double factor = a[fila][col] / p;
             if (factor == 0.0) continue;
-            for (int c = col; c < n; ++c) a[fila][c] -= factor * a[col][c];
+            for (size_t c = col; c < n; ++c) a[fila][c] -= factor * a[col][c];
             b[fila] -= factor * b[col];
         }
     }
     x.assign(n, 0.0);
-    for (int fila = n - 1; fila >= 0; --fila) {
+    for (size_t fila = n; fila-- > 0;) {
         double suma = b[fila];
-        for (int c = fila + 1; c < n; ++c) suma -= a[fila][c] * x[c];
+        for (size_t c = fila + 1; c < n; ++c) suma -= a[fila][c] * x[c];
         if (std::fabs(a[fila][fila]) < 1e-12) return false;
         x[fila] = suma / a[fila][fila];
         if (!std::isfinite(x[fila])) return false;
@@ -94,8 +94,8 @@ bool resolver_lineal(std::vector<std::vector<double>> a,
 
 int rango_matriz(std::vector<std::vector<double>> a) {
     if (a.empty()) return 0;
-    const int filas = static_cast<int>(a.size());
-    const int columnas = static_cast<int>(a[0].size());
+    const size_t filas = a.size();
+    const size_t columnas = a[0].size();
     for (auto& fila : a) {
         double escala = 0.0;
         for (double v : fila) escala = std::max(escala, std::fabs(v));
@@ -103,27 +103,27 @@ int rango_matriz(std::vector<std::vector<double>> a) {
             for (double& v : fila) v /= escala;
         }
     }
-    int r = 0;
-    for (int col = 0; col < columnas && r < filas; ++col) {
-        int pivote = r;
+    size_t r = 0;
+    for (size_t col = 0; col < columnas && r < filas; ++col) {
+        size_t pivote = r;
         double mejor = 0.0;
-        for (int fila = r; fila < filas; ++fila) {
+        for (size_t fila = r; fila < filas; ++fila) {
             const double v = std::fabs(a[fila][col]);
             if (v > mejor) { mejor = v; pivote = fila; }
         }
         if (mejor < 1e-9) continue;
         std::swap(a[pivote], a[r]);
         const double p = a[r][col];
-        for (int c = col; c < columnas; ++c) a[r][c] /= p;
-        for (int fila = 0; fila < filas; ++fila) {
+        for (size_t c = col; c < columnas; ++c) a[r][c] /= p;
+        for (size_t fila = 0; fila < filas; ++fila) {
             if (fila == r) continue;
             const double factor = a[fila][col];
             if (factor == 0.0) continue;
-            for (int c = col; c < columnas; ++c) a[fila][c] -= factor * a[r][c];
+            for (size_t c = col; c < columnas; ++c) a[fila][c] -= factor * a[r][c];
         }
         ++r;
     }
-    return r;
+    return static_cast<int>(r);
 }
 
 struct Variable {

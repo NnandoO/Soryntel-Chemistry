@@ -193,8 +193,7 @@ void PanelPropiedades::propiedades_nodo(nucleo::Nodo& nodo) {
     }
 }
 
-static void dibujar_selector_reaccion_hsc(nucleo::Nodo& nodo, const std::function<void()>& al_cambio) {
-    auto& gestor = base_datos::GestorDB::instancia();
+static void dibujar_selector_reaccion_hsc(const domain::ThermoRepository& gestor, nucleo::Nodo& nodo, const std::function<void()>& al_cambio) {
     auto rxns = gestor.todas_reacciones();
     int rxn_id = nodo.params.count("reaccion_id") ? static_cast<int>(nodo.params.at("reaccion_id")) : 0;
     const auto* rxn_actual = (rxn_id > 0) ? gestor.reaccion_por_id(rxn_id) : nullptr;
@@ -221,9 +220,10 @@ static void dibujar_selector_reaccion_hsc(nucleo::Nodo& nodo, const std::functio
 }
 
 void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
+    const domain::ThermoRepository& gestor =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     switch (nodo.tipo) {
         case nucleo::TipoNodo::Fuente: {
-            auto& gestor = base_datos::GestorDB::instancia();
             
             // Temperature input
             double T = nodo.params.count("temperatura") ? nodo.params.at("temperatura") : 
@@ -338,10 +338,12 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
         case nucleo::TipoNodo::ReactorEsteq:
         case nucleo::TipoNodo::ReactorCinetica:
         case nucleo::TipoNodo::Reactor: {
-            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
+            dibujar_selector_reaccion_hsc(gestor, nodo, al_cambio_flowsheet);
             double conv = nodo.conversion();
+            const double min_conversion = 0.0;
+            const double max_conversion = 1.0;
             if (ImGui::SliderScalar("Conversión (X)", ImGuiDataType_Double, &conv,
-                                    & (const double&){0.0}, & (const double&){1.0}, "%.3f")) {
+                                    &min_conversion, &max_conversion, "%.3f")) {
                 nodo.params["conversion"] = std::clamp(conv, 0.0, 1.0);
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
@@ -482,7 +484,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
             break;
         }
         case nucleo::TipoNodo::Separador: {
-            auto& gestor_sep = base_datos::GestorDB::instancia();
+            const auto& gestor_sep = gestor;
             ImGui::TextWrapped("%s", tr("La salida 1 retira las especies marcadas (reciclo/reactivo). La salida 0 es la corriente restante."));
             ImGui::Spacing();
             if (ImGui::Button(tr("Agregar Especie a Remover##sep"), ImVec2(-1, 0))) {
@@ -646,7 +648,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
                 nodo.params["dissolution"] = diss;
                 if (al_cambio_flowsheet) al_cambio_flowsheet();
             }
-            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
+            dibujar_selector_reaccion_hsc(gestor, nodo, al_cambio_flowsheet);
             ImGui::TextWrapped("%s", tr("Salida 0 = solución cargada (líquidos), Salida 1 = residuo (sólidos)."));
             dibujar_selector_splits(nodo, tr("Fijar Especie (Residuo / Salida 1)"));
             break;
@@ -737,7 +739,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
         case nucleo::TipoNodo::HornoReverbero:
         case nucleo::TipoNodo::Tostador:
         case nucleo::TipoNodo::Convertidor: {
-            dibujar_selector_reaccion_hsc(nodo, al_cambio_flowsheet);
+            dibujar_selector_reaccion_hsc(gestor, nodo, al_cambio_flowsheet);
             double conv = nodo.conversion();
             if (ImGui::InputDouble("Conversión", &conv, 0, 1, "%.3f")) {
                 nodo.params["conversion"] = conv;
@@ -757,7 +759,8 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
 }
 
 void PanelPropiedades::dibujar_selector_splits(nucleo::Nodo& nodo, const char* titulo) {
-    auto& gestor = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& gestor =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     ImGui::Spacing();
     if (ImGui::Button(titulo, ImVec2(-1, 0))) {
         ModalBuscadorDB::instancia().abrir("Buscar Especie (Distribución Salida 1)");
@@ -855,7 +858,8 @@ void PanelPropiedades::propiedades_flujo_especificas(nucleo::Flujo& flujo) {
         if (al_cambio_flowsheet) al_cambio_flowsheet();
     }
     
-    auto& gestor = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& gestor =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     ImGui::Text(tr("Flujo Molar Total: %.6f kmol/s"), flujo.flujo_molar_total());
     ImGui::Text(tr("Flujo Másico Total: %.3f t/h (%.4f kg/s)"), flujo.masa_total_t_h(gestor), flujo.masa_total(gestor));
     

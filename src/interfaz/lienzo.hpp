@@ -1,5 +1,6 @@
 #pragma once
 #include "nucleo/tipos.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include "diagrama_flujo/flowsheet.hpp"
 #include <imgui.h>
 #include <functional>
@@ -13,6 +14,7 @@ public:
 
     static void dibujar_modelo(ImDrawList* draw, ImVec2 c, float s, nucleo::TipoNodo tipo);
     void establecer_flowsheet(diagrama_flujo::Flowsheet* fs);
+    void establecer_repositorio(const domain::ThermoRepository* repo) { repo_ = repo; }
     void renderizar(const ImVec2& region);
     void centrar_en(float x, float y);
     void encajar_todo();
@@ -67,6 +69,7 @@ public:
 
 private:
     diagrama_flujo::Flowsheet* flowsheet_ = nullptr;
+    const domain::ThermoRepository* repo_ = nullptr;
 
     void renderizar_nodo(nucleo::Nodo& nodo, const ImVec2& pos_lienzo);
     void renderizar_flujos(const ImVec2& pos_lienzo);

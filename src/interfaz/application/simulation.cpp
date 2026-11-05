@@ -35,7 +35,7 @@ static std::string destino_del_flujo(const cma::diagrama_flujo::Flowsheet& fs, i
 }
 
 void Aplicacion::ejecutar_simulacion() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
     auto db = gestor.mapa_especies();
 
     panel_resultados_.limpiar();
@@ -270,7 +270,7 @@ void Aplicacion::exportar_resultados_csv() {
     if (filepath.size() < 4 || filepath.substr(filepath.size() - 4) != ".csv")
         filepath += ".csv";
 
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
 
     std::ostringstream ss;
     ss << "Flujo_ID,Nombre,Origen,Destino,Temperatura(K),Presion(atm),Flujo_Total(kmol/s),Especie,Flujo_Especie(kmol/s),Fase\n";
@@ -313,7 +313,7 @@ void Aplicacion::exportar_resultados_csv() {
 }
 
 void Aplicacion::ejecutar_gibbs() {
-    auto& gestor = base_datos::GestorDB::instancia();
+    auto& gestor = repository_;
     auto db = gestor.mapa_especies();
 
     try {

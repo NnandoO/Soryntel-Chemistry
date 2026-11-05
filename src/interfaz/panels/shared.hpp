@@ -25,7 +25,8 @@
 
 
 namespace cma { namespace interfaz {
-bool parse_chemical_equation(const std::string&, nucleo::Reaccion&, std::string&);
+bool parse_chemical_equation(const std::string&, nucleo::Reaccion&, std::string&,
+                             const domain::ThermoRepository* repo = nullptr);
 std::map<std::string, int> parse_formula_elements(const std::string&, std::string&);
 
 inline ImVec4 AdaptiveColor(float r, float g, float b, float a) {
@@ -65,11 +66,14 @@ inline std::string convert_to_subscript(const std::string& s) {
 }
 
 
-inline const cma::nucleo::Especie* buscar_especie_por_nombre_o_formula(const std::string& query_raw) {
+inline const cma::nucleo::Especie* buscar_especie_por_nombre_o_formula(
+    const std::string& query_raw,
+    const domain::ThermoRepository* repo = nullptr) {
     std::string query = trim_str(query_raw);
     if (query.empty()) return nullptr;
 
-    auto& gestor = cma::base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& gestor =
+        repo ? *repo : static_cast<const domain::ThermoRepository&>(cma::base_datos::GestorDB::instancia());
 
     // Strip state tags like (g), (s), (l), (a), (+a), (-a), (+3a), etc.
     std::string formula_clean;
