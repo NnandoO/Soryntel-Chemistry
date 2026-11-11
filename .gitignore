@@ -3,6 +3,7 @@ build/
 build_win/
 _deps/
 deps_win/
+evidence_stage7f/
 _CPack_Packages/
 dist/
 *.tar.gz
