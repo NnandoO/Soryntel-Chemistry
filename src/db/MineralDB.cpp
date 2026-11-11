@@ -381,20 +381,18 @@ bool MineralDB::cumple_consulta_hsc(const FichaMineralGeo& m, const std::string&
         std::stringstream ss(expr);
         std::string tok;
         while (ss >> tok) {
-            try {
-                size_t idx = 0;
-                double v = std::stod(tok, &idx);
-                if (idx > 0) nums.push_back(v);
-            } catch (...) {}
+            char* endp = nullptr;
+            const double v = std::strtod(tok.c_str(), &endp);
+            if (endp != tok.c_str()) nums.push_back(v);
         }
 
         if (expr_l.find("between") != std::string::npos && nums.size() >= 2) {
             double lo = std::min(nums[0], nums[1]);
             double hi = std::max(nums[0], nums[1]);
             if (valor_campo < lo || valor_campo > hi) return false;
-        } else if ((expr_l.find("greater") != std::string::npos || expr_l.find(">") != std::string::npos) && !nums.empty()) {
+        } else if ((expr_l.find("greater") != std::string::npos || expr_l.find('>') != std::string::npos) && !nums.empty()) {
             if (!(valor_campo > nums[0])) return false;
-        } else if ((expr_l.find("less") != std::string::npos || expr_l.find("<") != std::string::npos) && !nums.empty()) {
+        } else if ((expr_l.find("less") != std::string::npos || expr_l.find('<') != std::string::npos) && !nums.empty()) {
             if (!(valor_campo < nums[0])) return false;
         } else if (!nums.empty()) {
             if (std::abs(valor_campo - nums[0]) > 1.0) return false;

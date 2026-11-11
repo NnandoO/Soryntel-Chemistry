@@ -76,7 +76,8 @@ void PanelLCA::cargar_flujos(diagrama_flujo::Flowsheet* flowsheet) {
         return;
     }
 
-    auto& gestor = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& repo =
+        (repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia()));
 
     for (auto& [fid, flujo] : flowsheet->mapa_flujos()) {
         if (flujo.es_energia) continue;  // la energía se declara en Manuales
@@ -126,7 +127,7 @@ void PanelLCA::cargar_flujos(diagrama_flujo::Flowsheet* flowsheet) {
 
         for (const auto& [sid, n_moles] : flujo.flujo_molar) {
             if (!std::isfinite(n_moles) || n_moles <= 0.0) continue;
-            const auto* esp = gestor.especie_por_id(sid);
+            const auto* esp = repo.especie_por_id(sid);
             const std::string etiqueta =
                 esp != nullptr ? esp->formula : ("Especie #" + std::to_string(sid));
             const double masa_molar =

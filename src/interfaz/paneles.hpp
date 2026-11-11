@@ -48,7 +48,7 @@ public:
         static ModalBuscadorDB inst;
         return inst;
     }
-    
+
     void abrir(const char* titulo_popup);
     bool dibujar(const char* titulo_popup, std::vector<const nucleo::Especie*>& seleccionados, bool seleccion_multiple = true);
 
@@ -207,13 +207,13 @@ private:
     bool mostrar_leyenda_ = true;
     char busqueda_[64] = "";
     bool buscar_ = false;
-    
+
     // Nuevas variables
     int vista_actual_ = 0; // 0 = Chart, 1 = Database
     char prop_seleccionada_[128] = "Electronegativity";
     bool db_inicializada_ = false;
     char filename_[256] = "elementos_db.json";
-    
+
     void renderizar_elemento(int Z, const ImVec2& pos, const ImVec2& tam);
     void renderizar_leyenda(const ImVec2& pos);
 };
@@ -257,7 +257,7 @@ public:
         calc_cancelled_ = true;
         if (calc_thread_.joinable()) calc_thread_.join();
     }
-    
+
     void renderizar(const std::map<int64_t, nucleo::Especie>& db);
 
 private:
@@ -303,7 +303,7 @@ private:
     std::vector<double> x_values_; // Temperature
     std::vector<double> y_values_; // Pressure
     std::map<int64_t, std::vector<double>> z_values_; // key: species ID, value: amounts at each (T,P) grid point
-    
+
     struct ChartSurface {
         int64_t id;
         std::string legend;
@@ -324,12 +324,12 @@ private:
     // Energía de Gibbs total por punto del grid (para la tabla)
     std::vector<double> g_values_;
     std::vector<double> temp_g_values_;
-    
+
     std::atomic<bool> is_calculating_{false};
     std::atomic<float> calc_progress_{0.0f};
     std::atomic<bool> calculation_done_{false};
     std::atomic<bool> calc_cancelled_{false};
-    
+
     // Valid dimensions of the current plot data
     int plot_t_steps_ = 0;
     int plot_p_steps_ = 0;
@@ -354,7 +354,7 @@ private:
     double y_min_user_ = 0.0, y_max_user_ = 10.0;
     double z_min_user_ = 0.0, z_max_user_ = 1.0;
     int filtro_fase_ = -1;                          // -1 = all phases, 0..n = fase_num (0=todas)
-    
+
     // Temp storage for async thread results
     std::vector<double> temp_x_values_;
     std::vector<double> temp_y_values_;
@@ -422,12 +422,12 @@ private:
     double T_min_ = 298, T_max_ = 2000;
     int curva_activa_ = 0; // 0=H, 1=S, 2=Cp, 3=G, 4=Ellingham
     cma::application::modules::PropertyDiagrams motor_;
-    
+
     // UI state for multiple species
     bool show_select_species_modal_ = false;
     char search_buffer_[256] = "";
     std::map<int64_t, bool> especies_seleccionadas_;
-    
+
     struct CurvaEspecie {
         std::string nombre;
         std::vector<cma::application::modules::PuntoPropiedad> datos;
@@ -435,10 +435,10 @@ private:
         std::vector<double> Ys_cache;
     };
     std::vector<CurvaEspecie> datos_calculados_;
-    
+
     bool calculado_ = false;
     bool localizar_ = false;
-    
+
     void recalcular();
 };
 
@@ -555,7 +555,7 @@ private:
         int carga = 0;
         bool calculo_ok = false;
     };
-    
+
     std::vector<FilaAqua> filas_;
     bool usar_davies_ = true;
     bool usar_pitzer_ = false;
@@ -648,16 +648,16 @@ private:
 };
 
 // Struct for GPS Module items
-struct StockItem { 
-    char place[64]; 
-    char mat[64]; 
-    float amt; 
-    float fv; 
-    float o2; 
-    float cu; 
-    float fe; 
-    float ni; 
-    float s; 
+struct StockItem {
+    char place[64];
+    char mat[64];
+    float amt;
+    float fv;
+    float o2;
+    float cu;
+    float fe;
+    float ni;
+    float s;
     float x; // GPS X coordinate
     float y; // GPS Y coordinate
     bool selected_for_mix = false;
@@ -674,23 +674,23 @@ private:
     void refrescar_datos();
 
     int view_mode_ = 0; // 0 = Map, 1 = Stock
-    
+
     // 2D Camera state
     float zoom_ = 1.0f;
     float camera_x_ = 0.0f;
     float camera_y_ = 0.0f;
-    
+
     // UI selections
     int maps_idx_ = 0;
-    
+
     std::vector<StockItem> stock_db_;
     int selected_idx_ = -1; // Currently selected item for the right panel
-    
+
     // Right panel form data (bound to selected item)
     char place_name_[64] = "";
     char material_[64] = "";
     int amount_tons_ = 0;
-    
+
     // Map View Mode Dialog state
     bool show_dialog_ = true;
     bool mostrar_transporte_ = false;
@@ -722,7 +722,7 @@ private:
         double resistance = 0.0; // °C/kW
         double heat_flow = 0.0; // kW
         double heat_flux = 0.0; // kW/m²
-        
+
         // Fixed value indicators
         bool fix_temp_left = false;
         bool fix_temp_right = false;
@@ -753,17 +753,17 @@ public:
     PanelConvertidorEspecies();
     void renderizar();
 private:
-    struct InputItem { 
-        char element[32]; 
-        double wt_pct; 
-        double calc_elem; 
+    struct InputItem {
+        char element[32];
+        double wt_pct;
+        double calc_elem;
     };
-    struct OutputItem { 
-        char species[32]; 
-        double calc_wt; 
-        double target_wt; 
-        double weight_coeff; 
-        char type[16]; 
+    struct OutputItem {
+        char species[32];
+        double calc_wt;
+        double target_wt;
+        double weight_coeff;
+        char type[16];
     };
 
     std::vector<InputItem> inputs_;
@@ -775,10 +775,10 @@ private:
     bool mostrar_grafico_ = false;
 
     cma::application::modules::SpeciesConverter motor_;
-    
+
     char save_filename_[128] = "conversion.json";
     char open_filename_[128] = "conversion.json";
-    
+
     void calcular();
     void guardar_json(const char* path);
     void cargar_json(const char* path);
@@ -793,7 +793,7 @@ private:
     int categoria_ = 0;
     int unidad_origen_ = 0;
     int unidad_destino_ = 1;
-    
+
     struct FilaUnidades {
         double d1 = 0.0;
         double d2 = 0.0;
@@ -830,7 +830,7 @@ private:
 };
 
 // ── Panel de Método Benson ──────────────────────────────────────────────
-struct Vec3 { 
+struct Vec3 {
     float x,y,z;
     Vec3 operator+(const Vec3& o) const { return {x+o.x, y+o.y, z+o.z}; }
     Vec3 operator-(const Vec3& o) const { return {x-o.x, y-o.y, z-o.z}; }
@@ -862,13 +862,13 @@ private:
     double h_est_ = 0.0;
     double s_est_ = 0.0;
     double cp_est_ = 0.0;
-    
+
     std::vector<Atomo3D> atomos_;
     std::vector<Enlace3D> enlaces_;
-    
+
     float atom_size_ = 1.0f;
     float opacity_ = 1.0f;
-    
+
     void agregar_grupo(const std::string& nombre, const std::string& elemento_central);
     void deshacer();
     void recalcular();
@@ -1103,21 +1103,21 @@ private:
     diagrama_flujo::Flowsheet* flowsheet_ = nullptr;
     struct DataPoint { float x; float y; };
     std::vector<DataPoint> data_;
-    
+
     int func_type_ = 0; // 0=Linear, 1=Polynomial, 2=Rational
-    
+
     // Regression parameters (A, B, C, D, E, F, G)
     float params_[7] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-    
+
     // Results
     float error_ = 0.0f;
     float r2_ = 0.0f;
     float ssr_ = 0.0f;
-    
+
     // Gradient Descent Settings
     int iterations_max_ = 1000;
     float learning_rate_ = 0.0001f;
-    
+
     // Input
     void refrescar_datos();
     void fit_curve();
@@ -1180,11 +1180,11 @@ private:
         int group; // 0 or 1 for coloring
     };
     std::vector<StatDataPoint> db_;
-    
+
     // UI state
     int x_axis_col_ = 0; // 0=Al2O3, 1=Cr2O3, 2=Zn, 3=Cu
     int y_axis_col_ = 1;
-    
+
     // Variance data for PCA mock
     std::vector<float> pca_variance_;
     std::vector<std::string> pca_labels_;

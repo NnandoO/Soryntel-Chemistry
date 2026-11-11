@@ -9,7 +9,7 @@ ResultadoFit DataFitter::lineal(const std::vector<double>& x, const std::vector<
 }
 ResultadoFit DataFitter::polinomial(const std::vector<double>& x, const std::vector<double>& y, int grado) {
     ResultadoFit result;
-    if (grado < 0 || grado > 12 || x.size() != y.size() || x.size() < static_cast<size_t>(grado + 1) ||
+    if (grado < 0 || grado > 12 || x.size() != y.size() || x.size() < static_cast<size_t>(grado) + 1 ||
         x.size() > 1000000 || std::any_of(x.begin(),x.end(),[](double v){ return !std::isfinite(v); }) ||
         std::any_of(y.begin(),y.end(),[](double v){ return !std::isfinite(v); })) {
         result.mensaje = "Datos no finitos, grado inválido o puntos insuficientes"; return result;
@@ -30,7 +30,7 @@ ResultadoFit DataFitter::polinomial(const std::vector<double>& x, const std::vec
     if (solver.rank() != grado + 1) { result.mensaje = "Polinomio no identificable (matriz singular)"; return result; }
     const Eigen::VectorXd coefficients = solver.solve(target);
     if (!coefficients.allFinite()) { result.mensaje = "Ajuste no finito"; return result; }
-    result.coeficientes.assign(static_cast<size_t>(grado + 1), 0);
+    result.coeficientes.assign(static_cast<size_t>(grado) + 1, 0);
     // Transform the centered polynomial back to coefficients of powers of x.
     const double divisor = scale > 0 ? scale : 1;
     for (int j = 0; j <= grado; ++j) {

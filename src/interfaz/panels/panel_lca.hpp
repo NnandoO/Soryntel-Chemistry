@@ -1,5 +1,6 @@
 #pragma once
 #include "diagrama_flujo/flowsheet.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include "motores/lca.hpp"
 #include <string>
 #include <vector>
@@ -9,10 +10,13 @@ namespace cma { namespace interfaz {
 // ── Panel de Evaluación LCA (dataset de frontera + mapeo tipo GaBi) ─────────
 class PanelLCA {
 public:
+    explicit PanelLCA(const domain::ThermoRepository* repo = nullptr) : repo_(repo) {}
+    void establecer_repositorio(const domain::ThermoRepository* repo) { repo_ = repo; }
     void renderizar(diagrama_flujo::Flowsheet* flowsheet = nullptr);
     void reset();
 
 private:
+    const domain::ThermoRepository* repo_ = nullptr;
     struct FilaUI {
         int64_t stream_id = -1;
         std::string equipo;

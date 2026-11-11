@@ -551,7 +551,7 @@ void Aplicacion::renderizar() {
                 }
 
                 // Gráfico de barras: Points within range (Distribución de corrientes)
-                auto& db = base_datos::GestorDB::instancia();
+                auto& db = repository_;
                 std::vector<double> vals;
                 for (const auto& [fid, fl] : flowsheet_->mapa_flujos()) {
                     if (fl.pagina != lienzo_.pagina_actual) continue;
@@ -622,7 +622,7 @@ void Aplicacion::renderizar() {
                     ImGui::TreePop();
                 }
                 if (ImGui::TreeNodeEx(tr("Corrientes (Flujos)"), ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& db = base_datos::GestorDB::instancia();
+                    auto& db = repository_;
                     for (auto& [fid, f] : flowsheet_->mapa_flujos()) {
                         bool sel = (lienzo_.id_flujo_seleccionado == fid);
                         std::string name = f.nombre.empty() ? ("Flujo " + std::to_string(fid)) : f.nombre;

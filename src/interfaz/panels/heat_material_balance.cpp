@@ -13,10 +13,6 @@ const char* kModalHMB = "Buscar Especie (HMB)";
 ImVec4 color_ok()   { return cma::interfaz::AdaptiveColor(0.30f, 0.85f, 0.40f, 1.0f); }
 ImVec4 color_malo() { return cma::interfaz::AdaptiveColor(0.90f, 0.40f, 0.30f, 1.0f); }
 ImVec4 color_aviso(){ return cma::interfaz::AdaptiveColor(0.95f, 0.75f, 0.25f, 1.0f); }
-ImVec4 color_cabecera_corriente() {
-    return cma::interfaz::AdaptiveColor(0.85f, 0.92f, 1.00f, 1.0f);
-}
-
 } // namespace
 
 // ─────────────────────────────────────────────────────────────────────────────

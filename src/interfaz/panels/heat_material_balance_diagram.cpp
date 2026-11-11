@@ -325,6 +325,9 @@ void PanelBalanceHoja::dibujar_diagrama() {
 void PanelBalanceHoja::cargar_flujos(diagrama_flujo::Flowsheet* fs) {
     if (fs == nullptr) return;
 
+    const domain::ThermoRepository& repo =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+
     entradas_.clear();
     salidas_.clear();
 
@@ -367,7 +370,7 @@ void PanelBalanceHoja::cargar_flujos(diagrama_flujo::Flowsheet* fs) {
         if (!flujo.flujo_molar.empty()) {
             for (const auto& [sid, n] : flujo.flujo_molar) {
                 if (std::abs(n) < 1e-14) continue;
-                const auto* esp = base_datos::GestorDB::instancia().especie_por_id(sid);
+                const auto* esp = repo.especie_por_id(sid);
                 FilaUI f;
                 copiar_texto(f.formula, sizeof(f.formula),
                              esp != nullptr ? esp->formula
@@ -387,7 +390,8 @@ void PanelBalanceHoja::cargar_flujos(diagrama_flujo::Flowsheet* fs) {
                 c.filas.push_back(f);
             }
             for (const auto& p : flujo.particulas) {
-                const auto* esp = buscar_especie_por_nombre_o_formula(p.mineral);
+                const auto* esp = repo.especie_por_nombre(p.mineral);
+                if (!esp) esp = buscar_especie_por_nombre_o_formula(p.mineral);
                 if (esp != nullptr && esp->masa_molar > 0.0) {
                     FilaUI f;
                     copiar_texto(f.formula, sizeof(f.formula), esp->formula);

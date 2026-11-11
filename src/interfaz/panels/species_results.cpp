@@ -6,7 +6,8 @@ namespace cma { namespace interfaz {
 PanelEspecies::PanelEspecies() { busqueda_[0] = '\0'; }
 
 void PanelEspecies::refrescar() {
-    auto& db = base_datos::GestorDB::instancia();
+    const domain::ThermoRepository& db =
+        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     std::string q = busqueda_;
     if (q.empty())
         lista_ = db.todas_especies();

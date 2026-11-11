@@ -15,11 +15,12 @@ inline std::vector<double> explained_variance(const std::vector<std::vector<doub
         }
     }
     data.rowwise() -= data.colwise().mean().eval();
+    const double dof = static_cast<double>(data.rows() - 1);
     for (Eigen::Index col = 0; col < data.cols(); ++col) {
-        const double scale = std::sqrt(data.col(col).squaredNorm() / (data.rows() - 1));
+        const double scale = std::sqrt(data.col(col).squaredNorm() / dof);
         if (scale > 1e-15) data.col(col) /= scale;
     }
-    const Eigen::MatrixXd covariance = data.transpose() * data / (data.rows() - 1);
+    const Eigen::MatrixXd covariance = data.transpose() * data / dof;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(covariance);
     if (solver.info() != Eigen::Success) return {};
     const double total = solver.eigenvalues().sum();

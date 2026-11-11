@@ -182,6 +182,7 @@ ResultadoFlash EquilibrioFases::flash_isotermico(
     if (alimentacion.flujo_total() <= 0) { res.mensaje = "Flujo vacío"; return res; }
 
     std::vector<int64_t> species_ids;
+    species_ids.reserve(alimentacion.flujo_molar.size());
     for (auto& [sid, _] : alimentacion.flujo_molar) species_ids.push_back(sid);
 
     // Rachford-Rice: solve Σ (z_i * (K_i - 1)) / (1 + ψ * (K_i - 1)) = 0

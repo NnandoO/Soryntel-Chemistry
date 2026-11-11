@@ -1,5 +1,6 @@
 #pragma once
 #include "diagrama_flujo/flowsheet.hpp"
+#include "domain/ports/ThermoRepository.hpp"
 #include "motores/balance_hoja.hpp"
 #include <string>
 #include <vector>
@@ -10,10 +11,12 @@ namespace cma { namespace interfaz {
 class PanelBalanceHoja {
 public:
     PanelBalanceHoja();
+    void establecer_repositorio(const domain::ThermoRepository* repo) { repo_ = repo; }
     void renderizar(diagrama_flujo::Flowsheet* flowsheet = nullptr);
     void inicializar_valores_defecto();
 
 private:
+    const domain::ThermoRepository* repo_ = nullptr;
     struct FilaUI {
         char formula[64] = "";
         double temper = 25.0;   // en la unidad de temperatura seleccionada

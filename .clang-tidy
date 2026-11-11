@@ -1,0 +1,28 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-branch-clone,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-throwing-static-initialization,
+  performance-*,
+  -performance-enum-size,
+  -performance-Move-const-arg,
+  -performance-unnecessary-value-param,
+  -performance-inefficient-string-concatenation,
+  -performance-avoid-endl,
+  readability-misleading-indentation,
+  readability-redundant-control-flow,
+  readability-duplicate-include,
+  misc-unused-alias-decls,
+  misc-unused-using-decls
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/(domain|nucleo|application|motores|thermo|diagrams|aqueous|estimation|sim|tools|db)/.*\.(hpp|h)$'
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase

@@ -26,6 +26,7 @@ ResultadoODEs SimulacionDinamica::resolver(
     }
 
     std::vector<std::string> vars;
+    vars.reserve(condiciones_iniciales.size());
     for (auto& [k,_] : condiciones_iniciales) vars.push_back(k);
 
     std::map<std::string, double> y = condiciones_iniciales;
@@ -118,7 +119,9 @@ std::vector<double> SimulacionDinamica::perfil_temperatura_horno(
     double T = T0;
     double denom = masa * cp;
     if (std::abs(denom) < 1e-15) { perfil.push_back(T); return perfil; }
-    for (double t = 0; t <= t_max; t += dt) {
+    const int n_steps = static_cast<int>(std::floor(t_max / dt));
+    for (int step = 0; step <= n_steps; ++step) {
+        const double t = static_cast<double>(step) * dt;
         perfil.push_back(T);
         T = T_amb + (T0 - T_amb) * std::exp(-hA * (t + dt) / denom);
     }
