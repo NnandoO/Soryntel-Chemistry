@@ -63,25 +63,18 @@ void PanelPropiedades::renderizar_stream_viewer() {
                 ImGui::TableNextColumn(); ImGui::TextColored(ImVec4(0.05f, 0.2f, 0.45f, 1.0f), "Total Stream");
                 for (int c = 1; c < num_cols; ++c) { ImGui::TableNextColumn(); }
 
-                add_prop_row("Amount", "t/h", [&](const nucleo::Flujo& f) { return f.masa_total_t_h(db); }, "%.2f");
+                add_prop_row("Amount", "t/h", [&](const nucleo::Flujo& f) { return f.flujo_masico_total(db) * 3.6; }, "%.2f");
                 add_prop_row("Molar Flow", "kmol/h", [&](const nucleo::Flujo& f) { return f.flujo_molar_total() * 3600.0; }, "%.2f");
-                add_prop_row("Volume Flow", "m³/h", [&](const nucleo::Flujo& f) {
-                    double n_g = f.fraccion_gas * f.flujo_molar_total();
-                    double v_g = (n_g > 0 && f.presion > 1e-6) ? (n_g * 3600.0 * 0.082057 * f.temperatura / f.presion) : 0.0;
-                    double m_sl = (f.masa_total_t_h(db));
-                    return v_g + m_sl * 0.65;
-                }, "%.2f");
+                add_prop_row("Volume Flow", "m³/h", [&](const nucleo::Flujo& f) { return f.volumen_total_m3_h(db); }, "%.2f");
+                add_prop_row("Gas Volume", "Nm³/h", [&](const nucleo::Flujo& f) { return f.volumen_gas_Nm3_h(db); }, "%.2f");
                 add_prop_row("Temperature", "°C", [&](const nucleo::Flujo& f) { return f.temperatura - 273.15; }, "%.2f");
-                add_prop_row("Pressure", "bar", [&](const nucleo::Flujo& f) { return f.presion * 1.01325; }, "%.2f");
-                add_prop_row("Enthalpy", "kW", [&](const nucleo::Flujo& f) { return f.entalpia != 0.0 ? f.entalpia : f.calcular_entalpia(db); }, "%.2f");
-                add_prop_row("Exergy", "kW", [&](const nucleo::Flujo& f) {
-                    double H = (f.entalpia != 0.0) ? f.entalpia : f.calcular_entalpia(db);
-                    double T_ratio = (f.temperatura > 1.0) ? (1.0 - 298.15 / f.temperatura) : 0.0;
-                    return std::abs(H) * std::max(0.05, std::abs(T_ratio));
-                }, "%.2f");
-                add_prop_row("Heat Capacity", "kJ/(kg·°C)", [&](const nucleo::Flujo& f) {
-                    return (f.agua_kg_h > 0.0) ? 3.45 : 1.08;
-                }, "%.2f");
+                add_prop_row("Pressure", "bar", [&](const nucleo::Flujo& f) { return f.presion; }, "%.2f");
+                add_prop_row("Enthalpy (H)", "kW", [&](const nucleo::Flujo& f) { return f.entalpia != 0.0 ? f.entalpia : f.calcular_entalpia(db.mapa_especies()); }, "%.2f");
+                add_prop_row("Heat Content (Hc)", "kW", [&](const nucleo::Flujo& f) { return f.calor_contenido_Hc_kW(db); }, "%.2f");
+                add_prop_row("Exergy (Ex)", "kW", [&](const nucleo::Flujo& f) { return f.exergia_flujo_kW(db); }, "%.2f");
+                add_prop_row("Heat Capacity (Cp)", "kJ/(kg·K)", [&](const nucleo::Flujo& f) { return f.cp_especifico_kJ_kgK(db); }, "%.3f");
+                add_prop_row("% Solids", "wt-%", [&](const nucleo::Flujo& f) { return f.porcentaje_solidos_wt(db); }, "%.2f");
+                add_prop_row("Pulp SG", "g/cm³", [&](const nucleo::Flujo& f) { return f.densidad_pulpa_g_cm3(db); }, "%.3f");
 
                 // Recolectar todas las especies presentes agrupadas por fase
                 std::set<int64_t> gas_ids, liq_ids, sol_ids;

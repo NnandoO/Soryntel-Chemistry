@@ -271,39 +271,37 @@ ResultadoBalanceMasa BalanceMasa::resolver(const diagrama_flujo::Flowsheet& fs, 
         f.entalpia = H_total;
     }
 
-    // ── Verificación global: masa entrante (fuentes) vs masa saliente (sumideros) ──
+    // ── Verificación global: masa y entalpía entrante vs saliente (Sec. 40.2.4) ──
     double masa_in_total = 0.0, masa_out_total = 0.0;
-    auto masa_flujo = [&gestor](const nucleo::Flujo& f) {
-        double m = 0.0;
-        for (auto& [sid, n] : f.flujo_molar) {
-            auto* sp = gestor.especie_por_id(sid);
-            m += n * (sp ? sp->masa_molar : 0.0);
-        }
-        for (const auto& p : f.particulas) {
-            m += p.mass_kg_h / 3600.0;
-        }
-        m += f.agua_kg_h / 3600.0;
-        return m;
-    };
-    for (auto& n : nodos) {
-        if (n.tipo == nucleo::TipoNodo::Fuente) {
-            for (int64_t fid : n.ids_flujos_salida)
-                if (auto it = flujos_trabajo.find(fid); it != flujos_trabajo.end())
-                    masa_in_total += masa_flujo(it->second);
-        } else if (n.tipo == nucleo::TipoNodo::Sumidero) {
-            for (int64_t fid : n.ids_flujos_entrada)
-                if (auto it = flujos_trabajo.find(fid); it != flujos_trabajo.end())
-                    masa_out_total += masa_flujo(it->second);
+    double entalpia_in_total = 0.0, entalpia_out_total = 0.0;
+    for (const auto& [fid, f] : flujos_trabajo) {
+        if (f.es_energia) continue;
+        int tipo_con = fs.clasificar_conexion_flujo(fid);
+        if (tipo_con == 0) {
+            masa_in_total += f.flujo_masico_total(gestor);
+            entalpia_in_total += f.entalpia;
+        } else if (tipo_con == 2) {
+            masa_out_total += f.flujo_masico_total(gestor);
+            entalpia_out_total += f.entalpia;
         }
     }
+    res.masa_entrada_kg_s = masa_in_total;
+    res.masa_salida_kg_s = masa_out_total;
+    res.error_balance_masa_pct = (std::abs(masa_in_total) > 1e-12)
+        ? (std::abs(masa_in_total - masa_out_total) / std::abs(masa_in_total)) * 100.0 : 0.0;
+    res.entalpia_entrada_kW = entalpia_in_total;
+    res.entalpia_salida_kW = entalpia_out_total;
+    res.error_balance_entalpia_pct = (std::abs(entalpia_in_total) > 1e-9)
+        ? (std::abs(entalpia_in_total - entalpia_out_total) / std::abs(entalpia_in_total)) * 100.0 : 0.0;
+
     if (masa_in_total > 0.0 || masa_out_total > 0.0) {
         double dif = masa_out_total - masa_in_total;
         res.balance_global[-1] = dif; // clave -1 = total global (kg/s)
         double tol = 1e-6 + 1e-4 * std::max(masa_in_total, masa_out_total);
         char buf[256];
         snprintf(buf, sizeof(buf),
-                 " | Entrada fuentes=%.3f kg/s, Salida sumideros=%.3f kg/s, Diferencia=%+.3e kg/s%s",
-                 masa_in_total, masa_out_total, dif,
+                 " | Entrada=%.3f kg/s, Salida=%.3f kg/s, MB=%.4f%%, EB=%.4f%%%s",
+                 masa_in_total, masa_out_total, res.error_balance_masa_pct, res.error_balance_entalpia_pct,
                  std::abs(dif) < tol ? " (balance cerrado)" : "");
         res.mensaje += buf;
     }
@@ -383,9 +381,14 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
         case nucleo::TipoNodo::Mezclador: {
             auto salida = mezclar(entradas,
                 nodo.ids_flujos_salida.empty() ? -1 : nodo.ids_flujos_salida[0]);
-            auto itP = nodo.params.find("presion_salida");
-            if (itP != nodo.params.end() && itP->second > 0.0)
+            if (auto itP = nodo.params.find("presion_salida"); itP != nodo.params.end() && itP->second > 0.0)
                 salida.presion = itP->second;
+            if (auto itT = nodo.params.find("temperatura"); itT != nodo.params.end() && itT->second > 0.0) {
+                salida.temperatura = itT->second;
+            } else if (auto itQ = nodo.params.find("calor"); itQ != nodo.params.end() && std::abs(itQ->second) > 1e-9) {
+                double cp_tot = salida.cp_flujo(repository_);
+                if (cp_tot > 1e-9) salida.temperatura = std::max(1.0, salida.temperatura + itQ->second / cp_tot);
+            }
             if (!nodo.ids_flujos_salida.empty())
                 flujos_trabajo[nodo.ids_flujos_salida[0]] = salida;
             break;
@@ -615,9 +618,11 @@ void BalanceMasa::procesar_nodo(const nucleo::Nodo& nodo,
             if (entradas.empty()) break;
             auto mezcla = combinar_entradas(entradas);
             double T_sal = nodo.temperatura_salida();
-            double dP = 0;
-            for (auto& [k, v] : nodo.params)
-                if (k == "caida_presion") dP = v;
+            if (!nodo.params.count("T_salida") && !nodo.params.count("temperatura") && nodo.params.count("calor")) {
+                double cp_tot = mezcla.cp_flujo(repository_);
+                if (cp_tot > 1e-9) T_sal = std::max(1.0, mezcla.temperatura + nodo.params.at("calor") / cp_tot);
+            }
+            double dP = nodo.params.count("caida_presion") ? nodo.params.at("caida_presion") : 0.0;
             auto salida = intercambiador_calor(mezcla, T_sal, dP,
                 nodo.ids_flujos_salida.empty() ? -1 : nodo.ids_flujos_salida[0]);
             if (!nodo.ids_flujos_salida.empty())
@@ -986,18 +991,16 @@ nucleo::Flujo BalanceMasa::combinar_entradas(const std::vector<nucleo::Flujo>& e
         out.agua_kg_h += e.agua_kg_h;
     }
     double tot = out.flujo_total();
-    if (tot > 0) {
-        double T_pond = 0, P_pond = 0;
-        for (auto& e : entradas) {
-            double ft = e.flujo_total();
-            if (ft > 0) {
-                T_pond += e.temperatura * ft;
-                P_pond += e.presion * ft;
-            }
-        }
-        out.temperatura = T_pond / tot;
-        out.presion = P_pond / tot;
+    double cp_sum = 0.0, T_cp_pond = 0.0, T_pond = 0.0, P_pond = 0.0;
+    for (const auto& e : entradas) {
+        double cp_e = e.cp_flujo(repository_);
+        if (cp_e > 0.0) { cp_sum += cp_e; T_cp_pond += e.temperatura * cp_e; }
+        double ft = e.flujo_total();
+        if (ft > 0.0) { T_pond += e.temperatura * ft; P_pond += e.presion * ft; }
     }
+    if (cp_sum > 1e-12) out.temperatura = T_cp_pond / cp_sum;
+    else if (tot > 0.0) out.temperatura = T_pond / tot;
+    if (tot > 0.0) out.presion = P_pond / tot;
     return out;
 }
 

@@ -1,147 +1,174 @@
 #pragma once
+
+#include "nucleo/tipos.hpp"
+
 #include <cstdint>
+#include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace cma::domain {
 
-enum class StabilityAxisVar : int { TemperatureK = 0, LogPressureGas1 = 1, LogPressureGas2 = 2 };
-
-struct StabilitySpeciesSelection {
-    int64_t id = -1;
-    std::string formula;
-    std::string name;
-    std::string phase_label;
-    double n_main = 0.0;
-    double n_elem1 = 0.0;
-    double n_elem2 = 0.0;
-    double nu_gas1 = 0.0; // Coeficiente estequiométrico de Gas 1 por fórmula
-    double nu_gas2 = 0.0; // Coeficiente estequiométrico de Gas 2 por fórmula
-    double activity = 1.0;
-    bool selected = true;
-    bool is_gas = false;
+enum class StabilityDiagramMode : int {
+    Lpp_Isothermal = 0,       // Diagrama isotérmico vectorial log(p_X) vs log(p_Y) (Kellogg / Lpp)
+    Tpp_PartialPressure = 1,  // Diagrama Tpp isotérmico de áreas log(p_X) vs log(p_Y) a T fija
+    Tpp_TempPressure = 2      // Diagrama Tpp Temperatura (X) vs log(p_Y) (Y) a p_gas fija
 };
 
-struct BalancedPhasePlane {
-    int64_t species_id = -1;
+struct EspecieCandidataEstabilidad {
+    int64_t id = 0;
     std::string formula;
-    double n_main = 1.0;
-    double nu_gas1_per_metal = 0.0;
-    double nu_gas2_per_metal = 0.0;
-    double activity = 1.0;
-    double g_std_kj_mol = 0.0;
-    // Potencial químico normalizado por mol de metal:
-    // G_norm(x, y) = Z + A * log10(p_gas1) + B * log10(p_gas2)
-    double Z = 0.0;
-    double A = 0.0;
-    double B = 0.0;
-    std::string formation_reaction;
+    std::string nombre;
+    nucleo::Fase fase = nucleo::Fase::Solido;
+    double masa_molar = 0.0;
+    double h_formacion_298 = 0.0; // kJ/mol
+    double s_298 = 0.0;           // J/(mol*K)
+    double cp_298 = 0.0;          // J/(mol*K)
+    double T_min_K = 298.15;
+    double T_max_K = 2000.0;
+    double n_main = 0.0;          // Átomos del elemento principal por unidad fórmula
+    std::map<std::string, double> composicion; // Admite estequiometría fraccionaria (ej. VO1.24, TiO1.01)
+    bool es_gas = false;
+    bool es_liquido = false;
+    bool es_organico = false;
+    bool contiene_elemento_principal = false;
+    bool seleccionada_por_defecto = true;
 };
 
-struct PhasePolygonLpp {
-    int64_t species_id = -1;
-    std::string formula;
-    std::string formation_reaction;
-    double activity = 1.0;
-    std::vector<std::pair<double, double>> vertices;
-    double centroid_x = 0.0;
-    double centroid_y = 0.0;
-    double area_log2 = 0.0;
+struct SistemaTernarioEstabilidad {
+    std::vector<std::string> elementos; // 3 elementos seleccionados, ej. {"V", "Cl", "O"}
+    std::string elemento_principal;     // Elemento condensado base, ej. "V", "Ti", "Cu"
+    std::string elem_aux1;              // Primer elemento auxiliar, ej. "Cl", "S"
+    std::string elem_aux2;              // Segundo elemento auxiliar, ej. "O"
+    std::vector<EspecieCandidataEstabilidad> especies_sistema;   // Lista para "Select Species"
+    std::vector<EspecieCandidataEstabilidad> especies_gas_ejes;  // Gases sin elemento principal para ejes X/Y/Fixed
 };
 
-struct BoundaryLineLpp {
-    std::string phase_a;
-    std::string phase_b;
-    std::string reaction_equation;
+struct VerticeEstabilidad2D {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+struct TrapecioEstabilidad2D {
+    double x0 = 0.0;
     double x1 = 0.0;
-    double y1 = 0.0;
-    double x2 = 0.0;
-    double y2 = 0.0;
-    double slope_dy_dx = 0.0;
-    double log_k = 0.0;
+    double y0_bot = 0.0;
+    double y0_top = 0.0;
+    double y1_bot = 0.0;
+    double y1_top = 0.0;
 };
 
-struct TriplePointLpp {
-    std::string phase_a;
-    std::string phase_b;
-    std::string phase_c;
-    double log_p_gas1 = 0.0;
-    double log_p_gas2 = 0.0;
-};
-
-struct LppDiagramRequest {
-    std::string main_element = "Cu";
-    std::string gas1_formula = "O2";
-    std::string gas2_formula = "SO2";
-    double temperature_k = 973.15; // 700 °C
-    double x_min = -20.0;
-    double x_max = 0.0;
-    double y_min = -15.0;
-    double y_max = 2.0;
-    double probe_log_p1 = -10.0;
-    double probe_log_p2 = -2.0;
-    std::vector<StabilitySpeciesSelection> candidates;
-};
-
-struct LppDiagramResult {
-    bool ok = false;
-    std::string message;
-    std::string system_title;
-    double temperature_k = 973.15;
-    std::vector<BalancedPhasePlane> planes;
-    std::vector<PhasePolygonLpp> polygons;
-    std::vector<BoundaryLineLpp> boundaries;
-    std::vector<TriplePointLpp> triple_points;
-    std::string probe_predominant_phase;
-    double probe_min_potential_kj = 0.0;
-};
-
-struct TppLegendEntry {
-    int64_t species_id = -1;
+struct PoligonoPredominancia {
+    int64_t id = 0;
+    std::string formula;          // Fórmula completa en lista (ej. "VCl4(l)")
+    std::string etiqueta_grafico; // Etiqueta limpia en el área (ej. "VCl4", "CuO*CuSO4")
+    std::string nombre;
     int color_index = 0;
-    std::string formula;
-    double area_fraction_pct = 0.0;
+    std::vector<VerticeEstabilidad2D> vertices;     // Contorno cerrado del polígono o banda T-p
+    std::vector<TrapecioEstabilidad2D> trapecios;   // Bandas verticales convexas (usado en modo T-p curvo)
+    VerticeEstabilidad2D centroide;
+    double area = 0.0;
+    double nu_x_norm = 0.0;       // Moles de gas X por mol de elemento principal
+    double nu_y_norm = 0.0;       // Moles de gas Y por mol de elemento principal
+    double Z = 0.0;               // Término independiente del plano G_norm = Z + A*x + B*y
+    double A = 0.0;               // Pendiente respecto a x
+    double B = 0.0;               // Pendiente respecto a y
 };
 
-struct TppContourSegment {
-    double x1 = 0.0;
-    double y1 = 0.0;
-    double x2 = 0.0;
-    double y2 = 0.0;
-    std::string phase_a;
-    std::string phase_b;
+struct LineaFronteraLpp {
+    std::string fase_a;
+    std::string fase_b;
+    std::string ecuacion_reaccion; // Ej. "2 V3O7 + 0.5 O2(g) = 3 V2O5"
+    double delta_G_rxn_kJ = 0.0;
+    double log10_K = 0.0;
+    VerticeEstabilidad2D p1;
+    VerticeEstabilidad2D p2;
+    double pendiente = 0.0;        // dy / dx
 };
 
-struct TppDiagramRequest {
-    std::string main_element = "Cu";
-    std::string gas1_formula = "O2";
-    std::string gas2_formula = "SO2";
-    StabilityAxisVar x_var = StabilityAxisVar::LogPressureGas1;
-    StabilityAxisVar y_var = StabilityAxisVar::LogPressureGas2;
-    double fixed_value = 973.15; // K si X/Y son presiones, o log10(p) si uno de los ejes es T
-    double x_min = -20.0;
+struct PuntoInvarianteTriple {
+    std::string fase_1;
+    std::string fase_2;
+    std::string fase_3;
+    double x = 0.0;
+    double y = 0.0;
+};
+
+struct ParametrosCalculoLpp {
+    std::vector<std::string> elementos = {"Ti", "Cl", "O"};
+    std::string elemento_principal; // Si está vacío se detecta automáticamente
+    std::string gas_x = "Cl2(g)";
+    std::string gas_y = "O2(g)";
+    std::vector<std::string> formulas_seleccionadas;
+    double T_K = 573.15;            // 300 °C por defecto en Lpp (ejemplo HSC Ti-Cl-O)
+    bool auto_escala = true;
+    double x_min = -45.0;
     double x_max = 0.0;
-    double y_min = -15.0;
-    double y_max = 2.0;
-    int rows = 140;
-    int cols = 140;
-    double probe_x = -10.0;
-    double probe_y = -2.0;
-    std::vector<StabilitySpeciesSelection> candidates;
+    double y_min = -90.0;
+    double y_max = 0.0;
+    bool incluir_liquidos = false;
+    bool incluir_organicos = false;
+    bool omitir_estequiometria_identica = true;
 };
 
-struct TppDiagramResult {
+struct ResultadoDiagramaLpp {
     bool ok = false;
-    std::string message;
-    std::string system_title;
-    int rows = 0;
-    int cols = 0;
-    std::vector<int> phase_index_grid; // Índice local en legend (0..K-1) para cada celda [r * cols + c]
-    std::vector<TppLegendEntry> legend;
-    std::vector<TppContourSegment> contours;
-    std::string probe_predominant_phase;
-    double probe_min_potential_kj = 0.0;
+    std::string mensaje_error;
+    std::string titulo_sistema;     // Ej. "Ti-Cl-O"
+    std::string elemento_principal;
+    std::string gas_x;
+    std::string gas_y;
+    double T_K = 573.15;
+    double x_min_usado = -45.0;
+    double x_max_usado = 0.0;
+    double y_min_usado = -90.0;
+    double y_max_usado = 0.0;
+    std::vector<PoligonoPredominancia> poligonos;
+    std::vector<LineaFronteraLpp> fronteras;
+    std::vector<PuntoInvarianteTriple> puntos_triples;
+    std::vector<std::string> advertencias;
+    std::vector<std::string> especies_omitidas_duplicadas;
+};
+
+struct ParametrosCalculoTpp {
+    std::vector<std::string> elementos = {"V", "Cl", "O"};
+    std::string elemento_principal;
+    bool eje_x_es_temperatura = false; // false: p-p (log pX vs log pY), true: T-p (T vs log pY)
+    bool temp_en_celsius = true;       // Unidad para mostrar/ingresar temperatura (°C o K)
+    std::string gas_x = "Cl2(g)";      // Usado cuando !eje_x_es_temperatura
+    std::string gas_y = "O2(g)";       // Eje Y siempre es presión parcial log pY
+    std::string gas_fijo = "O2(g)";    // Usado cuando eje_x_es_temperatura
+    double x_min = -40.0;              // log pX_min o T_min (en °C o K según temp_en_celsius)
+    double x_max = 0.0;                // log pX_max o T_max
+    double y_min = -40.0;              // log pY_min
+    double y_max = 0.0;                // log pY_max
+    double valor_fijo = 500.0;         // Si p-p: Temperatura (en °C o K); si T-p: p_gas en bar (ej. 0.1 o 1e-20)
+    bool presion_fija_en_bar = true;   // true: valor_fijo > 0 es bar (1e-20, 0.1); false: es log10(p)
+    std::vector<std::string> formulas_seleccionadas;
+    bool incluir_organicos = false;
+    int profundidad_recursiva = 6;     // Algoritmo recursivo de subdivisión quadtree (2^6 = 64x64)
+};
+
+struct ResultadoDiagramaTpp {
+    bool ok = false;
+    std::string mensaje_error;
+    StabilityDiagramMode modo = StabilityDiagramMode::Tpp_PartialPressure;
+    std::string titulo_diagrama;       // Ej. "Predominance Diagram for V-Cl-O System"
+    std::string subtitulo_constante;   // Ej. "Constant value: Temperature = 500 °C"
+    std::string etiqueta_eje_x;        // Ej. "log pCl2(g)" o "T / °C"
+    std::string etiqueta_eje_y;        // Ej. "log pO2(g)"
+    std::string elemento_principal;
+    double x_min = -40.0;
+    double x_max = 0.0;
+    double y_min = -40.0;
+    double y_max = 0.0;
+    std::vector<PoligonoPredominancia> poligonos;
+    std::vector<LineaFronteraLpp> fronteras;
+    int grid_cols = 0;
+    int grid_rows = 0;
+    std::vector<int> grid_phase_idx;   // Índice de polígono predominante en cada celda
+    int evaluaciones_gibbs = 0;        // Número real de evaluaciones de Gibbs del algoritmo recursivo
+    std::vector<std::string> advertencias;
 };
 
 } // namespace cma::domain

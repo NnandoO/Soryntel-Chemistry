@@ -90,6 +90,12 @@ class PropertyDiagrams {
         std::vector<domain::LineaIsoPotencial>& iso_CO_CO2,
         std::vector<domain::LineaIsoPotencial>& iso_H2_H2O) const;
 
+    // Calcula el coeficiente estequiometrico (Coef.) para igualar la cantidad de un elemento (ej. O = 2.00 en Ellingham)
+    double balancear_cantidad_elemento(
+        const std::string& formula,
+        const std::string& elemento,
+        double cantidad_objetivo = 2.0) const;
+
     // Exporta las curvas e intersecciones calculadas a formato CSV
     std::string exportar_csv(
         const std::vector<domain::CurvaDiagramaTermo>& curvas,

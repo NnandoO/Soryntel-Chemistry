@@ -1,515 +1,1187 @@
-// ══════════════════════════════════════════════════════════════════════════════
-//  pourbaix.cpp — Adaptador UI Hexagonal del Módulo HSC Eh-pH (Pourbaix / EpH)
-// ══════════════════════════════════════════════════════════════════════════════
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wformat-security"
+
 #include "shared.hpp"
-#include "panel_pourbaix.hpp"
-#include <imgui.h>
-#include <implot.h>
+#include "motores/pourbaix.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
-#include <limits>
-#include <string>
-#include <vector>
+#include <fstream>
+#include <iomanip>
+#include <set>
+#include <sstream>
 
-namespace cma::interfaz {
+using namespace cma::interfaz;
 
-namespace Colores {
-    static const ImVec4 ACENTO_CIAN     = {0.20f, 0.78f, 0.92f, 1.0f};
-    static const ImVec4 ACENTO_VERDE    = {0.24f, 0.82f, 0.48f, 1.0f};
-    static const ImVec4 ACENTO_AMARILLO = {0.95f, 0.78f, 0.22f, 1.0f};
-    static const ImVec4 ACENTO_ROJO     = {0.92f, 0.32f, 0.32f, 1.0f};
-}
+namespace {
 
-static const ImVec4 kPaletteEspecies[] = {
-    {0.22f, 0.56f, 0.88f, 0.85f},
-    {0.24f, 0.78f, 0.45f, 0.85f},
-    {0.92f, 0.56f, 0.18f, 0.85f},
-    {0.86f, 0.28f, 0.36f, 0.85f},
-    {0.62f, 0.42f, 0.88f, 0.85f},
-    {0.18f, 0.78f, 0.78f, 0.85f},
-    {0.90f, 0.76f, 0.22f, 0.85f},
-    {0.82f, 0.38f, 0.68f, 0.85f},
-    {0.46f, 0.76f, 0.26f, 0.85f},
-    {0.48f, 0.56f, 0.68f, 0.85f},
+// Cuadrícula de elementos en 5 columnas exactas de la ventana HSC EpH (Imagen 1: Ac..Co, Cr..Ir, K..Pm, Po..Te, Th..Zr)
+constexpr const char* kElementosEpHCols[21][5] = {
+    {"Ac", "Cr", "K",  "Po", "Th"},
+    {"Ag", "Cs", "Kr", "Pr", "Ti"},
+    {"Al", "Cu", "La", "Pt", "Tl"},
+    {"Am", "Dy", "Li", "Pu", "Tm"},
+    {"Ar", "Er", "Lu", "Ra", "U" },
+    {"As", "Es", "Mg", "Rb", "V" },
+    {"At", "Eu", "Mn", "Re", "W" },
+    {"Au", "F",  "Mo", "Rh", "Xe"},
+    {"B",  "Fe", "N",  "Rn", "Y" },
+    {"Ba", "Fm", "Na", "Ru", "Yb"},
+    {"Be", "Fr", "Nb", "S",  "Zn"},
+    {"Bi", "Ga", "Nd", "Sb", "Zr"},
+    {"Bk", "Gd", "Ne", "Sc", ""  },
+    {"Br", "Ge", "Ni", "Se", ""  },
+    {"C",  "H",  "Np", "Si", ""  },
+    {"Ca", "He", "O",  "Sm", ""  },
+    {"Cd", "Hf", "Os", "Sn", ""  },
+    {"Ce", "Hg", "P",  "Sr", ""  },
+    {"Cf", "Ho", "Pa", "Ta", ""  },
+    {"Cl", "I",  "Pb", "Tb", ""  },
+    {"Co", "Ir", "Pm", "Te", ""  }
 };
-static constexpr int kNumColors = 10;
 
-PanelPourbaix::PanelPourbaix(const domain::ThermoRepository& repository)
-    : calc_(&repository)
-{
-    sincronizar_y_calcular();
+struct ColorAreaEpH {
+    ImU32 fill;
+    ImVec4 vec;
+};
+
+const ColorAreaEpH kPaletaEpH[] = {
+    {IM_COL32( 95, 168, 235, 130), ImVec4(0.37f, 0.66f, 0.92f, 0.52f)},
+    {IM_COL32(115, 205, 140, 130), ImVec4(0.45f, 0.80f, 0.55f, 0.52f)},
+    {IM_COL32(240, 185,  95, 130), ImVec4(0.94f, 0.73f, 0.37f, 0.52f)},
+    {IM_COL32(215, 135, 195, 130), ImVec4(0.84f, 0.53f, 0.76f, 0.52f)},
+    {IM_COL32(150, 155, 165, 130), ImVec4(0.59f, 0.61f, 0.65f, 0.52f)},
+    {IM_COL32( 85, 200, 195, 130), ImVec4(0.33f, 0.78f, 0.76f, 0.52f)},
+    {IM_COL32(235, 130, 115, 130), ImVec4(0.92f, 0.51f, 0.45f, 0.52f)},
+    {IM_COL32(180, 210, 100, 130), ImVec4(0.71f, 0.82f, 0.39f, 0.52f)},
+    {IM_COL32(140, 145, 225, 130), ImVec4(0.55f, 0.57f, 0.88f, 0.52f)},
+    {IM_COL32(225, 205, 120, 130), ImVec4(0.88f, 0.80f, 0.47f, 0.52f)}
+};
+constexpr size_t kNumColoresEpH = sizeof(kPaletaEpH) / sizeof(kPaletaEpH[0]);
+
+// Opciones de estilo para las líneas de estabilidad del agua (Format H2O Stability Lines)
+struct EstiloLineasAgua {
+    bool mostrar_superior = true;
+    bool mostrar_inferior = true;
+    float grosor = 1.6f;
+    ImVec4 color = ImVec4(0.12f, 0.12f, 0.12f, 0.92f);
+};
+
+EstiloLineasAgua& estilo_agua_global() {
+    static EstiloLineasAgua st;
+    return st;
 }
 
-void PanelPourbaix::sincronizar_y_calcular() {
-    calc_.establecer_elemento(elemento_actual_);
-    calc_.establecer_temperatura(temperatura_actual_);
-    calc_.establecer_presion(presion_actual_);
-    calc_.establecer_concentracion(concentracion_actual_);
-    calc_.establecer_escala_potencial(
-        static_cast<domain::PourbaixPotentialScale>(std::clamp(escala_idx_, 0, 2)));
-
-    calc_.limpiar_ligandos();
-    if (lig_S_activo_)  calc_.agregar_o_actualizar_ligando("S",  lig_S_molal_,  true);
-    if (lig_Cl_activo_) calc_.agregar_o_actualizar_ligando("Cl", lig_Cl_molal_, true);
-    if (lig_C_activo_)  calc_.agregar_o_actualizar_ligando("C",  lig_C_molal_,  true);
-    if (lig_N_activo_)  calc_.agregar_o_actualizar_ligando("N",  lig_N_molal_,  true);
-
-    calc_.calcular();
-    calculado_ = true;
+void dibujar_segmento_punteado(ImDrawList* dl, ImVec2 p1, ImVec2 p2, ImU32 col, float thickness, float dash_len = 4.0f, float gap_len = 4.0f) {
+    const float dx = p2.x - p1.x;
+    const float dy = p2.y - p1.y;
+    const float len = std::hypot(dx, dy);
+    if (len < 1.0f) return;
+    const float ux = dx / len;
+    const float uy = dy / len;
+    float t = 0.0f;
+    while (t < len) {
+        const float t_end = std::min(t + dash_len, len);
+        dl->AddLine(ImVec2(p1.x + ux * t, p1.y + uy * t),
+                    ImVec2(p1.x + ux * t_end, p1.y + uy * t_end),
+                    col, thickness);
+        t += dash_len + gap_len;
+    }
 }
 
-void PanelPourbaix::renderizar() {
-    ImGui::PushStyleColor(ImGuiCol_Text, Colores::ACENTO_CIAN);
-    ImGui::Text("DIAGRAMAS Eh-pH (POURBAIX / HSC EpH) — HIDROMETALURGIA Y CORROSIÓN");
-    ImGui::PopStyleColor();
-    ImGui::Separator();
+} // namespace
 
-    // ── Barra superior de Presets Industriales HSC ───────────────────────────
-    ImGui::TextDisabled("Presets HSC:");
-    ImGui::SameLine();
-    auto apply_preset = [&](int id, const char* elem, double T, double conc,
-                            bool s_on, double s_m, bool cl_on, double cl_m, bool c_on, double c_m) {
-        elemento_actual_ = elem;
-        temperatura_actual_ = T;
-        concentracion_actual_ = conc;
-        lig_S_activo_ = s_on;   lig_S_molal_ = s_m;
-        lig_Cl_activo_ = cl_on; lig_Cl_molal_ = cl_m;
-        lig_C_activo_ = c_on;   lig_C_molal_ = c_m;
-        lig_N_activo_ = false;
-        calc_.cargar_preset_hsc(id);
-        calculado_ = true;
-    };
-    if (ImGui::SmallButton("Fe-H2O (Corrosión)")) {
-        apply_preset(0, "Fe", 298.15, 1e-6, false, 1e-2, false, 1e-1, false, 1e-3);
-    }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Cu-H2O (Lixiviación)")) {
-        apply_preset(1, "Cu", 298.15, 1e-4, false, 1e-2, false, 1e-1, false, 1e-3);
-    }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Cu-S-H2O (Calcosina/Covelina)")) {
-        apply_preset(2, "Cu", 298.15, 1e-4, true, 1e-2, false, 1e-1, false, 1e-3);
-    }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Fe-S-C-H2O (Pirita/Siderita)")) {
-        apply_preset(3, "Fe", 298.15, 1e-4, true, 1e-2, false, 1e-1, true, 1e-3);
-    }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Au-Cl-H2O (Cloruración)")) {
-        apply_preset(4, "Au", 298.15, 1e-5, false, 1e-2, true, 1.0, false, 1e-3);
-    }
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Mn-H2O (Pirolusita)")) {
-        apply_preset(5, "Mn", 298.15, 1e-4, false, 1e-2, false, 1e-1, false, 1e-3);
-    }
-    ImGui::Separator();
+cma::interfaz::PanelPourbaix::PanelPourbaix(const domain::ThermoRepository& repository)
+    : calc_(repository) {
+    // Inicializar por defecto con el sistema de referencia CUS25.eph8 (Cu - S a 25.00 °C, 1.00E+00 mol/kg, Imagen 1-4)
+    cargar_preset(2);
+}
 
-    const float panel_izq_w = 360.0f;
-    ImGui::BeginChild("##pourbaix_left", ImVec2(panel_izq_w, 0), true);
+void cma::interfaz::PanelPourbaix::cargar_preset(int idx) {
+    calc_.cargar_preset_hsc(idx);
+    const auto& res = calc_.ultimo_resultado_eph();
+    params_.elementos = res.elementos_usados;
+    params_.elemento_principal = res.elemento_principal;
+    params_.T_K = res.T_K;
+    params_.temp_en_celsius = true;
+    params_.pH_min = res.pH_min;
+    params_.pH_max = res.pH_max;
+    params_.Eh_min = res.Eh_min;
+    params_.Eh_max = res.Eh_max;
+    params_.escala_potencial = res.escala_potencial;
+    params_.modos_busqueda.condensed = true;
+    params_.modos_busqueda.aqueous_ions = true;
+    params_.modos_busqueda.aqueous_neutrals = (idx != 2 && idx != 3);
+    params_.formulas_seleccionadas.clear();
+
+    idx_elem_principal_combo_ = 0;
+    for (size_t i = 0; i < params_.elementos.size(); ++i) {
+        if (params_.elementos[i].symbol == params_.elemento_principal) {
+            idx_elem_principal_combo_ = static_cast<int>(i);
+            break;
+        }
+    }
+
+    actualizar_especies_sistema(false);
+    ejecutar_calculo(false);
+    datasets_combiner_ = calc_.calcular_combiner_eph(params_, params_.temperaturas_combiner_C);
+}
+
+void cma::interfaz::PanelPourbaix::actualizar_especies_sistema(bool mantener_seleccion) {
+    std::set<std::string> prev_sel;
+    if (mantener_seleccion) {
+        for (size_t i = 0; i < especies_candidatas_.size() && i < especies_seleccionadas_.size(); ++i) {
+            if (especies_seleccionadas_[i]) prev_sel.insert(especies_candidatas_[i].formula);
+        }
+    }
+
+    especies_candidatas_ = calc_.recolectar_especies_sistema(params_);
+    especies_seleccionadas_.assign(especies_candidatas_.size(), true);
+
+    for (size_t i = 0; i < especies_candidatas_.size(); ++i) {
+        if (mantener_seleccion && !prev_sel.empty()) {
+            especies_seleccionadas_[i] = prev_sel.count(especies_candidatas_[i].formula) > 0;
+        } else {
+            especies_seleccionadas_[i] = especies_candidatas_[i].seleccionada_por_defecto;
+        }
+    }
+}
+
+void cma::interfaz::PanelPourbaix::ejecutar_calculo(bool forzar_nueva_pagina) {
+    params_.formulas_seleccionadas.clear();
+    for (size_t i = 0; i < especies_candidatas_.size() && i < especies_seleccionadas_.size(); ++i) {
+        if (especies_seleccionadas_[i]) {
+            params_.formulas_seleccionadas.push_back(especies_candidatas_[i].formula);
+        }
+    }
+
+    auto res = calc_.calcular_diagrama_eph(params_);
+    if (!res.ok) {
+        estado_msg_ = res.mensaje_error;
+        return;
+    }
+
+    if (pestanas_.empty() || forzar_nueva_pagina || create_new_page_) {
+        PestanaEpH nueva;
+        nueva.nombre = "Chart" + std::to_string(pestanas_.size() + 1);
+        nueva.params = params_;
+        nueva.resultado = res;
+        nueva.calculado = true;
+        nueva.reset_limites = true;
+        pestanas_.push_back(nueva);
+        idx_pestana_activa_ = static_cast<int>(pestanas_.size()) - 1;
+    } else {
+        idx_pestana_activa_ = std::clamp(idx_pestana_activa_, 0, static_cast<int>(pestanas_.size()) - 1);
+        auto& tab = pestanas_[idx_pestana_activa_];
+        tab.params = params_;
+        tab.resultado = res;
+        tab.calculado = true;
+        tab.reset_limites = true;
+    }
+
+    std::ostringstream os;
+    os << res.titulo_diagrama << " | " << res.poligonos.size() << " áreas, "
+       << res.fronteras.size() << " líneas.";
+    estado_msg_ = os.str();
+}
+
+void cma::interfaz::PanelPourbaix::renderizar() {
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
+
+    // ── Barra de Herramientas y Menús Superior estilo HSC EpH (Siempre visible y espaciada) ──
+    ImGui::BeginChild("##EpHTopHeaderBar", ImVec2(0.0f, 36.0f), true, ImGuiWindowFlags_NoScrollbar);
     {
-        // 1. Elemento principal y condiciones P-T-m
-        ImGui::TextColored(Colores::ACENTO_VERDE, "1. Sistema Químico Principal");
-        static const char* kElementos[] = {
-            "Fe", "Cu", "Zn", "Mn", "Ni", "Cr", "Al", "Au", "Ag", "Pb"
-        };
-        static int idx_elem = 0;
-        for (int i = 0; i < 10; ++i) {
-            if (elemento_actual_ == kElementos[i]) { idx_elem = i; break; }
-        }
-        ImGui::SetNextItemWidth(130.0f);
-        if (ImGui::Combo("Metal Principal (M)", &idx_elem, kElementos, 10)) {
-            elemento_actual_ = kElementos[idx_elem];
-            sincronizar_y_calcular();
-        }
-
-        float temp_C = static_cast<float>(temperatura_actual_ - 273.15);
-        ImGui::SetNextItemWidth(130.0f);
-        if (ImGui::SliderFloat("Temperatura (°C)", &temp_C, 0.0f, 300.0f, "%.1f °C")) {
-            temperatura_actual_ = temp_C + 273.15;
-            calc_.establecer_temperatura(temperatura_actual_);
-            calc_.calcular();
-        }
-
-        static float log_conc = -6.0f;
-        log_conc = static_cast<float>(std::log10(std::max(1e-12, concentracion_actual_)));
-        ImGui::SetNextItemWidth(130.0f);
-        if (ImGui::SliderFloat("log10([M] mol/kg)", &log_conc, -8.0f, 0.0f, "10^(%.1f)")) {
-            concentracion_actual_ = std::pow(10.0, static_cast<double>(log_conc));
-            calc_.establecer_concentracion(concentracion_actual_);
-            calc_.calcular();
-        }
-
-        const char* kEscalas[] = {"SHE (Estándar H2, 0.000 V)", "SCE (Calomelanos, +0.241 V)", "Ag/AgCl (KCl sat., +0.197 V)"};
-        ImGui::SetNextItemWidth(195.0f);
-        if (ImGui::Combo("Escala Ref.", &escala_idx_, kEscalas, 3)) {
-            calc_.establecer_escala_potencial(static_cast<domain::PourbaixPotentialScale>(escala_idx_));
-            calc_.calcular();
-        }
-
-        // 2. Ligandos Secundarios (M - L - H2O)
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextColored(Colores::ACENTO_VERDE, "2. Ligandos Disueltos (M-L-H2O)");
-        bool lig_changed = false;
-        lig_changed |= ImGui::Checkbox("S (H2S/HS-/SO4²⁻)", &lig_S_activo_);
-        if (lig_S_activo_) {
-            ImGui::SameLine();
-            float l_s = static_cast<float>(std::log10(std::max(1e-10, lig_S_molal_)));
-            ImGui::SetNextItemWidth(95.0f);
-            if (ImGui::SliderFloat("##logS", &l_s, -6.0f, 0.0f, "10^%.1f m")) {
-                lig_S_molal_ = std::pow(10.0, l_s);
-                lig_changed = true;
+        if (ImGui::Button("File  v", ImVec2(68.0f, 24.0f))) ImGui::OpenPopup("##EpHFileMenuPopup");
+        if (ImGui::BeginPopup("##EpHFileMenuPopup")) {
+            ImGui::TextDisabled("Reference Systems (HSC EpH)");
+            ImGui::Separator();
+            if (ImGui::MenuItem("Load CUS25.eph8 (Cu - S - H2O at 25 °C — Fig. 1, 2, 3)")) cargar_preset(2);
+            if (ImGui::MenuItem("Load S - Cu - H2O at 25 °C (Sulfur Main Element — Fig. 4)")) cargar_preset(3);
+            if (ImGui::MenuItem("Load Mn - H2O at 25 °C (Section 17.1 Manual Example)")) cargar_preset(5);
+            if (ImGui::MenuItem("Load Fe - H2O at 25 °C (Pourbaix Corrosion Reference)")) cargar_preset(0);
+            if (ImGui::MenuItem("Load Au - Cl - H2O at 25 °C (Chloride Leaching)")) cargar_preset(4);
+            if (ImGui::MenuItem("Load Zn - S - H2O at 25 °C (Sphalerite Leaching)")) cargar_preset(6);
+            ImGui::Separator();
+            if (ImGui::MenuItem("Save *.eph8 Specification...")) {
+                if (std::ofstream ofs(ruta_eph8_); ofs) { ofs << calc_.serializar_eph8(params_); estado_msg_ = "Guardado en " + std::string(ruta_eph8_); }
             }
-        }
-        lig_changed |= ImGui::Checkbox("Cl (Cl-/HClO/ClO-)", &lig_Cl_activo_);
-        if (lig_Cl_activo_) {
-            ImGui::SameLine();
-            float l_cl = static_cast<float>(std::log10(std::max(1e-10, lig_Cl_molal_)));
-            ImGui::SetNextItemWidth(95.0f);
-            if (ImGui::SliderFloat("##logCl", &l_cl, -6.0f, 0.5f, "10^%.1f m")) {
-                lig_Cl_molal_ = std::pow(10.0, l_cl);
-                lig_changed = true;
+            if (ImGui::MenuItem("Open *.eph8 Specification...")) {
+                if (std::ifstream ifs(ruta_eph8_); ifs) {
+                    std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+                    if (calc_.deserializar_eph8(content, params_)) { actualizar_especies_sistema(false); ejecutar_calculo(false); }
+                }
             }
-        }
-        lig_changed |= ImGui::Checkbox("C (H2CO3/HCO3-/CO3²⁻)", &lig_C_activo_);
-        if (lig_C_activo_) {
-            ImGui::SameLine();
-            float l_c = static_cast<float>(std::log10(std::max(1e-10, lig_C_molal_)));
-            ImGui::SetNextItemWidth(95.0f);
-            if (ImGui::SliderFloat("##logC", &l_c, -6.0f, 0.0f, "10^%.1f m")) {
-                lig_C_molal_ = std::pow(10.0, l_c);
-                lig_changed = true;
+            if (ImGui::MenuItem("Export Table & Boundaries CSV...") && !pestanas_.empty()) {
+                if (std::ofstream ofs("eph_diagram_table.csv"); ofs) ofs << calc_.exportar_tabla_eph_csv(pestanas_[idx_pestana_activa_].resultado);
             }
-        }
-        lig_changed |= ImGui::Checkbox("N (NH4+/NH3 lixiv.)", &lig_N_activo_);
-        if (lig_N_activo_) {
-            ImGui::SameLine();
-            float l_n = static_cast<float>(std::log10(std::max(1e-10, lig_N_molal_)));
-            ImGui::SetNextItemWidth(95.0f);
-            if (ImGui::SliderFloat("##logN", &l_n, -6.0f, 0.5f, "10^%.1f m")) {
-                lig_N_molal_ = std::pow(10.0, l_n);
-                lig_changed = true;
-            }
-        }
-        if (lig_changed) {
-            sincronizar_y_calcular();
+            ImGui::Separator();
+            if (ImGui::MenuItem("Print / Preview...")) mostrar_modal_print_ = true;
+            ImGui::EndPopup();
         }
 
-        // 3. Opciones visuales
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextColored(Colores::ACENTO_VERDE, "3. Visualización y Capas");
-        const char* kModosColor[] = {"Regiones de Predominancia Química", "Zonas de Corrosión (Pourbaix)"};
-        ImGui::SetNextItemWidth(220.0f);
-        ImGui::Combo("Mapa", &modo_color_, kModosColor, 2);
-        ImGui::Checkbox("Mostrar regiones coloreadas", &mostrar_mapa_color_);
-        ImGui::Checkbox("Límites de estabilidad del H2O (a, b)", &mostrar_agua_);
-        ImGui::Checkbox("Etiquetas de fases y puntos triples", &mostrar_etiquetas_);
-
-        // 4. Sonda puntual de operación (pH, Eh)
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextColored(Colores::ACENTO_AMARILLO, "4. Sonda de Punto de Operación");
-        float p_pH = static_cast<float>(probe_pH_);
-        float p_Eh = static_cast<float>(probe_Eh_);
-        ImGui::SetNextItemWidth(110.0f);
-        if (ImGui::SliderFloat("pH op.", &p_pH, static_cast<float>(calc_.pH_min()), static_cast<float>(calc_.pH_max()), "%.2f")) {
-            probe_pH_ = p_pH;
-        }
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(110.0f);
-        if (ImGui::SliderFloat("Eh op. (V)", &p_Eh, static_cast<float>(calc_.Eh_min()), static_cast<float>(calc_.Eh_max()), "%.3f")) {
-            probe_Eh_ = p_Eh;
-        }
-        const auto eval = calc_.evaluar_punto(probe_pH_, probe_Eh_);
-        if (eval.valid) {
-            ImGui::Text("Fase Predominante: %s (%s)",
-                        eval.predominant_clean.c_str(), eval.predominant_state.c_str());
-            ImGui::Text("Diagnóstico: %s", domain::pourbaix_corrosion_label(eval.corrosion_state));
-            ImGui::Text("pe = %.2f | Margen ΔG = %.2f kJ/mol",
-                        eval.pe, eval.stability_margin_kJ);
-            if (!eval.water_stable) {
-                ImGui::TextColored(Colores::ACENTO_ROJO,
-                    eval.o2_evolution ? "Fuera del dominio H2O: Evolución de O2(g)"
-                                      : "Fuera del dominio H2O: Evolución de H2(g)");
-            } else {
-                ImGui::TextColored(Colores::ACENTO_VERDE, "Dentro de la ventana de estabilidad del H2O(l)");
+        if (ImGui::Button("Edit  v", ImVec2(68.0f, 24.0f))) ImGui::OpenPopup("##EpHEditMenuPopup");
+        if (ImGui::BeginPopup("##EpHEditMenuPopup")) {
+            if (ImGui::MenuItem("Copy Summary & Boundaries to Clipboard") && !pestanas_.empty()) {
+                const std::string csv = calc_.exportar_tabla_eph_csv(pestanas_[idx_pestana_activa_].resultado);
+                ImGui::SetClipboardText(csv.c_str());
             }
+            if (ImGui::MenuItem("Select All Species")) {
+                std::fill(especies_seleccionadas_.begin(), especies_seleccionadas_.end(), true);
+                ejecutar_calculo(false);
+            }
+            ImGui::EndPopup();
         }
 
-        // 5. Tabla interactiva de especies (activación y ΔG°(T))
-        ImGui::Spacing();
+        ImGui::SameLine();
+        if (ImGui::Button("Format  v", ImVec2(78.0f, 24.0f))) ImGui::OpenPopup("##EpHFormatMenuPopup");
+        if (ImGui::BeginPopup("##EpHFormatMenuPopup")) {
+            if (ImGui::MenuItem("H2O Stability Lines...")) mostrar_modal_h2o_ = true;
+            if (ImGui::MenuItem("Toggle Area Colors", nullptr, &params_.mostrar_colores)) ejecutar_calculo(false);
+            if (ImGui::MenuItem("Show Predominance Areas of Ions", nullptr, &params_.mostrar_areas_iones)) ejecutar_calculo(false);
+            ImGui::EndPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Help  v", ImVec2(68.0f, 24.0f))) ImGui::OpenPopup("##EpHHelpMenuPopup");
+        if (ImGui::BeginPopup("##EpHHelpMenuPopup")) {
+            ImGui::TextColored(ImVec4(0.20f, 0.48f, 0.85f, 1.0f), "HSC EpH — Pourbaix Diagrams Module (STABCAL)");
+            ImGui::Separator();
+            ImGui::BulletText("Select 1 to 7 elements (H and O are automatically included).");
+            ImGui::BulletText("Use the element selector next to Draw to switch the Main Element (e.g. Cu vs S).");
+            ImGui::BulletText("Double-click any species in Select Species to inspect its thermodynamic data.");
+            ImGui::BulletText("Drag or double-click any region label inside the diagram to move or edit it.");
+            ImGui::EndPopup();
+        }
+
+        ImGui::SameLine(0.0f, 18.0f);
+        ImGui::TextDisabled("Quick Presets:");
+        ImGui::SameLine(); if (ImGui::SmallButton("Cu-S (Cu)")) cargar_preset(2);
+        ImGui::SameLine(); if (ImGui::SmallButton("S-Cu (S)")) cargar_preset(3);
+        ImGui::SameLine(); if (ImGui::SmallButton("Fe-H2O")) cargar_preset(0);
+        ImGui::SameLine(); if (ImGui::SmallButton("Mn-H2O")) cargar_preset(5);
+        ImGui::SameLine(); if (ImGui::SmallButton("Au-Cl")) cargar_preset(4);
+        ImGui::SameLine(); if (ImGui::SmallButton("Zn-S")) cargar_preset(6);
+    }
+    ImGui::EndChild();
+
+    ImGui::Dummy(ImVec2(0.0f, 2.0f));
+
+    const float panel_izq_w = 435.0f;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COLUMNA IZQUIERDA: "Diagram Parameters" (Diseño espaciado y sin solapamientos)
+    // ═══════════════════════════════════════════════════════════════════════════
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
+    ImGui::BeginChild("##EpHLeftPanel", ImVec2(panel_izq_w, 0.0f), true);
+    {
+        ImGui::TextColored(ImVec4(0.22f, 0.45f, 0.72f, 1.0f), "Diagram Parameters");
         ImGui::Separator();
-        ImGui::TextColored(Colores::ACENTO_CIAN, "5. Especies del Sistema (%zu)", calc_.obtener_especies().size());
-        if (ImGui::BeginTable("##pourbaix_sp_tbl", 5,
-            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp,
-            ImVec2(0, 175)))
+        ImGui::Dummy(ImVec2(0.0f, 2.0f));
+
+        const float col_el_w = 205.0f;
+        const float col_sp_w = panel_izq_w - col_el_w - 30.0f;
+        const float top_split_h = 392.0f;
+
+        // Cabeceras: Select Elements | Select Species
+        ImGui::TextUnformatted("Select Elements");
+        ImGui::SameLine(col_el_w + 12.0f);
+        ImGui::TextUnformatted("Select Species");
+
+        // Subcolumna izquierda: Select Elements + Search Mode + Organics
+        ImGui::BeginChild("##EpHElemSearchSubCol", ImVec2(col_el_w, top_split_h), false, ImGuiWindowFlags_NoScrollbar);
         {
-            ImGui::TableSetupColumn("On", ImGuiTableColumnFlags_WidthFixed, 26.0f);
-            ImGui::TableSetupColumn("Especie", ImGuiTableColumnFlags_WidthStretch, 1.1f);
-            ImGui::TableSetupColumn("Est.", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-            ImGui::TableSetupColumn("ΔGf°(T)", ImGuiTableColumnFlags_WidthFixed, 68.0f);
-            ImGui::TableSetupColumn("Zona", ImGuiTableColumnFlags_WidthFixed, 62.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 3.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
+            ImGui::BeginChild("##EpHElementsGrid", ImVec2(col_el_w, 218.0f), true);
+            for (int r = 0; r < 21; ++r) {
+                for (int c = 0; c < 5; ++c) {
+                    const char* sym = kElementosEpHCols[r][c];
+                    if (!sym || sym[0] == '\0') continue;
+                    if (c > 0) ImGui::SameLine(8.0f + c * 37.0f);
+
+                    const bool es_ho = (std::string(sym) == "H" || std::string(sym) == "O");
+                    bool sel = false;
+                    for (const auto& el : params_.elementos) {
+                        if (el.symbol == sym) { sel = true; break; }
+                    }
+
+                    if (sel) {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.50f, 0.86f, 0.95f));
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    } else if (es_ho) {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.45f, 0.62f, 0.78f, 0.35f));
+                    }
+
+                    std::string btn_id = std::string(sym) + "##eph_el";
+                    if (ImGui::Button(btn_id.c_str(), ImVec2(33.5f, 20.0f)) && !es_ho) {
+                        auto it = std::find_if(params_.elementos.begin(), params_.elementos.end(),
+                                               [&](const domain::EpHElementConfig& e) { return e.symbol == sym; });
+                        if (it != params_.elementos.end()) {
+                            if (params_.elementos.size() > 1) params_.elementos.erase(it);
+                        } else if (params_.elementos.size() < 7) {
+                            params_.elementos.push_back({sym, 1.0, 1.0});
+                        }
+                        if (!params_.elementos.empty()) {
+                            bool main_valid = false;
+                            for (size_t k = 0; k < params_.elementos.size(); ++k) {
+                                if (params_.elementos[k].symbol == params_.elemento_principal) {
+                                    main_valid = true;
+                                    idx_elem_principal_combo_ = static_cast<int>(k);
+                                    break;
+                                }
+                            }
+                            if (!main_valid) {
+                                params_.elemento_principal = params_.elementos.front().symbol;
+                                idx_elem_principal_combo_ = 0;
+                            }
+                        }
+                        actualizar_especies_sistema(false);
+                        ejecutar_calculo(false);
+                    }
+
+                    if (sel) ImGui::PopStyleColor(2);
+                    else if (es_ho) ImGui::PopStyleColor(1);
+                }
+            }
+            ImGui::EndChild();
+            ImGui::PopStyleVar(2);
+
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
+            ImGui::TextUnformatted("Search Mode");
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
+            ImGui::BeginChild("##EpHSearchModeBox", ImVec2(col_el_w, 118.0f), true);
+            {
+                bool chg = false;
+                chg |= ImGui::Selectable("Gases", &params_.modos_busqueda.gases);
+                chg |= ImGui::Selectable("Gas Ions", &params_.modos_busqueda.gas_ions);
+                chg |= ImGui::Selectable("Liquids", &params_.modos_busqueda.liquids);
+                chg |= ImGui::Selectable("Condensed", &params_.modos_busqueda.condensed);
+                chg |= ImGui::Selectable("Aqueous Neutrals", &params_.modos_busqueda.aqueous_neutrals);
+                chg |= ImGui::Selectable("Aqueous Ions", &params_.modos_busqueda.aqueous_ions);
+                if (chg) {
+                    actualizar_especies_sistema(true);
+                    ejecutar_calculo(false);
+                }
+            }
+            ImGui::EndChild();
+            ImGui::PopStyleVar();
+
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
+            if (ImGui::Checkbox("Organics", &params_.modos_busqueda.organics)) {
+                actualizar_especies_sistema(true);
+                ejecutar_calculo(false);
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine(col_el_w + 12.0f);
+
+        // Subcolumna derecha: Select Species + Select All
+        ImGui::BeginChild("##EpHSpeciesSubCol", ImVec2(col_sp_w, top_split_h), false, ImGuiWindowFlags_NoScrollbar);
+        {
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 4.0f));
+            ImGui::BeginChild("##EpHSpeciesList", ImVec2(col_sp_w, top_split_h - 36.0f), true);
+            for (size_t i = 0; i < especies_candidatas_.size(); ++i) {
+                const auto& sp = especies_candidatas_[i];
+                bool sel = especies_seleccionadas_[i];
+                if (ImGui::Selectable(sp.formula.c_str(), sel, ImGuiSelectableFlags_AllowDoubleClick)) {
+                    if (ImGui::IsMouseDoubleClicked(0)) {
+                        especie_modal_ = sp;
+                        mostrar_modal_especie_ = true;
+                    } else {
+                        especies_seleccionadas_[i] = !sel;
+                        ejecutar_calculo(false);
+                    }
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s\nΔG°(T) = %.3f kcal/mol (%.2f kJ/mol)\nDouble-click for thermodynamic details",
+                                      sp.nombre.c_str(), sp.dG0_T_kcal, sp.dG0_T_kJ);
+                }
+            }
+            ImGui::EndChild();
+            ImGui::PopStyleVar();
+
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
+            if (ImGui::Button("Select All", ImVec2(col_sp_w, 28.0f))) {
+                const bool todas_activas = std::all_of(especies_seleccionadas_.begin(), especies_seleccionadas_.end(),
+                                                       [](bool v) { return v; });
+                for (size_t i = 0; i < especies_candidatas_.size(); ++i) {
+                    especies_seleccionadas_[i] = todas_activas ? especies_candidatas_[i].seleccionada_por_defecto : true;
+                }
+                ejecutar_calculo(false);
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+        // ── Sección Desplegable "Parameters and Axes" (Con tabla alineada de 2 columnas) ──
+        if (ImGui::CollapsingHeader("Parameters and Axes")) {
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(6.0f, 4.0f));
+            const auto& cur_res = (!pestanas_.empty()) ? pestanas_[idx_pestana_activa_].resultado : calc_.ultimo_resultado_eph();
+
+            if (ImGui::BeginTable("##EpHParamsGrid", 2, ImGuiTableFlags_SizingStretchProp)) {
+                ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 175.0f);
+                ImGui::TableSetupColumn("Input", ImGuiTableColumnFlags_WidthStretch);
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Dielectric Constant");
+                ImGui::TableSetColumnIndex(1);
+                float eps_val = static_cast<float>(params_.override_constante_dielectrica
+                                                       ? params_.constante_dielectrica_manual
+                                                       : cur_res.constante_dielectrica);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##eps_in", &eps_val, 0.0f, 0.0f, "%.3f")) {
+                    params_.override_constante_dielectrica = true;
+                    params_.constante_dielectrica_manual = eps_val;
+                }
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("ΔG of H2O (kcal/mol)");
+                ImGui::TableSetColumnIndex(1);
+                float dg_h2o_val = static_cast<float>(params_.override_dG_agua
+                                                          ? params_.dG_agua_manual_kcal
+                                                          : cur_res.dG_H2O_kcal);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##dgh2o_in", &dg_h2o_val, 0.0f, 0.0f, "%.3f")) {
+                    params_.override_dG_agua = true;
+                    params_.dG_agua_manual_kcal = dg_h2o_val;
+                }
+                ImGui::EndTable();
+            }
+
+            if (ImGui::Checkbox("Use Davies Method for Activity", &params_.usar_davies)) {
+                actualizar_especies_sistema(true);
+                ejecutar_calculo(false);
+            }
+            ImGui::BeginDisabled(!params_.usar_davies);
+            if (ImGui::BeginTable("##EpHDaviesGrid", 2, ImGuiTableFlags_SizingStretchProp)) {
+                ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 175.0f);
+                ImGui::TableSetupColumn("Input", ImGuiTableColumnFlags_WidthStretch);
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Ion Strength (mol/kg)");
+                ImGui::TableSetColumnIndex(1);
+                float i_str = static_cast<float>(params_.fuerza_ionica);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##istr_in", &i_str, 0.0f, 0.0f, "%.3f")) {
+                    params_.fuerza_ionica = std::max(0.0, static_cast<double>(i_str));
+                    actualizar_especies_sistema(true);
+                }
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Correction Factor");
+                ImGui::TableSetColumnIndex(1);
+                float c_fac = static_cast<float>(cur_res.factor_correccion_davies);
+                ImGui::SetNextItemWidth(-1.0f);
+                ImGui::InputFloat("##cfac_in", &c_fac, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_ReadOnly);
+                ImGui::EndTable();
+            }
+            ImGui::EndDisabled();
+
+            if (ImGui::Checkbox("Criss-Cobble Extrapolation", &params_.usar_criss_cobble)) {
+                actualizar_especies_sistema(true);
+                ejecutar_calculo(false);
+            }
+
+            ImGui::Separator();
+            ImGui::TextDisabled("Diagram Axes");
+            if (ImGui::BeginTable("##EpHAxesGrid", 4, ImGuiTableFlags_SizingStretchProp)) {
+                float eh_min = static_cast<float>(params_.Eh_min);
+                float eh_max = static_cast<float>(params_.Eh_max);
+                float ph_min = static_cast<float>(params_.pH_min);
+                float ph_max = static_cast<float>(params_.pH_max);
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Min Eh (V)");
+                ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##ehmin", &eh_min, 0.0f, 0.0f, "%.2f") && (eh_max - eh_min >= 0.2f)) params_.Eh_min = eh_min;
+                ImGui::TableSetColumnIndex(2); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Max Eh (V)");
+                ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##ehmax", &eh_max, 0.0f, 0.0f, "%.2f") && (eh_max - eh_min >= 0.2f)) params_.Eh_max = eh_max;
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Min pH");
+                ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##phmin", &ph_min, 0.0f, 0.0f, "%.2f") && (ph_max - ph_min >= 0.2f)) params_.pH_min = ph_min;
+                ImGui::TableSetColumnIndex(2); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Max pH");
+                ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##phmax", &ph_max, 0.0f, 0.0f, "%.2f") && (ph_max - ph_min >= 0.2f)) params_.pH_max = ph_max;
+                ImGui::EndTable();
+            }
+
+            ImGui::TextDisabled("Potential Scale");
+            int sc = static_cast<int>(params_.escala_potencial);
+            bool sc_chg = false;
+            sc_chg |= ImGui::RadioButton("Hydrogen", &sc, 0); ImGui::SameLine(0.0f, 14.0f);
+            sc_chg |= ImGui::RadioButton("Calomel", &sc, 1);  ImGui::SameLine(0.0f, 14.0f);
+            sc_chg |= ImGui::RadioButton("Ag / AgCl", &sc, 2);
+            if (sc_chg) {
+                params_.escala_potencial = static_cast<domain::PourbaixPotentialScale>(sc);
+                ejecutar_calculo(false);
+            }
+            ImGui::PopStyleVar();
+            ImGui::Separator();
+        }
+
+        // ── Temperatura y Unidad (°C / K) ──
+        ImGui::Dummy(ImVec2(0.0f, 2.0f));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Temperature:");
+        ImGui::SameLine(115.0f);
+        float t_disp = static_cast<float>(params_.temp_en_celsius ? (params_.T_K - 273.15) : params_.T_K);
+        ImGui::SetNextItemWidth(175.0f);
+        if (ImGui::InputFloat("##EpHTempInput", &t_disp, 0.0f, 0.0f, "%.2f")) {
+            params_.T_K = params_.temp_en_celsius ? (t_disp + 273.15) : t_disp;
+            params_.T_K = std::clamp(params_.T_K, 273.15, 647.0);
+            actualizar_especies_sistema(true);
+        }
+        ImGui::SameLine(0.0f, 8.0f);
+        if (ImGui::Button(params_.temp_en_celsius ? "°C##eph_u" : "K##eph_u", ImVec2(110.0f, 0.0f))) {
+            params_.temp_en_celsius = !params_.temp_en_celsius;
+        }
+
+        ImGui::Dummy(ImVec2(0.0f, 2.0f));
+
+        // ── Tabla Element | Molality (mol/kg H2O) | Pressure (bar) ──
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8.0f, 5.0f));
+        if (ImGui::BeginTable("##EpHElemMolalityTable", 3,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
+                              ImVec2(0.0f, 104.0f))) {
+            ImGui::TableSetupColumn("Element", ImGuiTableColumnFlags_WidthFixed, 82.0f);
+            ImGui::TableSetupColumn("Molality (mol/kg H2O)", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Pressure (bar)", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
 
-            auto& especies_mut = calc_.obtener_especies_mut();
-            bool need_recalc = false;
-            for (size_t i = 0; i < especies_mut.size(); ++i) {
-                auto& sp = especies_mut[i];
+            for (size_t i = 0; i < params_.elementos.size(); ++i) {
+                auto& el = params_.elementos[i];
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::PushID(static_cast<int>(i));
-                if (ImGui::Checkbox("##act", &sp.activa)) {
-                    need_recalc = true;
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted(el.symbol.c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::PushID(static_cast<int>(i * 10 + 1));
+                float mol_f = static_cast<float>(el.molality);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##mol", &mol_f, 0.0f, 0.0f, "%.2E")) {
+                    el.molality = std::max(1e-18, static_cast<double>(mol_f));
+                    actualizar_especies_sistema(true);
                 }
                 ImGui::PopID();
 
-                ImGui::TableSetColumnIndex(1);
-                ImVec4 col = kPaletteEspecies[i % kNumColors];
-                ImGui::TextColored(col, "%s", sp.formula_limpia.c_str());
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s (ID: %lld, a=%.2e)",
-                        sp.nombre.c_str(), static_cast<long long>(sp.id), sp.molalidad);
-                }
-
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(sp.estado.c_str());
-
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("%.1f", sp.dG0);
-
-                ImGui::TableSetColumnIndex(4);
-                const char* z_short =
-                    (sp.estado_corrosion == domain::PourbaixCorrosionState::Immunity) ? "Inmune" :
-                    (sp.estado_corrosion == domain::PourbaixCorrosionState::Passivation) ? "Pasiva" : "Corros.";
-                ImGui::TextUnformatted(z_short);
+                ImGui::PushID(static_cast<int>(i * 10 + 2));
+                float p_f = static_cast<float>(el.pressure_bar);
+                ImGui::SetNextItemWidth(-1.0f);
+                if (ImGui::InputFloat("##pres", &p_f, 0.0f, 0.0f, "%.2E")) {
+                    el.pressure_bar = std::max(0.01, static_cast<double>(p_f));
+                    actualizar_especies_sistema(true);
+                }
+                ImGui::PopID();
             }
             ImGui::EndTable();
-            if (need_recalc) calc_.calcular();
+        }
+        ImGui::PopStyleVar();
+
+        ImGui::Dummy(ImVec2(0.0f, 3.0f));
+
+        // ── Checkboxes inferiores y Botones: Table | Combiner | Draw [Main Element v] ──
+        if (ImGui::Checkbox("Show predominance areas of ions", &params_.mostrar_areas_iones)) {
+            ejecutar_calculo(false);
+        }
+        ImGui::Checkbox("Create new page", &create_new_page_);
+        ImGui::SameLine(220.0f);
+        if (ImGui::Checkbox("Show colors", &params_.mostrar_colores)) {
+            ejecutar_calculo(false);
         }
 
-        // Exportación CSV
-        ImGui::SetNextItemWidth(180.0f);
-        ImGui::InputText("##csv_pourbaix", csv_path_, sizeof(csv_path_));
-        ImGui::SameLine();
-        if (ImGui::Button("Exportar CSV")) {
-            if (calc_.guardar_csv(csv_path_)) {
-                estado_msg_ = std::string("Exportado a ") + csv_path_;
-            } else {
-                estado_msg_ = "Error al guardar CSV";
+        ImGui::Dummy(ImVec2(0.0f, 4.0f));
+        if (ImGui::Button("Table", ImVec2(102.0f, 30.0f))) {
+            mostrar_tabla_settings_ = true;
+            ejecutar_calculo(false);
+        }
+        ImGui::SameLine(0.0f, 8.0f);
+        if (ImGui::Button("Combiner", ImVec2(106.0f, 30.0f))) {
+            mostrar_combiner_ = true;
+            datasets_combiner_ = calc_.calcular_combiner_eph(params_, params_.temperaturas_combiner_C);
+        }
+        ImGui::SameLine(0.0f, 8.0f);
+        if (ImGui::Button("Draw", ImVec2(92.0f, 30.0f))) {
+            ejecutar_calculo(false);
+        }
+        ImGui::SameLine(0.0f, 6.0f);
+        ImGui::SetNextItemWidth(85.0f);
+        if (!params_.elementos.empty()) {
+            idx_elem_principal_combo_ = std::clamp(idx_elem_principal_combo_, 0, static_cast<int>(params_.elementos.size()) - 1);
+            const char* cur_main = params_.elementos[idx_elem_principal_combo_].symbol.c_str();
+            if (ImGui::BeginCombo("##EpHMainElemCombo", cur_main)) {
+                for (int i = 0; i < static_cast<int>(params_.elementos.size()); ++i) {
+                    const bool is_sel = (idx_elem_principal_combo_ == i);
+                    if (ImGui::Selectable(params_.elementos[i].symbol.c_str(), is_sel)) {
+                        idx_elem_principal_combo_ = i;
+                        params_.elemento_principal = params_.elementos[i].symbol;
+                        ejecutar_calculo(false);
+                        if (mostrar_combiner_) {
+                            datasets_combiner_ = calc_.calcular_combiner_eph(params_, params_.temperaturas_combiner_C);
+                        }
+                    }
+                    if (is_sel) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
             }
         }
+
         if (!estado_msg_.empty()) {
+            ImGui::Dummy(ImVec2(0.0f, 2.0f));
             ImGui::TextDisabled("%s", estado_msg_.c_str());
         }
     }
     ImGui::EndChild();
+    ImGui::PopStyleVar(); // WindowPadding
 
-    ImGui::SameLine();
+    ImGui::SameLine(0.0f, 10.0f);
 
-    // ── Panel derecho: Gráfico Eh-pH y Pestañas de Ecuaciones Nernst / Puntos Triples ──
-    ImGui::BeginChild("##pourbaix_right", ImVec2(0, 0), false);
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COLUMNA DERECHA: Pestañas de Diagramas (Chart1, Table Basic Settings, Combiner)
+    // ═══════════════════════════════════════════════════════════════════════════
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
+    ImGui::BeginChild("##EpHRightPanel", ImVec2(0.0f, 0.0f), true);
     {
-        const float avail_h = ImGui::GetContentRegionAvail().y;
-        const float plot_h  = std::max(280.0f, avail_h * 0.68f);
+        if (ImGui::BeginTabBar("##EpHTabBar", ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs)) {
+            for (int t = 0; t < static_cast<int>(pestanas_.size()); ++t) {
+                auto& tab = pestanas_[t];
+                bool open = true;
+                std::string tab_lbl = tab.nombre + "##eph_tab_" + std::to_string(t);
+                if (ImGui::BeginTabItem(tab_lbl.c_str(), (pestanas_.size() > 1) ? &open : nullptr)) {
+                    idx_pestana_activa_ = t;
+                    const auto& res = tab.resultado;
 
-        char titulo[192];
-        std::snprintf(titulo, sizeof(titulo),
-            "Diagrama Eh-pH: %s - H2O (T = %.1f °C, [M] = %.1e m, %s)###PourbaixPlot",
-            elemento_actual_.c_str(),
-            temperatura_actual_ - 273.15,
-            concentracion_actual_,
-            domain::pourbaix_scale_label(calc_.escala_potencial()));
+                    ImGui::Dummy(ImVec2(0.0f, 2.0f));
 
-        if (ImPlot::BeginPlot(titulo, ImVec2(-1, plot_h))) {
-            ImPlot::SetupAxes("pH", domain::pourbaix_scale_label(calc_.escala_potencial()));
-            ImPlot::SetupAxesLimits(calc_.pH_min(), calc_.pH_max(),
-                                    calc_.Eh_min(), calc_.Eh_max(), ImGuiCond_Once);
+                    // Barra vertical izquierda de iconos rápidos con espaciado generoso
+                    ImGui::BeginChild("##EpHQuickToolbar", ImVec2(42.0f, -86.0f), false);
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 8.0f));
+                        if (ImGui::Button("S##sv", ImVec2(34.0f, 30.0f))) {
+                            std::ofstream ofs(ruta_eph8_);
+                            if (ofs) ofs << calc_.serializar_eph8(tab.params);
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Save .eph8 Specification");
 
-            // Clic en el gráfico para mover la sonda operativa
-            if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                ImPlotPoint pt = ImPlot::GetPlotMousePos();
-                probe_pH_ = std::clamp(pt.x, calc_.pH_min(), calc_.pH_max());
-                probe_Eh_ = std::clamp(pt.y, calc_.Eh_min(), calc_.Eh_max());
+                        if (ImGui::Button("C##cp", ImVec2(34.0f, 30.0f))) {
+                            const std::string csv = calc_.exportar_tabla_eph_csv(res);
+                            ImGui::SetClipboardText(csv.c_str());
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copy Diagram Data to Clipboard");
+
+                        if (ImGui::Button("P##pr", ImVec2(34.0f, 30.0f))) {
+                            mostrar_modal_print_ = true;
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Print Settings / Preview (Fig. 6)");
+
+                        if (ImGui::Button("F##cl", ImVec2(34.0f, 30.0f))) {
+                            params_.mostrar_colores = !params_.mostrar_colores;
+                            tab.params.mostrar_colores = params_.mostrar_colores;
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle Area Fill Colors");
+
+                        if (ImGui::Button("R##rs", ImVec2(34.0f, 30.0f))) {
+                            tab.reset_limites = true;
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Reset Axis Zoom");
+
+                        if (ImGui::Button("A##lb", ImVec2(34.0f, 30.0f))) {
+                            mostrar_modal_h2o_ = true;
+                        }
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Format H2O Stability Lines & Labels");
+                        ImGui::PopStyleVar();
+                    }
+                    ImGui::EndChild();
+
+                    ImGui::SameLine(0.0f, 8.0f);
+
+                    // Lienzo principal del gráfico Eh-pH
+                    ImGui::BeginChild("##EpHPlotArea", ImVec2(0.0f, -86.0f), false);
+                    {
+                        const char* y_label = (res.escala_potencial == domain::PourbaixPotentialScale::SCE)
+                                                  ? "E vs SCE (Volts)"
+                                              : (res.escala_potencial == domain::PourbaixPotentialScale::AgAgCl)
+                                                  ? "E vs Ag/AgCl (Volts)"
+                                                  : "Eh (Volts)";
+
+                        ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(0.985f, 0.988f, 0.992f, 1.0f));
+                        ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.75f, 0.78f, 0.82f, 0.55f));
+
+                        std::string plot_title = res.titulo_diagrama + "##plot_" + std::to_string(t);
+                        if (ImPlot::BeginPlot(plot_title.c_str(), ImVec2(-1.0f, -1.0f), ImPlotFlags_NoLegend)) {
+                            ImPlot::SetupAxes("pH", y_label, ImPlotAxisFlags_None, ImPlotAxisFlags_None);
+                            if (tab.reset_limites) {
+                                ImPlot::SetupAxesLimits(res.pH_min, res.pH_max, res.Eh_min, res.Eh_max, ImGuiCond_Always);
+                                tab.reset_limites = false;
+                            } else {
+                                ImPlot::SetupAxesLimits(res.pH_min, res.pH_max, res.Eh_min, res.Eh_max, ImGuiCond_Once);
+                            }
+
+                            ImDrawList* dl = ImPlot::GetPlotDrawList();
+                            ImPlot::PushPlotClipRect();
+
+                            // 1. Pintar áreas de predominancia si Show colors está activo
+                            if (tab.params.mostrar_colores) {
+                                for (size_t k = 0; k < res.poligonos.size(); ++k) {
+                                    const auto& pol = res.poligonos[k];
+                                    if (pol.vertices.size() < 3) continue;
+                                    const ImU32 fill_col = kPaletaEpH[k % kNumColoresEpH].fill;
+                                    const ImVec2 p0 = ImPlot::PlotToPixels(pol.vertices[0].pH, pol.vertices[0].Eh);
+                                    for (size_t i = 1; i + 1 < pol.vertices.size(); ++i) {
+                                        const ImVec2 p1 = ImPlot::PlotToPixels(pol.vertices[i].pH, pol.vertices[i].Eh);
+                                        const ImVec2 p2 = ImPlot::PlotToPixels(pol.vertices[i + 1].pH, pol.vertices[i + 1].Eh);
+                                        dl->AddTriangleFilled(p0, p1, p2, fill_col);
+                                    }
+                                }
+                            }
+
+                            // 2. Líneas sólidas negras de equilibrio de fases (Imagen 3 e Imagen 4)
+                            for (const auto& f : res.fronteras) {
+                                const ImVec2 p1 = ImPlot::PlotToPixels(f.p1.pH, f.p1.Eh);
+                                const ImVec2 p2 = ImPlot::PlotToPixels(f.p2.pH, f.p2.Eh);
+                                dl->AddLine(p1, p2, IM_COL32(20, 22, 26, 255), 1.45f);
+                            }
+
+                            // 3. Líneas punteadas negras de estabilidad del agua (O2/H2O superior y H+/H2 inferior)
+                            const auto& st_h2o = estilo_agua_global();
+                            const ImU32 col_h2o = ImGui::ColorConvertFloat4ToU32(st_h2o.color);
+                            if (st_h2o.mostrar_superior) {
+                                const ImVec2 w1 = ImPlot::PlotToPixels(res.pH_min, res.eh_agua_sup_pHmin);
+                                const ImVec2 w2 = ImPlot::PlotToPixels(res.pH_max, res.eh_agua_sup_pHmax);
+                                dibujar_segmento_punteado(dl, w1, w2, col_h2o, st_h2o.grosor, 4.0f, 4.0f);
+                            }
+                            if (st_h2o.mostrar_inferior) {
+                                const ImVec2 w1 = ImPlot::PlotToPixels(res.pH_min, res.eh_agua_inf_pHmin);
+                                const ImVec2 w2 = ImPlot::PlotToPixels(res.pH_max, res.eh_agua_inf_pHmax);
+                                dibujar_segmento_punteado(dl, w1, w2, col_h2o, st_h2o.grosor, 4.0f, 4.0f);
+                            }
+
+                            // 4. Superposición azul punteada de "Show predominance areas of ions" (Sección 17.3.7)
+                            if (tab.params.mostrar_areas_iones) {
+                                for (const auto& fi : res.fronteras_iones) {
+                                    const ImVec2 p1 = ImPlot::PlotToPixels(fi.p1.pH, fi.p1.Eh);
+                                    const ImVec2 p2 = ImPlot::PlotToPixels(fi.p2.pH, fi.p2.Eh);
+                                    dibujar_segmento_punteado(dl, p1, p2, IM_COL32(25, 95, 215, 240), 1.5f, 3.5f, 3.5f);
+                                }
+                            }
+
+                            // 5. Etiquetas de áreas de estabilidad ubicadas en el punto más ancho (arrastrables y editables)
+                            for (const auto& pol : res.poligonos) {
+                                std::string txt = pol.etiqueta;
+                                if (tab.etiquetas_custom.count(pol.formula)) {
+                                    txt = tab.etiquetas_custom.at(pol.formula);
+                                }
+                                if (txt.empty()) continue; // Etiqueta ocultada por el usuario
+
+                                ImVec2 coord(static_cast<float>(pol.centroide.pH), static_cast<float>(pol.centroide.Eh));
+                                if (tab.pos_etiquetas.count(pol.formula)) {
+                                    coord = tab.pos_etiquetas.at(pol.formula);
+                                }
+
+                                const ImVec2 px = ImPlot::PlotToPixels(coord.x, coord.y);
+                                const ImVec2 tsz = ImGui::CalcTextSize(txt.c_str());
+                                const ImVec2 pos_txt(px.x - 0.5f * tsz.x, px.y - 0.5f * tsz.y);
+
+                                dl->AddText(ImVec2(pos_txt.x + 1.0f, pos_txt.y + 1.0f), IM_COL32(255, 255, 255, 220), txt.c_str());
+                                dl->AddText(pos_txt, IM_COL32(15, 18, 22, 255), txt.c_str());
+
+                                // Interacción con el ratón sobre la etiqueta (doble clic para editar, arrastrar para mover)
+                                const ImVec2 mouse = ImGui::GetMousePos();
+                                if (mouse.x >= pos_txt.x - 4.0f && mouse.x <= pos_txt.x + tsz.x + 4.0f &&
+                                    mouse.y >= pos_txt.y - 3.0f && mouse.y <= pos_txt.y + tsz.y + 3.0f) {
+                                    if (ImGui::IsMouseDoubleClicked(0)) {
+                                        label_edit_key_ = pol.formula;
+                                        std::snprintf(buf_label_edit_, sizeof(buf_label_edit_), "%s", txt.c_str());
+                                        mostrar_modal_label_ = true;
+                                    } else if (ImGui::IsMouseDragging(0)) {
+                                        const ImPlotPoint mp = ImPlot::GetPlotMousePos();
+                                        tab.pos_etiquetas[pol.formula] = ImVec2(static_cast<float>(mp.x), static_cast<float>(mp.y));
+                                    }
+                                }
+                            }
+
+                            ImPlot::PopPlotClipRect();
+
+                            // Sonda electroquímica en tiempo real al pasar el cursor
+                            if (ImPlot::IsPlotHovered()) {
+                                const ImPlotPoint mp = ImPlot::GetPlotMousePos();
+                                auto ev = calc_.evaluar_punto(mp.x, mp.y);
+                                if (ev.valid) {
+                                    const char* st_str = (ev.corrosion_state == domain::PourbaixCorrosionState::Immunity)
+                                                             ? "Immunity"
+                                                         : (ev.corrosion_state == domain::PourbaixCorrosionState::Corrosion)
+                                                             ? "Active Corrosion (Aqueous)"
+                                                             : "Passivation (Condensed)";
+                                    ImGui::BeginTooltip();
+                                    ImGui::Text("pH = %.2f | Eh = %+.3f V", mp.x, mp.y);
+                                    ImGui::Text("Predominant Phase: %s (%s)", ev.predominant_formula.c_str(), st_str);
+                                    ImGui::Text("Water Window: %s", ev.water_stable ? "Stable H2O(l)"
+                                                                   : (ev.o2_evolution ? "O2(g) Evolution" : "H2(g) Evolution"));
+                                    ImGui::EndTooltip();
+                                }
+                            }
+
+                            ImPlot::EndPlot();
+                        }
+                        ImPlot::PopStyleColor(2);
+                    }
+                    ImGui::EndChild();
+
+                    // ── Caja resumen inferior centrada bajo el eje pH: Element | Molality | Pressure ──
+                    ImGui::Dummy(ImVec2(0.0f, 4.0f));
+                    const float avail_w = ImGui::GetContentRegionAvail().x;
+                    const float box_w = 340.0f;
+                    if (avail_w > box_w) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 0.5f * (avail_w - box_w));
+                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10.0f, 5.0f));
+                    if (ImGui::BeginTable("##EpHBottomSummaryBox", 3,
+                                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit,
+                                          ImVec2(box_w, 68.0f))) {
+                        ImGui::TableSetupColumn("Element", ImGuiTableColumnFlags_WidthFixed, 82.0f);
+                        ImGui::TableSetupColumn("Molality (mol/kg)", ImGuiTableColumnFlags_WidthFixed, 125.0f);
+                        ImGui::TableSetupColumn("Pressure (bar)", ImGuiTableColumnFlags_WidthFixed, 125.0f);
+                        ImGui::TableHeadersRow();
+                        for (const auto& el : res.elementos_usados) {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(el.symbol.c_str());
+                            ImGui::TableSetColumnIndex(1); ImGui::Text("%.2E", el.molality);
+                            ImGui::TableSetColumnIndex(2); ImGui::Text("%.2E", el.pressure_bar);
+                        }
+                        ImGui::EndTable();
+                    }
+                    ImGui::PopStyleVar();
+
+                    ImGui::EndTabItem();
+                }
+                if (!open && pestanas_.size() > 1) {
+                    pestanas_.erase(pestanas_.begin() + t);
+                    idx_pestana_activa_ = std::clamp(idx_pestana_activa_, 0, static_cast<int>(pestanas_.size()) - 1);
+                    break;
+                }
             }
 
-            const auto& dom = calc_.obtener_dominancia();
-            const auto& especies = calc_.obtener_especies();
+            // ── Pestaña "E-pH Diagram Basic Settings" (Botón Table — Columnas amplias y legibles) ──
+            if (mostrar_tabla_settings_) {
+                if (ImGui::BeginTabItem("E-pH Diagram Basic Settings (Table)", &mostrar_tabla_settings_)) {
+                    const auto& res = (!pestanas_.empty()) ? pestanas_[idx_pestana_activa_].resultado : calc_.ultimo_resultado_eph();
 
-            // 1. Mapa de predominancia por lotes (1 llamada por especie o zona de corrosión)
-            if (mostrar_mapa_color_ && !dom.pH_grid.empty() && !dom.Eh_grid.empty()) {
-                if (modo_color_ == 0) {
-                    std::vector<std::vector<double>> xs_sp(especies.size());
-                    std::vector<std::vector<double>> ys_sp(especies.size());
-                    for (size_t ie = 0; ie < dom.Eh_grid.size(); ++ie) {
-                        for (size_t ip = 0; ip < dom.pH_grid.size(); ++ip) {
-                            int idx = dom.especie_dom[ie][ip];
-                            if (idx >= 0 && static_cast<size_t>(idx) < especies.size()) {
-                                xs_sp[static_cast<size_t>(idx)].push_back(dom.pH_grid[ip]);
-                                ys_sp[static_cast<size_t>(idx)].push_back(dom.Eh_grid[ie]);
+                    ImGui::Dummy(ImVec2(0.0f, 2.0f));
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextColored(ImVec4(0.15f, 0.38f, 0.68f, 1.0f), "%s", res.titulo_diagrama.c_str());
+                    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 190.0f);
+                    if (ImGui::Button("Copy All to Clipboard", ImVec2(180.0f, 26.0f))) {
+                        const std::string csv = calc_.exportar_tabla_eph_csv(res);
+                        ImGui::SetClipboardText(csv.c_str());
+                    }
+                    ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10.0f, 6.0f));
+                    if (ImGui::BeginTable("##EpHBasicSettingsSheet", 8,
+                                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                          ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable,
+                                          ImVec2(0.0f, 0.0f))) {
+                        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 34.0f);
+                        ImGui::TableSetupColumn("A (Species / Parameter)", ImGuiTableColumnFlags_WidthFixed, 175.0f);
+                        ImGui::TableSetupColumn("B (DeltaG kcal/mol)", ImGuiTableColumnFlags_WidthFixed, 155.0f);
+                        ImGui::TableSetupColumn("C (Area no / P)", ImGuiTableColumnFlags_WidthFixed, 105.0f);
+                        ImGui::TableSetupColumn("D (X1 pH)", ImGuiTableColumnFlags_WidthFixed, 85.0f);
+                        ImGui::TableSetupColumn("E (Y1 V / Setting)", ImGuiTableColumnFlags_WidthFixed, 165.0f);
+                        ImGui::TableSetupColumn("F (X2 pH / Value)", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+                        ImGui::TableSetupColumn("G (Y2 V / Unit)", ImGuiTableColumnFlags_WidthStretch);
+                        ImGui::TableHeadersRow();
+
+                        auto add_sheet_row = [&](int row_num, const char* colA, const char* colB, const char* colC,
+                                                 const char* colD, const char* colE, const char* colF, const char* colG) {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0); ImGui::TextDisabled("%d", row_num);
+                            ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(colA);
+                            ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(colB);
+                            ImGui::TableSetColumnIndex(3); ImGui::TextUnformatted(colC);
+                            ImGui::TableSetColumnIndex(4); ImGui::TextUnformatted(colD);
+                            ImGui::TableSetColumnIndex(5); ImGui::TextUnformatted(colE);
+                            ImGui::TableSetColumnIndex(6); ImGui::TextUnformatted(colF);
+                            ImGui::TableSetColumnIndex(7); ImGui::TextUnformatted(colG);
+                        };
+
+                        char b_temp[32], b_eps[32], b_dgw[32], b_is[32], b_cf[32];
+                        char b_ehmin[32], b_ehmax[32], b_phmin[32], b_phmax[32];
+                        std::snprintf(b_temp, sizeof(b_temp), "%.3f", res.T_C);
+                        std::snprintf(b_eps, sizeof(b_eps), "%.3f", res.constante_dielectrica);
+                        std::snprintf(b_dgw, sizeof(b_dgw), "%.3f", res.dG_H2O_kcal);
+                        std::snprintf(b_is, sizeof(b_is), "%.3f", res.fuerza_ionica);
+                        std::snprintf(b_cf, sizeof(b_cf), "%.3f", res.factor_correccion_davies);
+                        std::snprintf(b_ehmin, sizeof(b_ehmin), "%.3f", res.Eh_min);
+                        std::snprintf(b_ehmax, sizeof(b_ehmax), "%.3f", res.Eh_max);
+                        std::snprintf(b_phmin, sizeof(b_phmin), "%.3f", res.pH_min);
+                        std::snprintf(b_phmax, sizeof(b_phmax), "%.3f", res.pH_max);
+
+                        add_sheet_row(1, res.titulo_diagrama.c_str(), "", "", "", "", "", "");
+                        add_sheet_row(2, "Elements", "Molality", "Pressure", "", "Temperature:", b_temp, "°C");
+
+                        auto get_el_str = [&](size_t idx, char* m_buf, char* p_buf) -> const char* {
+                            if (idx >= res.elementos_usados.size()) { m_buf[0] = '\0'; p_buf[0] = '\0'; return ""; }
+                            std::snprintf(m_buf, 32, "%.2E", res.elementos_usados[idx].molality);
+                            std::snprintf(p_buf, 32, "%.2E", res.elementos_usados[idx].pressure_bar);
+                            return res.elementos_usados[idx].symbol.c_str();
+                        };
+                        char m0[32], p0[32], m1[32], p1[32];
+                        const char* s0 = get_el_str(0, m0, p0);
+                        const char* s1 = get_el_str(1, m1, p1);
+
+                        add_sheet_row(3, s0, m0, p0, "", "Show Colors:", params_.mostrar_colores ? "TRUE" : "FALSE", "");
+                        add_sheet_row(4, s1, m1, p1, "", "Dielectric Constant:", b_eps, "");
+                        add_sheet_row(5, "", "", "", "", "DeltaG of H2O:", b_dgw, "kcal/mol");
+                        add_sheet_row(6, "", "", "", "", "Davies Method:", params_.usar_davies ? "TRUE" : "FALSE", "");
+                        add_sheet_row(7, "", "", "", "", "Ion Strength:", b_is, "mol/kg H2O");
+                        add_sheet_row(8, "", "", "", "", "Correction Factor:", b_cf, "");
+                        add_sheet_row(9, "", "", "", "", "Criss Cobble:", params_.usar_criss_cobble ? "TRUE" : "FALSE", "");
+                        add_sheet_row(10, "", "", "", "", "Min Eh:", b_ehmin, "V");
+                        add_sheet_row(11, "", "", "", "", "Max Eh:", b_ehmax, "V");
+                        add_sheet_row(12, "", "", "", "", "Min pH:", b_phmin, "");
+                        add_sheet_row(13, "Potential Scale:", "1.000", "", "", "Max pH:", b_phmax, "");
+                        add_sheet_row(14, "Search modes:", "Condensed;Aqueous Ions", "", "",
+                                      "Show Predominance Ions:", params_.mostrar_areas_iones ? "TRUE" : "FALSE", "");
+                        add_sheet_row(16, "Species", "DeltaG kcal/mol", "Area no", "X1 pH", "Y1 V", "X2 pH", "Y2 V");
+
+                        int row_idx = 17;
+                        for (size_t i = 0; i < res.especies_tabla.size(); ++i) {
+                            const auto& sp = res.especies_tabla[i];
+                            char dg_buf[32], area_buf[32] = "", x1_b[32] = "", y1_b[32] = "", x2_b[32] = "", y2_b[32] = "";
+                            std::snprintf(dg_buf, sizeof(dg_buf), "%.3f", sp.dG0_T_kcal);
+                            if (i < res.fronteras.size()) {
+                                const auto& fr = res.fronteras[i];
+                                std::snprintf(area_buf, sizeof(area_buf), "%d", fr.area_no);
+                                std::snprintf(x1_b, sizeof(x1_b), "%.2f", fr.p1.pH);
+                                std::snprintf(y1_b, sizeof(y1_b), "%.3f", fr.p1.Eh);
+                                std::snprintf(x2_b, sizeof(x2_b), "%.2f", fr.p2.pH);
+                                std::snprintf(y2_b, sizeof(y2_b), "%.3f", fr.p2.Eh);
+                            }
+                            add_sheet_row(row_idx++, sp.formula.c_str(), dg_buf, area_buf, x1_b, y1_b, x2_b, y2_b);
+                        }
+
+                        ImGui::EndTable();
+                    }
+                    ImGui::PopStyleVar();
+                    ImGui::EndTabItem();
+                }
+            }
+
+            // ── Pestaña "Combined E-pH Diagrams (Combiner)" (Sección 17.5 / Fig. 7) ──
+            if (mostrar_combiner_) {
+                if (ImGui::BeginTabItem("Combined E-pH Diagram (Combiner)", &mostrar_combiner_)) {
+                    ImGui::Dummy(ImVec2(0.0f, 3.0f));
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextUnformatted("Isotherm Datasets (°C):");
+                    for (size_t d = 0; d < params_.temperaturas_combiner_C.size(); ++d) {
+                        ImGui::SameLine(0.0f, 10.0f);
+                        ImGui::PushID(static_cast<int>(d + 500));
+                        float tc = static_cast<float>(params_.temperaturas_combiner_C[d]);
+                        ImGui::SetNextItemWidth(82.0f);
+                        if (ImGui::InputFloat("##tc", &tc, 0.0f, 0.0f, "%.0f °C")) {
+                            params_.temperaturas_combiner_C[d] = std::clamp(static_cast<double>(tc), 0.0, 350.0);
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::SameLine(0.0f, 14.0f);
+                    if (ImGui::Button("Draw Combiner", ImVec2(130.0f, 28.0f))) {
+                        datasets_combiner_ = calc_.calcular_combiner_eph(params_, params_.temperaturas_combiner_C);
+                    }
+                    ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+                    const ImVec4 comb_cols[] = {
+                        ImVec4(0.10f, 0.12f, 0.15f, 1.0f), // 25 °C (Negro)
+                        ImVec4(0.15f, 0.45f, 0.85f, 1.0f), // 50 °C (Azul)
+                        ImVec4(0.85f, 0.22f, 0.18f, 1.0f), // 75 °C (Rojo)
+                        ImVec4(0.15f, 0.65f, 0.32f, 1.0f)  // 100 °C (Verde)
+                    };
+
+                    if (ImPlot::BeginPlot("Combined E-pH Diagram (Isotherm Overlay: 25, 50, 75, 100 °C)##comb", ImVec2(-1.0f, -1.0f))) {
+                        ImPlot::SetupAxes("pH", "Eh (Volts)");
+                        ImPlot::SetupAxesLimits(params_.pH_min, params_.pH_max, params_.Eh_min, params_.Eh_max, ImGuiCond_Once);
+
+                        for (size_t d = 0; d < datasets_combiner_.size(); ++d) {
+                            const auto& ds = datasets_combiner_[d];
+                            const ImVec4 col = comb_cols[d % 4];
+                            for (size_t f = 0; f < ds.resultado.fronteras.size(); ++f) {
+                                const auto& fr = ds.resultado.fronteras[f];
+                                double xs[2] = {fr.p1.pH, fr.p2.pH};
+                                double ys[2] = {fr.p1.Eh, fr.p2.Eh};
+                                ImPlot::SetNextLineStyle(col, 1.5f);
+                                std::string lbl = (f == 0) ? ds.etiqueta : ("##comb_" + std::to_string(d) + "_" + std::to_string(f));
+                                ImPlot::PlotLine(lbl.c_str(), xs, ys, 2);
+                            }
+                            if (d == 0) {
+                                for (const auto& pol : ds.resultado.poligonos) {
+                                    ImPlot::PlotText(pol.formula.c_str(), pol.centroide.pH, pol.centroide.Eh);
+                                }
                             }
                         }
+                        ImPlot::EndPlot();
                     }
-                    for (size_t k = 0; k < especies.size(); ++k) {
-                        if (xs_sp[k].empty()) continue;
-                        ImVec4 col = kPaletteEspecies[k % kNumColors];
-                        col.w = 0.28f;
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 4.2f, col, 0.0f, col);
-                        std::string lbl = especies[k].formula_limpia + " (" + especies[k].estado + ")";
-                        ImPlot::PlotScatter(lbl.c_str(), xs_sp[k].data(), ys_sp[k].data(),
-                                            static_cast<int>(xs_sp[k].size()));
-                    }
-                } else {
-                    std::vector<double> x_imm, y_imm, x_pas, y_pas, x_cor, y_cor;
-                    for (size_t ie = 0; ie < dom.Eh_grid.size(); ++ie) {
-                        for (size_t ip = 0; ip < dom.pH_grid.size(); ++ip) {
-                            int cz = dom.corrosion_grid[ie][ip];
-                            if (cz == 0) { x_imm.push_back(dom.pH_grid[ip]); y_imm.push_back(dom.Eh_grid[ie]); }
-                            else if (cz == 1) { x_pas.push_back(dom.pH_grid[ip]); y_pas.push_back(dom.Eh_grid[ie]); }
-                            else { x_cor.push_back(dom.pH_grid[ip]); y_cor.push_back(dom.Eh_grid[ie]); }
-                        }
-                    }
-                    if (!x_imm.empty()) {
-                        ImVec4 c(0.20f, 0.78f, 0.38f, 0.30f);
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 4.2f, c, 0.0f, c);
-                        ImPlot::PlotScatter("Inmunidad (Metal Estable)", x_imm.data(), y_imm.data(), static_cast<int>(x_imm.size()));
-                    }
-                    if (!x_pas.empty()) {
-                        ImVec4 c(0.24f, 0.62f, 0.92f, 0.30f);
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 4.2f, c, 0.0f, c);
-                        ImPlot::PlotScatter("Pasivación (Capa Sólida)", x_pas.data(), y_pas.data(), static_cast<int>(x_pas.size()));
-                    }
-                    if (!x_cor.empty()) {
-                        ImVec4 c(0.92f, 0.32f, 0.32f, 0.30f);
-                        ImPlot::SetNextMarkerStyle(ImPlotMarker_Square, 4.2f, c, 0.0f, c);
-                        ImPlot::PlotScatter("Corrosión Activa (Disolución)", x_cor.data(), y_cor.data(), static_cast<int>(x_cor.size()));
-                    }
+                    ImGui::EndTabItem();
                 }
             }
 
-            // 2. Fronteras exactas de predominancia (con separador NaN en un solo trazo)
-            const double qnan = std::numeric_limits<double>::quiet_NaN();
-            std::vector<double> bx, by;
-            const auto& lineas = calc_.obtener_lineas();
-            for (const auto& l : lineas) {
-                for (const auto& seg : l.segmentos_recortados) {
-                    bx.push_back(seg.pH1); by.push_back(seg.Eh1);
-                    bx.push_back(seg.pH2); by.push_back(seg.Eh2);
-                    bx.push_back(qnan);    by.push_back(qnan);
-                }
-            }
-            // Complementar con fronteras de celda cuando hay ligandos multicomponente
-            if (!calc_.obtener_ligandos().empty()) {
-                for (const auto& seg : calc_.obtener_segmentos_frontera()) {
-                    bx.push_back(seg.pH1); by.push_back(seg.Eh1);
-                    bx.push_back(seg.pH2); by.push_back(seg.Eh2);
-                    bx.push_back(qnan);    by.push_back(qnan);
-                }
-            }
-            if (!bx.empty()) {
-                ImPlot::SetNextLineStyle(ImVec4(0.95f, 0.96f, 0.98f, 0.95f), 2.0f);
-                ImPlot::PlotLine("Fronteras de Equilibrio", bx.data(), by.data(), static_cast<int>(bx.size()));
-            }
-
-            // 3. Límites de estabilidad termodinámica del agua (a: O2/H2O, b: H+/H2)
-            if (mostrar_agua_) {
-                double ph_ends[2] = {calc_.pH_min(), calc_.pH_max()};
-                double eh_ox[2]   = {calc_.eh_agua_oxidacion(ph_ends[0]), calc_.eh_agua_oxidacion(ph_ends[1])};
-                double eh_red[2]  = {calc_.eh_agua_reduccion(ph_ends[0]), calc_.eh_agua_reduccion(ph_ends[1])};
-
-                ImPlot::SetNextLineStyle(ImVec4(0.35f, 0.85f, 1.0f, 0.90f), 1.8f);
-                ImPlot::PlotLine("(a) O2 / H2O (1 atm)", ph_ends, eh_ox, 2);
-                ImPlot::SetNextLineStyle(ImVec4(0.35f, 0.85f, 1.0f, 0.90f), 1.8f);
-                ImPlot::PlotLine("(b) H+ / H2 (1 atm)", ph_ends, eh_red, 2);
-            }
-
-            // 4. Etiquetas centradas en cada polígono de predominancia y puntos triples
-            if (mostrar_etiquetas_) {
-                for (const auto& poly : calc_.obtener_poligonos()) {
-                    std::string tag = poly.clean_formula + " (" + poly.estado + ")";
-                    ImPlot::PlotText(tag.c_str(), poly.centroid_pH, poly.centroid_Eh);
-                }
-                const auto& tps = calc_.obtener_puntos_triples();
-                if (!tps.empty()) {
-                    std::vector<double> tx, ty;
-                    for (const auto& tp : tps) { tx.push_back(tp.pH); ty.push_back(tp.Eh_V); }
-                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Diamond, 5.5f,
-                        ImVec4(1.0f, 0.85f, 0.20f, 1.0f), 1.5f, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-                    ImPlot::PlotScatter("Puntos Triples Invariantes", tx.data(), ty.data(), static_cast<int>(tx.size()));
-                }
-            }
-
-            // 5. Marcador de la sonda de punto de operación (pH, Eh)
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Cross, 9.0f,
-                ImVec4(1.0f, 0.92f, 0.20f, 1.0f), 2.5f);
-            ImPlot::PlotScatter("Sonda Operativa", &probe_pH_, &probe_Eh_, 1);
-
-            ImPlot::EndPlot();
-        }
-
-        // ── Pestañas inferiores: Ecuaciones de Nernst Recortadas y Puntos Triples ──
-        if (ImGui::BeginTabBar("##pourbaix_tabs")) {
-            if (ImGui::BeginTabItem("Ecuaciones de Equilibrio Nernst (Recortadas)")) {
-                const auto& lineas = calc_.obtener_lineas();
-                if (ImGui::BeginTable("##nernst_tbl", 5,
-                    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
-                    ImVec2(0, 0)))
-                {
-                    ImGui::TableSetupColumn("Especie 1", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                    ImGui::TableSetupColumn("Especie 2", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-                    ImGui::TableSetupColumn("E° (V) / pH_eq", ImGuiTableColumnFlags_WidthFixed, 115.0f);
-                    ImGui::TableSetupColumn("dEh/dpH (V/pH)", ImGuiTableColumnFlags_WidthFixed, 105.0f);
-                    ImGui::TableSetupColumn("Semirreacción / Equilibrio Hidrolítico", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableHeadersRow();
-
-                    for (const auto& l : lineas) {
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(l.sp_ox.c_str());
-                        ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(l.sp_red.c_str());
-                        ImGui::TableSetColumnIndex(2);
-                        if (l.es_vertical) ImGui::Text("pH_eq = %.2f", l.pH_eq);
-                        else               ImGui::Text("E° = %+.3f V", l.E0);
-                        ImGui::TableSetColumnIndex(3);
-                        if (l.es_vertical) ImGui::TextDisabled("Vertical");
-                        else               ImGui::Text("%+.4f", l.dEdpH);
-                        ImGui::TableSetColumnIndex(4);
-                        ImGui::TextUnformatted(l.ecuacion.c_str());
-                    }
-                    ImGui::EndTable();
-                }
-                ImGui::EndTabItem();
-            }
-
-            if (ImGui::BeginTabItem("Puntos Triples Invariantes")) {
-                const auto& tps = calc_.obtener_puntos_triples();
-                if (ImGui::BeginTable("##tp_tbl", 5,
-                    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
-                    ImVec2(0, 0)))
-                {
-                    ImGui::TableSetupColumn("pH", ImGuiTableColumnFlags_WidthFixed, 75.0f);
-                    ImGui::TableSetupColumn("Eh (V)", ImGuiTableColumnFlags_WidthFixed, 85.0f);
-                    ImGui::TableSetupColumn("Fase 1", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupColumn("Fase 2", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupColumn("Fase 3", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableHeadersRow();
-
-                    for (const auto& tp : tps) {
-                        ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0); ImGui::Text("%.2f", tp.pH);
-                        ImGui::TableSetColumnIndex(1); ImGui::Text("%+.3f", tp.Eh_V);
-                        ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(tp.sp1.c_str());
-                        ImGui::TableSetColumnIndex(3); ImGui::TextUnformatted(tp.sp2.c_str());
-                        ImGui::TableSetColumnIndex(4); ImGui::TextUnformatted(tp.sp3.c_str());
-                    }
-                    ImGui::EndTable();
-                }
-                ImGui::EndTabItem();
-            }
             ImGui::EndTabBar();
         }
     }
     ImGui::EndChild();
+    ImGui::PopStyleVar(); // WindowPadding de EpHRightPanel
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MODALES: Información de Especie, Formato Líneas H2O, Etiquetas e Impresión
+    // ═══════════════════════════════════════════════════════════════════════════
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.0f, 14.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 8.0f));
+
+    if (mostrar_modal_especie_) {
+        ImGui::OpenPopup("EpH Species Thermodynamic Data");
+        mostrar_modal_especie_ = false;
+    }
+    if (ImGui::BeginPopupModal("EpH Species Thermodynamic Data", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextColored(ImVec4(0.20f, 0.48f, 0.85f, 1.0f), "%s — %s",
+                           especie_modal_.formula.c_str(), especie_modal_.nombre.c_str());
+        ImGui::Separator();
+        ImGui::Text("Ionic Charge (z):      %+d", especie_modal_.carga);
+        ImGui::Text("ΔGf°(T):               %.3f kcal/mol  (%.3f kJ/mol)", especie_modal_.dG0_T_kcal, especie_modal_.dG0_T_kJ);
+        ImGui::Text("ΔHf°(298.15 K):        %.3f kJ/mol", especie_modal_.h_298_kJ);
+        ImGui::Text("S°(298.15 K):          %.3f J/(mol·K)", especie_modal_.s_298_J_K);
+        ImGui::Text("Cp°(298.15 K):         %.3f J/(mol·K)", especie_modal_.cp_298_J_K);
+        ImGui::Separator();
+        if (ImGui::Button("Close", ImVec2(130.0f, 28.0f))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if (mostrar_modal_h2o_) {
+        ImGui::OpenPopup("Format H2O Stability Lines");
+        mostrar_modal_h2o_ = false;
+    }
+    if (ImGui::BeginPopupModal("Format H2O Stability Lines", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        auto& st = estilo_agua_global();
+        ImGui::Checkbox("Show Upper O2(g)/H2O Stability Line", &st.mostrar_superior);
+        ImGui::Checkbox("Show Lower H(+a)/H2(g) Stability Line", &st.mostrar_inferior);
+        ImGui::SliderFloat("Line Width", &st.grosor, 1.0f, 3.5f, "%.1f px");
+        ImGui::ColorEdit4("Line Color", &st.color.x);
+        ImGui::Separator();
+        if (ImGui::Button("OK", ImVec2(130.0f, 28.0f))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if (mostrar_modal_label_) {
+        ImGui::OpenPopup("Label Format");
+        mostrar_modal_label_ = false;
+    }
+    if (ImGui::BeginPopupModal("Label Format", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Species Area: %s", label_edit_key_.c_str());
+        ImGui::SetNextItemWidth(240.0f);
+        ImGui::InputText("Label Text (clear to hide)", buf_label_edit_, sizeof(buf_label_edit_));
+        ImGui::Separator();
+        if (ImGui::Button("Apply", ImVec2(110.0f, 28.0f))) {
+            if (!pestanas_.empty()) {
+                pestanas_[idx_pestana_activa_].etiquetas_custom[label_edit_key_] = buf_label_edit_;
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Position", ImVec2(130.0f, 28.0f))) {
+            if (!pestanas_.empty()) {
+                pestanas_[idx_pestana_activa_].pos_etiquetas.erase(label_edit_key_);
+                pestanas_[idx_pestana_activa_].etiquetas_custom.erase(label_edit_key_);
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(100.0f, 28.0f))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    // Modal "Print Settings/Preview" (Réplica fiel y espaciada de Fig. 6 en Imagen 5)
+    if (mostrar_modal_print_) {
+        ImGui::OpenPopup("Print Settings/Preview");
+        mostrar_modal_print_ = false;
+    }
+    if (ImGui::BeginPopupModal("Print Settings/Preview", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        static int orientacion = 0; // 0 = Portrait, 1 = Landscape
+        static int margenes[4] = {25, 25, 25, 25};
+        static bool keep_aspect = true, bg_fill = true, graph_fill = true;
+
+        ImGui::BeginChild("##PrintLeftControls", ImVec2(245.0f, 360.0f), true);
+        {
+            ImGui::TextColored(ImVec4(0.20f, 0.48f, 0.85f, 1.0f), "Orientation");
+            ImGui::RadioButton("Portrait", &orientacion, 0);
+            ImGui::RadioButton("Landscape", &orientacion, 1);
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.20f, 0.48f, 0.85f, 1.0f), "Margins (mm)");
+            ImGui::SetNextItemWidth(90.0f); ImGui::InputInt("Top", &margenes[0]);
+            ImGui::SetNextItemWidth(90.0f); ImGui::InputInt("Bottom", &margenes[1]);
+            ImGui::SetNextItemWidth(90.0f); ImGui::InputInt("Left", &margenes[2]);
+            ImGui::SetNextItemWidth(90.0f); ImGui::InputInt("Right", &margenes[3]);
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.20f, 0.48f, 0.85f, 1.0f), "Content Options");
+            ImGui::Checkbox("Keep aspect ratio", &keep_aspect);
+            ImGui::Checkbox("Use background fill", &bg_fill);
+            ImGui::Checkbox("Use graph fill", &graph_fill);
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine(0.0f, 14.0f);
+
+        // Vista previa vectorial de la hoja impresa (Fig. 6)
+        ImGui::BeginChild("##PrintPagePreview", ImVec2(310.0f, 360.0f), true);
+        {
+            ImDrawList* pdl = ImGui::GetWindowDrawList();
+            const ImVec2 p0 = ImGui::GetCursorScreenPos();
+            const ImVec2 sz(280.0f, 332.0f);
+            pdl->AddRectFilled(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(252, 252, 252, 255));
+            pdl->AddRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(80, 80, 80, 255));
+
+            const ImVec2 g0(p0.x + 32.0f, p0.y + 42.0f);
+            const ImVec2 g1(p0.x + sz.x - 28.0f, p0.y + sz.y - 56.0f);
+            pdl->AddRect(g0, g1, IM_COL32(20, 20, 20, 255));
+
+            if (!pestanas_.empty()) {
+                const auto& r = pestanas_[idx_pestana_activa_].resultado;
+                pdl->AddText(ImVec2(g0.x, p0.y + 18.0f), IM_COL32(10, 10, 10, 255), r.titulo_diagrama.c_str());
+                for (const auto& f : r.fronteras) {
+                    const float x1 = g0.x + static_cast<float>((f.p1.pH - r.pH_min) / (r.pH_max - r.pH_min)) * (g1.x - g0.x);
+                    const float y1 = g1.y - static_cast<float>((f.p1.Eh - r.Eh_min) / (r.Eh_max - r.Eh_min)) * (g1.y - g0.y);
+                    const float x2 = g0.x + static_cast<float>((f.p2.pH - r.pH_min) / (r.pH_max - r.pH_min)) * (g1.x - g0.x);
+                    const float y2 = g1.y - static_cast<float>((f.p2.Eh - r.Eh_min) / (r.Eh_max - r.Eh_min)) * (g1.y - g0.y);
+                    pdl->AddLine(ImVec2(x1, y1), ImVec2(x2, y2), IM_COL32(20, 20, 20, 255), 1.0f);
+                }
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::Dummy(ImVec2(0.0f, 4.0f));
+        if (ImGui::Button("Export CSV / Print", ImVec2(160.0f, 30.0f))) {
+            if (!pestanas_.empty()) {
+                std::ofstream ofs("eph_print_export.csv");
+                if (ofs) ofs << calc_.exportar_tabla_eph_csv(pestanas_[idx_pestana_activa_].resultado);
+                estado_msg_ = "Reporte de impresión exportado a eph_print_export.csv";
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine(0.0f, 12.0f);
+        if (ImGui::Button("Close", ImVec2(115.0f, 30.0f))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    ImGui::PopStyleVar(2); // Modales WindowPadding + ItemSpacing
+    ImGui::PopStyleVar(2); // Top-level ItemSpacing + FramePadding
 }
 
-} // namespace cma::interfaz
+#pragma GCC diagnostic pop

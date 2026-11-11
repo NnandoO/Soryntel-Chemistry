@@ -37,7 +37,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Calculadora Termodinámica"), &mostrar_calculadora_);
         css::draw_module_banner("H/S", "H, S, C and G Thermodynamic Calculator", "Shomate / NASA / Maier-Kelley polynomial evaluation across temperature ranges", IM_COL32(42, 128, 76, 255));
-        auto& gestor = repository_;
+        auto& gestor = base_datos::GestorDB::instancia();
         auto db = gestor.mapa_especies();
         panel_calculadora_.renderizar(db);
         ImGui::End();
@@ -66,7 +66,7 @@ void Aplicacion::renderizar_modulos() {
         ImGui::SetNextWindowSize(ImVec2(1100,750), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("7. Cálculos de Equilibrio (GEM)"), &mostrar_equilibrio_);
         css::draw_module_banner("GEM", "Gibbs Energy Minimization (Equilibrium)", "Multiphase constrained Gibbs free energy solver with elemental conservation", IM_COL32(36, 98, 178, 255));
-        auto& gestor = repository_;
+        auto& gestor = base_datos::GestorDB::instancia();
         const auto& db = gestor.mapa_especies();
         panel_equilibrio_.renderizar(db);
         ImGui::End();
@@ -82,22 +82,27 @@ void Aplicacion::renderizar_modulos() {
     }
 
     if (mostrar_estabilidad_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
-        if (review_panel_ == "stability") {
-            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(760, 520), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1180, 760), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "tpp") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
         }
-        ImGui::Begin(tr("Diagrama de Estabilidad"), &mostrar_estabilidad_);
-        css::draw_module_banner(" T-P", "Phase Stability Diagrams", "Thermodynamic predominance domains as a function of T and chemical potential", IM_COL32(186, 52, 46, 255));
+        ImGui::Begin("Tpp Predominance Diagrams", &mostrar_estabilidad_, ImGuiWindowFlags_MenuBar);
         panel_estabilidad_.renderizar();
         ImGui::End();
     }
 
     if (mostrar_lpp_) {
-        ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Lpp Diagram - Stability Diagrams"), &mostrar_lpp_);
-        css::draw_module_banner("Lpp", "Lpp Partial Pressure Stability Diagrams", "Isothermal log(p_X) vs log(p_Y) phase predominance boundaries (Kellogg)", IM_COL32(36, 98, 178, 255));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(760, 520), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1180, 760), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "lpp") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
+        }
+        ImGui::Begin("Lpp Phase Stability Diagram", &mostrar_lpp_, ImGuiWindowFlags_MenuBar);
         panel_lpp_.renderizar();
         ImGui::End();
     }
@@ -134,26 +139,22 @@ void Aplicacion::renderizar_modulos() {
     }
 
     if (mostrar_pourbaix_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-        if (review_panel_ == "pourbaix") {
-            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(780, 540), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1220, 780), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "pourbaix" || review_panel_ == "eph") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
         }
-        if (ImGui::Begin(tr("Diagramas Eh-pH (Pourbaix)"), &mostrar_pourbaix_)) {
-            css::draw_module_banner("Eh", "Eh-pH Pourbaix Diagrams", "Aqueous electrochemical predominance domains with water stability lines", IM_COL32(36, 98, 178, 255));
+        if (ImGui::Begin("Eh-pH Diagram", &mostrar_pourbaix_, ImGuiWindowFlags_MenuBar)) {
             panel_pourbaix_.renderizar();
         }
         ImGui::End();
     }
 
     if (mostrar_diagramas_termo_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(820,540), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(1250,740), ImGuiCond_FirstUseEver);
-        if (review_panel_ == "diagrams" || review_panel_ == "ellingham") {
-            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
-        }
+        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Diagramas H, S, Cp, G"), &mostrar_diagramas_termo_);
         css::draw_module_banner("DIA", "Ellingham & Thermodynamic Diagrams (H, S, Cp, G)", "Comparative species & reaction property plots as a function of temperature", IM_COL32(186, 52, 46, 255));
         panel_diagramas_termo_.renderizar();
@@ -204,15 +205,10 @@ void Aplicacion::renderizar_modulos() {
     }
 
     if (mostrar_perdida_calor_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(750,520), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(1180,740), ImGuiCond_FirstUseEver);
-        if (review_panel_ == "heat_loss") {
-            ImGui::SetNextWindowPos(ImVec2(12, 52), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
-        }
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600,450), ImVec2(3000,3000));
+        ImGui::SetNextWindowSize(ImVec2(950,620), ImGuiCond_FirstUseEver);
         ImGui::Begin(tr("Pérdida de Calor"), &mostrar_perdida_calor_);
         css::draw_module_banner("HLI", "Heat Loss & Refractory Insulation Calculator", "Multilayer conduction, convection, and thermal radiation heat transfer", IM_COL32(186, 52, 46, 255));
-        panel_perdida_calor_.establecer_flowsheet(flowsheet_.get());
         panel_perdida_calor_.renderizar();
         ImGui::End();
     }
@@ -368,6 +364,11 @@ void Aplicacion::renderizar_modulos() {
         }
         panel_material_db_.renderizar(&mostrar_material_db_);
     }
+
+    if (panel_sim_tools_.visible) {
+        motores::BalanceMasa motor_bm_sim(repository_);
+        panel_sim_tools_.renderizar(*flowsheet_, motor_bm_sim, sim_ultimo_balance_masa_);
+    }
     
     if (mostrar_data_fit_) {
         ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
@@ -383,15 +384,15 @@ void Aplicacion::renderizar_modulos() {
         css::draw_module_banner("SIM", "HSC Sim Flowsheet Convergence & Diagnostics", "Topological tear-stream analysis and Wegstein recycle acceleration", IM_COL32(42, 128, 76, 255));
 
         auto& fs = flowsheet_;
-        int total_nodos = static_cast<int>(fs->conteo_nodos());
-        int total_flujos = static_cast<int>(fs->conteo_flujos());
+        int total_nodos = (int)fs->conteo_nodos();
+        int total_flujos = (int)fs->conteo_flujos();
         int total_conexiones = 0;
         bool tiene_ciclo = fs->detectar_ciclo();
 
         // Contar conexiones y clasificar nodos
         int n_fuentes = 0, n_sumideros = 0, n_reactores = 0, n_equipos = 0;
         for (const auto& nodo : fs->nodos()) {
-            total_conexiones += static_cast<int>(nodo.ids_flujos_salida.size());
+            total_conexiones += (int)nodo.ids_flujos_salida.size();
             switch (nodo.tipo) {
                 case nucleo::TipoNodo::Fuente: n_fuentes++; break;
                 case nucleo::TipoNodo::Sumidero: n_sumideros++; break;
@@ -503,7 +504,7 @@ void Aplicacion::renderizar_modulos() {
                 for (const auto& nodo : fs->nodos()) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%lld", static_cast<long long>(nodo.id));
+                    ImGui::Text("%lld", (long long)nodo.id);
                     ImGui::TableSetColumnIndex(1);
                     ImGui::TextUnformatted(nodo.nombre.c_str());
                     ImGui::TableSetColumnIndex(2);

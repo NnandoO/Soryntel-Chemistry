@@ -182,7 +182,80 @@ bool Flowsheet::conectar(int64_t origen, int64_t destino, int64_t id_flujo) {
 
     from->ids_flujos_salida.push_back(fid);
     to->ids_flujos_entrada.push_back(fid);
+    if (auto it = flujos_.find(fid); it != flujos_.end()) {
+        it->second.nodo_origen = origen;
+        it->second.nodo_destino = destino;
+    }
     return true;
+}
+
+int64_t Flowsheet::origen_del_flujo(int64_t id_flujo) const {
+    for (const auto& n : nodos_)
+        if (std::find(n.ids_flujos_salida.begin(), n.ids_flujos_salida.end(), id_flujo) != n.ids_flujos_salida.end())
+            return n.id;
+    if (auto it = flujos_.find(id_flujo); it != flujos_.end())
+        return it->second.nodo_origen;
+    return -1;
+}
+
+int64_t Flowsheet::destino_del_flujo_conectado(int64_t id_flujo) const {
+    int64_t d = destino_del_flujo(id_flujo);
+    if (d >= 0) return d;
+    if (auto it = flujos_.find(id_flujo); it != flujos_.end())
+        return it->second.nodo_destino;
+    return -1;
+}
+
+int Flowsheet::clasificar_conexion_flujo(int64_t id_flujo) const {
+    int64_t orig_id = origen_del_flujo(id_flujo);
+    int64_t dest_id = destino_del_flujo_conectado(id_flujo);
+    const auto* n_orig = (orig_id >= 0) ? nodo_por_id(orig_id) : nullptr;
+    const auto* n_dest = (dest_id >= 0) ? nodo_por_id(dest_id) : nullptr;
+    if ((n_orig && n_orig->tipo == nucleo::TipoNodo::Fuente) ||
+        (!n_orig && n_dest && n_dest->tipo != nucleo::TipoNodo::Sumidero)) {
+        return 0; // Input stream (Azul)
+    }
+    if ((n_dest && n_dest->tipo == nucleo::TipoNodo::Sumidero) ||
+        (!n_dest && n_orig && n_orig->tipo != nucleo::TipoNodo::Fuente)) {
+        return 2; // Output stream (Rojo)
+    }
+    return 1; // Internal stream (Negro)
+}
+
+size_t Flowsheet::limpiar_corrientes_internas() {
+    size_t limpiadas = 0;
+    for (auto& [fid, f] : flujos_) {
+        if (clasificar_conexion_flujo(fid) != 0) {
+            f.flujo_molar.clear();
+            f.flujo_solido.clear();
+            f.flujo_liquido.clear();
+            f.flujo_gas.clear();
+            f.particulas.clear();
+            f.agua_kg_h = 0.0;
+            f.entalpia = 0.0;
+            f.energia = 0.0;
+            f.temperatura = nucleo::STP_TEMP;
+            f.presion = nucleo::STP_PRES;
+            ++limpiadas;
+        }
+    }
+    return limpiadas;
+}
+
+size_t Flowsheet::vaciar_tanques() {
+    size_t vaciados = 0;
+    for (auto& n : nodos_) {
+        bool mod = false;
+        for (const char* k : {"nivel", "level", "holdup", "masa_acumulada", "volumen_acumulado"}) {
+            if (n.params.count(k)) { n.params[k] = 0.0; mod = true; }
+        }
+        if (n.tipo == nucleo::TipoNodo::TanqueLixiviacion || n.tipo == nucleo::TipoNodo::Espesador) {
+            n.params["holdup"] = 0.0;
+            mod = true;
+        }
+        if (mod) ++vaciados;
+    }
+    return vaciados;
 }
 
 bool Flowsheet::desconectar(int64_t id_flujo) {
@@ -263,13 +336,16 @@ std::vector<int64_t> Flowsheet::orden_topologico() const {
     std::map<int64_t, int> grado_entrada;
     std::map<int64_t, std::vector<int64_t>> adyacencia;
 
+    // El grado de entrada solo cuenta aristas unidad→unidad: las corrientes de
+    // alimentación libres (Input Stream sin unidad origen, Sec. 40.1.2) no bloquean el orden.
+    for (auto& n : nodos_) grado_entrada[n.id] = 0;
     for (auto& n : nodos_) {
-        grado_entrada[n.id] = n.num_entradas();
         for (int64_t sid : n.ids_flujos_salida) {
             for (auto& m : nodos_) {
                 auto it = std::find(m.ids_flujos_entrada.begin(), m.ids_flujos_entrada.end(), sid);
                 if (it != m.ids_flujos_entrada.end()) {
                     adyacencia[n.id].push_back(m.id);
+                    grado_entrada[m.id]++;
                     break;
                 }
             }
