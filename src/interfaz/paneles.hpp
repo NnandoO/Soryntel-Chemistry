@@ -944,7 +944,7 @@ private:
 // ── Panel de ReactionSolver ─────────────────────────────────────────────
 class PanelReactionSolver {
 public:
-    explicit PanelReactionSolver(const domain::ThermoRepository& repository) : motor_(repository) {}
+    explicit PanelReactionSolver(const domain::ThermoRepository& repository) : repo_(&repository), motor_(repository) {}
     void renderizar();
 private:
     char ecuacion_[128] = "2CO(g) + O2(g) = 2CO2(g)";
@@ -990,6 +990,7 @@ private:
     bool error_parsing_ = false;
     bool balance_ok_ = true;
 
+    const domain::ThermoRepository* repo_ = nullptr;
     cma::application::modules::ReactionSolver motor_;
 
     void balancear_ecuacion();

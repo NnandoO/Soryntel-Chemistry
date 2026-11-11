@@ -10,7 +10,7 @@ void PanelPropiedades::renderizar_stream_viewer() {
     }
 
     const domain::ThermoRepository& db =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
 
     // Determinar las corrientes a comparar: si hay nodo seleccionado, sus entradas/salidas; si no, hasta 5 corrientes del proceso
     std::vector<const nucleo::Flujo*> cols;
@@ -202,7 +202,7 @@ void PanelPropiedades::renderizar_editor_unidad() {
     }
 
     const domain::ThermoRepository& db =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     ImGui::SetNextWindowSize(ImVec2(760, 520), ImGuiCond_FirstUseEver);
     std::string win_title = "HSC-Sim Unit Model Editor (XLS) - " + nodo->nombre + "###UnitEditorXLS";
     if (ImGui::Begin(win_title.c_str(), &mostrar_editor_unidad_)) {

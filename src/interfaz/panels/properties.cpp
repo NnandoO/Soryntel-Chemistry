@@ -221,7 +221,7 @@ static void dibujar_selector_reaccion_hsc(const domain::ThermoRepository& gestor
 
 void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
     const domain::ThermoRepository& gestor =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     switch (nodo.tipo) {
         case nucleo::TipoNodo::Fuente: {
             
@@ -760,7 +760,7 @@ void PanelPropiedades::propiedades_nodo_especificas(nucleo::Nodo& nodo) {
 
 void PanelPropiedades::dibujar_selector_splits(nucleo::Nodo& nodo, const char* titulo) {
     const domain::ThermoRepository& gestor =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     ImGui::Spacing();
     if (ImGui::Button(titulo, ImVec2(-1, 0))) {
         ModalBuscadorDB::instancia().abrir("Buscar Especie (Distribución Salida 1)");
@@ -859,7 +859,7 @@ void PanelPropiedades::propiedades_flujo_especificas(nucleo::Flujo& flujo) {
     }
     
     const domain::ThermoRepository& gestor =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     ImGui::Text(tr("Flujo Molar Total: %.6f kmol/s"), flujo.flujo_molar_total());
     ImGui::Text(tr("Flujo Másico Total: %.3f t/h (%.4f kg/s)"), flujo.masa_total_t_h(gestor), flujo.masa_total(gestor));
     

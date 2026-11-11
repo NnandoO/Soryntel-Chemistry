@@ -326,7 +326,7 @@ void PanelBalanceHoja::cargar_flujos(diagrama_flujo::Flowsheet* fs) {
     if (fs == nullptr) return;
 
     const domain::ThermoRepository& repo =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
 
     entradas_.clear();
     salidas_.clear();
