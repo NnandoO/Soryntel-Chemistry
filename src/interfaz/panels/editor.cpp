@@ -21,7 +21,7 @@ bool ModalBuscadorDB::dibujar(const char* titulo_popup, std::vector<const nucleo
         ImGui::Spacing();
         
         const domain::ThermoRepository& repo =
-            repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(db_ ? *db_ : base_datos::GestorDB::instancia());
+            static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
         auto db_especies = repo.todas_especies();
         std::string query = search_buffer_;
         std::transform(query.begin(), query.end(), query.begin(), ::tolower);
