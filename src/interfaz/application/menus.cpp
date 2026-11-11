@@ -140,6 +140,26 @@ void Aplicacion::menu_simulacion() {
         if (ImGui::MenuItem(tr("Minimizar Gibbs"), "Ctrl+G"))
             ejecutar_gibbs();
         ImGui::Separator();
+        if (ImGui::MenuItem("Select Unit Models (40.2.2)"))
+            panel_sim_tools_.abrir_pestana(0);
+        if (ImGui::MenuItem("Stream Table Editor (40.1.4)"))
+            panel_sim_tools_.abrir_pestana(1);
+        if (ImGui::MenuItem("Reports — Unit & Stream Balance (40.2.1)"))
+            panel_sim_tools_.abrir_pestana(2);
+        if (ImGui::MenuItem("Scenario & Monte Carlo Editor (40.2.3-4)"))
+            panel_sim_tools_.abrir_pestana(3);
+        if (ImGui::MenuItem("Convergence Monitor & Calculation Order (40.2.5)"))
+            panel_sim_tools_.abrir_pestana(4);
+        ImGui::Separator();
+        if (ImGui::MenuItem("Clear Internal Streams (Fig. 37)")) {
+            flowsheet_->limpiar_corrientes_internas();
+            hay_cambios_sin_guardar_ = true;
+        }
+        if (ImGui::MenuItem("Empty All Tanks")) {
+            flowsheet_->vaciar_tanques();
+            hay_cambios_sin_guardar_ = true;
+        }
+        ImGui::Separator();
         if (ImGui::MenuItem(tr("Exportar resultados a CSV")))
             exportar_resultados_csv();
         ImGui::Separator();
@@ -192,6 +212,7 @@ void Aplicacion::menu_modulos() {
         ImGui::MenuItem("26. Auditoría del catálogo", nullptr, &mostrar_catalog_audit_);
         ImGui::MenuItem(tr("27. Dat - Data (Redes Neuronales)"), nullptr, &mostrar_datos_ann_);
         ImGui::MenuItem(tr("28. Mat - Base de Datos de Materiales"), nullptr, &mostrar_material_db_);
+        ImGui::MenuItem("29. HSC Sim - Common Tools (Unit Models, Reports, Scenarios, MC)", nullptr, &panel_sim_tools_.visible);
         
         ImGui::EndMenu();
     }

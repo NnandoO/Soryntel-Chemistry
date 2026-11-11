@@ -31,12 +31,21 @@ enum class MetodoOptimizacion {
     SQP
 };
 
+// Distribuciones de probabilidad de HSC Sim Scenario Editor – Monte Carlo (Sec. 40.2.4, Fig. 33)
+enum class DistribucionMonteCarlo {
+    Uniforme   = 0, // Uniform(min, max)
+    Normal     = 1, // Normal(media=(min+max)/2 o valor_inicial, sigma=(max-min)/6)
+    Laplace    = 2, // Laplace(mu=(min+max)/2 o valor_inicial, b=(max-min)/8)
+    Trapezoide = 3  // Trapezoid(a=min, b=min+0.25*(max-min), c=min+0.75*(max-min), d=max)
+};
+
 struct VariableDecision {
     std::string nombre;
     double min = 0.0;
     double max = 1.0;
     double valor_inicial = 0.5;
     bool activa = true;
+    DistribucionMonteCarlo distribucion = DistribucionMonteCarlo::Uniforme;
 };
 
 struct ResultadoOptimizacion {
@@ -47,8 +56,9 @@ struct ResultadoOptimizacion {
     int evaluaciones = 0;
     std::string mensaje;
 
-    // Para Monte-Carlo: distribución de resultados
+    // Para Monte-Carlo: distribución de resultados y muestras por variable (Fig. 33-34)
     std::vector<double> historial_objetivo;
+    std::map<std::string, std::vector<double>> muestras_variables;
     std::vector<double> valores_media;
     std::vector<double> valores_std;
     std::vector<double> valores_min;

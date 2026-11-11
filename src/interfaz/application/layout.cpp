@@ -75,10 +75,11 @@ void Aplicacion::renderizar() {
             "Mass Flow (kg/s)",
             "Temperature (°C)",
             "Pressure (bar)",
-            "Enthalpy (kW)"
+            "Enthalpy (kW)",
+            "Connection Colors (Blue/Black/Red)"
         };
-        if (ImGui::Combo("##hsc_vis_mode", &lienzo_.modo_visualizacion_flujos, vis_modes, 7)) {
-            if (lienzo_.modo_visualizacion_flujos > 0) lienzo_.sankey_activo = true;
+        if (ImGui::Combo("##hsc_vis_mode", &lienzo_.modo_visualizacion_flujos, vis_modes, 8)) {
+            if (lienzo_.modo_visualizacion_flujos > 0 && lienzo_.modo_visualizacion_flujos != 7) lienzo_.sankey_activo = true;
         }
         ImGui::SameLine(0.0f, 6.0f);
         if (ImGui::Checkbox("Sankey", &lienzo_.sankey_activo)) {
@@ -88,6 +89,22 @@ void Aplicacion::renderizar() {
         ImGui::SameLine(0.0f, 8.0f);
         if (css::category_pill("Calculate (F5)", false, IM_COL32(46, 128, 72, 255))) {
             ejecutar_simulacion();
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Sim Tools", panel_sim_tools_.visible, IM_COL32(36, 98, 178, 255))) {
+            panel_sim_tools_.visible = !panel_sim_tools_.visible;
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Stream Tables", false, IM_COL32(62, 118, 168, 255))) {
+            panel_sim_tools_.abrir_pestana(1);
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Reports", false, IM_COL32(48, 132, 116, 255))) {
+            panel_sim_tools_.abrir_pestana(2);
+        }
+        ImGui::SameLine(0.0f, 4.0f);
+        if (css::category_pill("Scenarios / MC", false, IM_COL32(142, 78, 168, 255))) {
+            panel_sim_tools_.abrir_pestana(3);
         }
         ImGui::SameLine(0.0f, 4.0f);
         if (css::category_pill("Dynamic", mostrar_sim_dinamica_, IM_COL32(55, 112, 178, 255))) {

@@ -82,18 +82,27 @@ void Aplicacion::renderizar_modulos() {
     }
 
     if (mostrar_estabilidad_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Diagrama de Estabilidad"), &mostrar_estabilidad_);
-        css::draw_module_banner(" T-P", "Phase Stability Diagrams", "Thermodynamic predominance domains as a function of T and chemical potential", IM_COL32(186, 52, 46, 255));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(760, 520), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1180, 760), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "tpp") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
+        }
+        ImGui::Begin("Tpp Predominance Diagrams", &mostrar_estabilidad_, ImGuiWindowFlags_MenuBar);
         panel_estabilidad_.renderizar();
         ImGui::End();
     }
 
     if (mostrar_lpp_) {
-        ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
-        ImGui::Begin(tr("Lpp Diagram - Stability Diagrams"), &mostrar_lpp_);
-        css::draw_module_banner("Lpp", "Lpp Partial Pressure Stability Diagrams", "Isothermal log(p_X) vs log(p_Y) phase predominance boundaries (Kellogg)", IM_COL32(36, 98, 178, 255));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(760, 520), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1180, 760), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "lpp") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
+        }
+        ImGui::Begin("Lpp Phase Stability Diagram", &mostrar_lpp_, ImGuiWindowFlags_MenuBar);
         panel_lpp_.renderizar();
         ImGui::End();
     }
@@ -130,10 +139,14 @@ void Aplicacion::renderizar_modulos() {
     }
 
     if (mostrar_pourbaix_) {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(300,200), ImVec2(3000,3000));
-        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(tr("Diagramas Eh-pH (Pourbaix)"), &mostrar_pourbaix_)) {
-            css::draw_module_banner("Eh", "Eh-pH Pourbaix Diagrams", "Aqueous electrochemical predominance domains with water stability lines", IM_COL32(36, 98, 178, 255));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(780, 540), ImVec2(3000, 3000));
+        ImGui::SetNextWindowSize(ImVec2(1220, 780), ImGuiCond_FirstUseEver);
+        if (review_panel_ == "pourbaix" || review_panel_ == "eph") {
+            const ImVec2 vp = ImGui::GetMainViewport()->Size;
+            ImGui::SetNextWindowPos(ImVec2(10.0f, 35.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(std::max(vp.x - 20.0f, 800.0f), std::max(vp.y - 50.0f, 560.0f)), ImGuiCond_Always);
+        }
+        if (ImGui::Begin("Eh-pH Diagram", &mostrar_pourbaix_, ImGuiWindowFlags_MenuBar)) {
             panel_pourbaix_.renderizar();
         }
         ImGui::End();
@@ -350,6 +363,11 @@ void Aplicacion::renderizar_modulos() {
             ImGui::SetNextWindowSize(ImVec2(1250, 720), ImGuiCond_Always);
         }
         panel_material_db_.renderizar(&mostrar_material_db_);
+    }
+
+    if (panel_sim_tools_.visible) {
+        motores::BalanceMasa motor_bm_sim(repository_);
+        panel_sim_tools_.renderizar(*flowsheet_, motor_bm_sim, sim_ultimo_balance_masa_);
     }
     
     if (mostrar_data_fit_) {

@@ -1094,10 +1094,8 @@ void PanelGeoMineralogical::renderizar() {
     }
     ImGui::EndChild();
 
-    // 3. Barra de estado inferior estilo Outotec HSC Geo 8.0
-    ImGui::BeginChild("##GeoOutotecStatusBar", ImVec2(0.0f, 22.0f), false, ImGuiWindowFlags_NoScrollbar);
-    ImGui::TextColored(ImVec4(0.84f, 0.24f, 0.16f, 1.0f), "Outotec |");
-    ImGui::SameLine(0.0f, 8.0f);
+    // 3. Barra de estado inferior HSC Geo 8.0
+    ImGui::BeginChild("##GeoStatusBar", ImVec2(0.0f, 22.0f), false, ImGuiWindowFlags_NoScrollbar);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 p0 = ImGui::GetCursorScreenPos();
     dl->AddRectFilledMultiColor(ImVec2(p0.x, p0.y + 3.0f), ImVec2(p0.x + 110.0f, p0.y + 16.0f),

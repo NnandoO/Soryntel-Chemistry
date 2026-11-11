@@ -66,7 +66,8 @@ Aplicacion::Aplicacion(base_datos::GestorDB& repository, application::FileDialog
                        const domain::AqueousDatabase& aqueous_database,const domain::AqueousEngine& aqueous_engine)
     : repository_(repository), file_dialog_(file_dialog), panel_native_aqueous_(aqueous_database),
       panel_advanced_aqueous_(aqueous_engine), panel_mineral_processing_(file_dialog), panel_catalog_audit_(repository,file_dialog), panel_estimacion_(repository),
-      panel_reaction_solver_(repository), panel_pourbaix_(repository), panel_material_db_(repository) {
+      panel_reaction_solver_(repository), panel_pourbaix_(repository), panel_material_db_(repository),
+      panel_sim_tools_(repository) {
     instancia_global = this;
     flowsheet_ = std::make_unique<diagrama_flujo::Flowsheet>();
 

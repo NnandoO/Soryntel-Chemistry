@@ -442,64 +442,83 @@ private:
     void recalcular();
 };
 
-// ── Panel de Diagrama de Estabilidad (predominancia) ────────────────────
+// ── Panel de Diagrama de Estabilidad Tpp (Predominance Diagrams) ────────
 class PanelEstabilidad {
 public:
+    PanelEstabilidad();
     void renderizar();
 private:
-    char main_element_[16] = "V";
-    char gas1_element_[16] = "O";
-    char gas2_element_[16] = "Cl";
-    
-    int xaxis_var_ = 1; // 0=T, 1=log p(Gas1), 2=log p(Gas2)
-    int yaxis_var_ = 2; // 0=T, 1=log p(Gas1), 2=log p(Gas2)
-    
-    double fixed_val_ = 500.0; // T if X/Y are pressures. log p if one is T.
-    
-    double x_min_ = -40.0, x_max_ = 0.0;
-    double y_min_ = -40.0, y_max_ = 0.0;
-    
-    std::map<int64_t, bool> especies_seleccionadas_;
-    
-    struct HeatmapData {
-        int rows = 200;
-        int cols = 200;
-        std::vector<int> grid; // Contains the local species index that is stable at this pixel
-        std::map<int, std::string> labels;
+    struct PestanaTpp {
+        std::string nombre_pestana = "Chart 1";
+        bool abierta = true;
+        bool calculado = false;
+        bool ajustar_ejes = true;
+        cma::domain::ResultadoDiagramaTpp resultado;
     };
-    HeatmapData heatmap_;
-    bool calculado_ = false;
-    
-    void recalcular();
+    cma::application::modules::StabilityDiagrams motor_;
+    std::vector<std::string> elementos_sel_ = {"Cl", "O", "V"};
+    bool incluir_organicos_ = false;
+    cma::domain::SistemaTernarioEstabilidad sistema_;
+    std::map<std::string, bool> especies_sel_;
+    std::string x_var_ = "Cl2(g)", y_var_ = "O2(g)", fixed_var_ = "Temperature";
+    double x_min_ = -40.0, x_max_ = 0.0, y_min_ = -40.0, y_max_ = 0.0;
+    double fixed_val_ = 500.0;
+    bool usar_kelvin_ = false, show_colors_ = true, show_grid_ = true, create_new_page_ = true;
+    std::vector<PestanaTpp> pestanas_;
+    int pestana_activa_ = 0, contador_pestanas_ = 0;
+    std::string especie_inspeccionada_;
+    bool modal_especie_ = false, modal_editar_ejes_ = false, modal_archivo_ = false, modo_guardar_ = true;
+    char ruta_archivo_[256] = "diagrama_sistema.tpp8";
+    char edit_titulo_[128] = "", edit_x_[64] = "", edit_y_[64] = "";
+    std::string estado_msg_;
+
+    void actualizar_sistema(bool reset_ejes = true);
+    void cargar_preset_v_cl_o();
+    void cargar_preset_s_cu_o_tp();
+    void cargar_preset_cu_s_o_pp();
+    void cargar_preset_fe_s_o();
+    void cargar_preset_ti_cl_o();
+    void ejecutar_calculo(bool forzar_en_actual = false);
 };
 
-// ── Panel de Diagrama de Lpp (Vectorial / Kellogg) ────────────────────
+// ── Panel de Diagrama de Lpp (Phase Stability / Kellogg Diagram) ────────
 class PanelDiagramasLpp {
 public:
+    PanelDiagramasLpp();
     void renderizar();
 private:
-    char main_element_[16] = "Ni";
-    char gas1_element_[16] = "O2";
-    char gas2_element_[16] = "S2";
-    
-    double T_ = 300.0;
-    
-    double x_min_ = -80.0, x_max_ = -50.0;
-    double y_min_ = -60.0, y_max_ = -10.0;
-    
-    std::map<int64_t, bool> especies_seleccionadas_;
-    
-    struct PoligonoFase {
-        int64_t id;
-        std::string formula;
-        ImU32 color;
-        std::vector<ImVec2> vertices;
-        ImVec2 centroide;
+    struct PestanaLpp {
+        std::string nombre_pestana = "Chart1";
+        bool abierta = true;
+        bool calculado = false;
+        bool ajustar_ejes = true;
+        cma::domain::ResultadoDiagramaLpp resultado;
     };
-    std::vector<PoligonoFase> poligonos_;
-    bool calculado_ = false;
-    
-    void recalcular();
+    cma::application::modules::StabilityDiagrams motor_;
+    std::vector<std::string> elementos_sel_ = {"Cl", "O", "Ti"};
+    bool incluir_liquidos_ = false, incluir_organicos_ = false;
+    cma::domain::SistemaTernarioEstabilidad sistema_;
+    std::map<std::string, bool> especies_sel_;
+    std::string x_gas_ = "Cl2(g)", y_gas_ = "O2(g)";
+    double x_min_ = -50.0, x_max_ = 10.0, y_min_ = -70.0, y_max_ = 0.0;
+    bool auto_scale_ = true;
+    double temperatura_ = 300.0;
+    bool usar_kelvin_ = false, create_new_page_ = false, show_colors_ = false, show_table_ = false;
+    std::vector<PestanaLpp> pestanas_;
+    int pestana_activa_ = 0, contador_pestanas_ = 0;
+    std::string especie_inspeccionada_;
+    bool modal_especie_ = false, modal_editar_ejes_ = false, modal_archivo_ = false, modo_guardar_ = true;
+    char ruta_archivo_[256] = "ti_cl_o_300C.lpp8";
+    char edit_titulo_[128] = "", edit_x_[64] = "", edit_y_[64] = "";
+    std::string estado_msg_;
+
+    void actualizar_sistema(bool reset_ejes = false);
+    void cargar_preset_ti_cl_o();
+    void cargar_preset_v_cl_o();
+    void cargar_preset_cu_s_o();
+    void cargar_preset_fe_s_o();
+    void cargar_preset_ni_s_o();
+    void ejecutar_calculo(bool forzar_en_actual = false);
 };
 
 // ── Panel de Agua (Tablas de Vapor) ─────────────────────────────────────
@@ -1105,18 +1124,44 @@ private:
     float evaluate_func(float x) const;
 };
 
-// ── Panel POURBAIX (Eh-pH) ──────────────────────────────────────────────────
+// ── Panel POURBAIX / HSC EpH (Eh-pH Diagrams) ───────────────────────────────
 class PanelPourbaix {
 public:
     explicit PanelPourbaix(const domain::ThermoRepository& repository);
     void renderizar();
 
+    struct PestanaEpH {
+        std::string nombre = "Chart1";
+        domain::EpHSystemParameters params;
+        domain::EpHDiagramResult resultado;
+        std::map<std::string, std::string> etiquetas_custom;
+        std::map<std::string, ImVec2> pos_etiquetas;
+        bool calculado = false;
+        bool reset_limites = true;
+    };
+
 private:
-    std::string elemento_actual_ = "Fe";
-    double temperatura_actual_ = 298.15;
-    double concentracion_actual_ = 1e-6;
     cma::motores::CalculadorPourbaix calc_;
-    bool calculado_ = false;
+    domain::EpHSystemParameters params_;
+    std::vector<domain::EpHCandidateSpecies> especies_candidatas_;
+    std::vector<bool> especies_seleccionadas_;
+    std::vector<PestanaEpH> pestanas_;
+    std::vector<domain::EpHCombinerDataset> datasets_combiner_;
+    int idx_pestana_activa_ = 0;
+    int idx_elem_principal_combo_ = 0;
+    bool create_new_page_ = false;
+    bool mostrar_tabla_settings_ = false;
+    bool mostrar_combiner_ = false;
+    bool mostrar_modal_especie_ = false;
+    bool mostrar_modal_h2o_ = false;
+    bool mostrar_modal_print_ = false;
+    bool mostrar_modal_label_ = false;
+    domain::EpHCandidateSpecies especie_modal_;
+    std::string label_edit_key_, estado_msg_;
+    char buf_label_edit_[128] = {}, ruta_eph8_[256] = "CUS25.eph8";
+    void actualizar_especies_sistema(bool mantener_seleccion = false);
+    void ejecutar_calculo(bool forzar_nueva_pagina = false);
+    void cargar_preset(int idx);
 };
 
 class PanelStatisticalAnalysis {

@@ -34,7 +34,7 @@ void Lienzo::renderizar_flujos(const ImVec2&) {
     for (auto& [fid, flujo] : flowsheet_->mapa_flujos()) {
         if (flujo.pagina != pagina_actual) continue;
         ImVec2 inicio(0,0), fin(0,0);
-        bool encontrado = false;
+        bool tiene_origen = false, tiene_destino = false;
 
         for (auto& nodo : flowsheet_->nodos()) {
             for (int64_t sid : nodo.ids_flujos_salida)
@@ -45,6 +45,7 @@ void Lienzo::renderizar_flujos(const ImVec2&) {
                         for(size_t k=0; k<nodo.ids_flujos_salida.size(); ++k) if(nodo.ids_flujos_salida[k] == fid) idx = k;
                         if (idx < it->second.size()) inicio = it->second[idx];
                         else inicio = it->second.back();
+                        tiene_origen = true;
                     }
                 }
             for (int64_t sid : nodo.ids_flujos_entrada)
@@ -55,12 +56,17 @@ void Lienzo::renderizar_flujos(const ImVec2&) {
                         for(size_t k=0; k<nodo.ids_flujos_entrada.size(); ++k) if(nodo.ids_flujos_entrada[k] == fid) idx = k;
                         if (idx < it->second.size()) fin = it->second[idx];
                         else fin = it->second.back();
-                        encontrado = true;
+                        tiene_destino = true;
                     }
                 }
         }
 
-        if (!encontrado) continue;
+        if (!tiene_origen && !tiene_destino) continue;
+        if (!tiene_origen && tiene_destino) {
+            inicio = ImVec2(fin.x - 105.0f * zoom, fin.y);
+        } else if (tiene_origen && !tiene_destino) {
+            fin = ImVec2(inicio.x + 105.0f * zoom, inicio.y);
+        }
 
         // ── Energy stream (rojo punteado) ──
         if (flujo.es_energia) {
@@ -89,17 +95,24 @@ void Lienzo::renderizar_flujos(const ImVec2&) {
         float ancho = (id_flujo_seleccionado == fid) ? (base_ancho + 2.5f) * zoom : base_ancho * zoom;
 
         ImU32 col_c;
+        const int rol_con = flowsheet_->clasificar_conexion_flujo(fid); // 0=Input(Blue), 1=Internal(Black), 2=Output(Red)
         if (id_flujo_seleccionado == fid) {
             col_c = IM_COL32(255, 210, 60, 245);
-        } else if (sankey_activo && sankey_usar_color && modo_visualizacion_flujos > 0) {
+        } else if (sankey_activo && sankey_usar_color && modo_visualizacion_flujos > 0 && modo_visualizacion_flujos != 7) {
             const float* c = (val_vis >= 0.0) ? sankey_color_pos : sankey_color_neg;
             col_c = IM_COL32((int)(c[0]*255), (int)(c[1]*255), (int)(c[2]*255), 215);
+        } else if (rol_con == 0) {
+            col_c = IM_COL32(36, 128, 242, 235); // Azul: Input Stream (HSC Sim Fig. 4 / Fig. 40)
+        } else if (rol_con == 2) {
+            col_c = IM_COL32(228, 56, 56, 235);  // Rojo: Output Stream (HSC Sim Fig. 4 / Fig. 40)
         } else {
-            float factor = std::min(flujo_total / 20.0f, 1.0f);
-            int r = (int)(130 - factor * 80);
-            int g = (int)(145 + factor * 70);
-            int b = (int)(175 + factor * 80);
-            col_c = IM_COL32(r, g, b, 200);
+            bool fondo_claro = ImGui::GetStyle().Colors[ImGuiCol_WindowBg].x > 0.5f;
+            col_c = fondo_claro ? IM_COL32(35, 42, 52, 235) : IM_COL32(150, 175, 210, 220); // Negro/Pizarra: Internal Stream
+        }
+
+        if (!tiene_origen && tiene_destino) {
+            draw->AddCircleFilled(inicio, 4.2f * zoom, IM_COL32(255, 255, 255, 245), 12);
+            draw->AddCircle(inicio, 4.2f * zoom, col_c, 12, 1.8f * zoom);
         }
 
         ImVec2 mid;

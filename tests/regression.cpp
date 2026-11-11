@@ -1751,6 +1751,300 @@ int main() {
                 CHECK(iss.detail.find("Fe1₋ₓS") == std::string::npos);
             }
         }
+
+        // ── T-09: Diagramas de Estabilidad de Fases HSC (Tpp y Lpp)
+        {
+            cma::application::modules::StabilityDiagrams stab(&repo);
+
+            // 1) Tpp modo p-p: Sistema V-Cl-O a 500 °C (Image 1)
+            auto sis_v = stab.analizar_sistema_ternario({"Cl", "O", "V"}, true, false);
+            CHECK(sis_v.especies_sistema.size() >= 20);
+            CHECK(!sis_v.especies_gas_ejes.empty());
+
+            cma::domain::ParametrosCalculoTpp p_v;
+            p_v.elementos = {"Cl", "O", "V"};
+            p_v.eje_x_es_temperatura = false;
+            p_v.temp_en_celsius = true;
+            p_v.gas_x = "Cl2(g)";
+            p_v.gas_y = "O2(g)";
+            p_v.x_min = -40.0; p_v.x_max = 0.0;
+            p_v.y_min = -40.0; p_v.y_max = 0.0;
+            p_v.valor_fijo = 500.0;
+
+            auto res_v = stab.calcular_tpp(p_v);
+            CHECK(res_v.ok);
+            CHECK(res_v.poligonos.size() >= 10);
+            bool tiene_v2o5 = false, tiene_v2o3 = false, tiene_vocl3 = false, tiene_vcl3 = false;
+            for (const auto& pol : res_v.poligonos) {
+                CHECK(pol.centroide.x >= -40.0 && pol.centroide.x <= 0.0);
+                CHECK(pol.centroide.y >= -40.0 && pol.centroide.y <= 0.0);
+                if (pol.etiqueta_grafico == "V2O5")  tiene_v2o5 = true;
+                if (pol.etiqueta_grafico == "V2O3")  tiene_v2o3 = true;
+                if (pol.etiqueta_grafico == "VOCl3") tiene_vocl3 = true;
+                if (pol.etiqueta_grafico == "VCl3")  tiene_vcl3 = true;
+            }
+            CHECK(tiene_v2o5 && tiene_v2o3 && tiene_vocl3 && tiene_vcl3);
+
+            // 2) Tpp modo T-p: Sistema S-Cu-O con pO2(g) = 0.1 bar (Image 3 & Manual Fig. 1-2)
+            cma::domain::ParametrosCalculoTpp p_cu;
+            p_cu.elementos = {"Cu", "O", "S"};
+            p_cu.eje_x_es_temperatura = true;
+            p_cu.temp_en_celsius = true;
+            p_cu.gas_y = "SO2(g)";
+            p_cu.gas_fijo = "O2(g)";
+            p_cu.x_min = 0.0; p_cu.x_max = 1000.0;
+            p_cu.y_min = -5.0; p_cu.y_max = 2.0;
+            p_cu.valor_fijo = 0.1;
+            p_cu.presion_fija_en_bar = true;
+
+            auto res_cu = stab.calcular_tpp(p_cu);
+            CHECK(res_cu.ok);
+            bool tiene_cuso4 = false, tiene_oxisulfato = false, tiene_cuo = false;
+            for (const auto& pol : res_cu.poligonos) {
+                CHECK(!pol.trapecios.empty());
+                if (pol.etiqueta_grafico == "CuSO4")     tiene_cuso4 = true;
+                if (pol.etiqueta_grafico == "CuO*CuSO4") tiene_oxisulfato = true;
+                if (pol.etiqueta_grafico == "CuO")       tiene_cuo = true;
+            }
+            CHECK(tiene_cuso4 && tiene_oxisulfato && tiene_cuo);
+
+            // 3) Lpp Kellogg: Sistema Ti-Cl-O a 300 °C con Auto scale (Image 4 & Manual Fig. 3-4)
+            cma::domain::ParametrosCalculoLpp p_ti;
+            p_ti.elementos = {"Cl", "O", "Ti"};
+            p_ti.elemento_principal = "Ti";
+            p_ti.gas_x = "Cl2(g)";
+            p_ti.gas_y = "O2(g)";
+            p_ti.T_K = 573.15;
+            p_ti.auto_escala = true;
+
+            auto res_ti = stab.calcular_lpp(p_ti);
+            CHECK(res_ti.ok);
+            CHECK(!res_ti.poligonos.empty());
+            CHECK(!res_ti.fronteras.empty());
+            std::string csv_ti = stab.exportar_tabla_lpp_csv(res_ti);
+            CHECK(csv_ti.find("Phase A,Phase B,Equilibrium Reaction") != std::string::npos);
+        }
+
+        // ============================================================
+        // T-10: Diagramas E-pH (Pourbaix / HSC EpH STABCAL)
+        // ============================================================
+        {
+            cma::motores::CalculadorPourbaix eph(&repo);
+
+            // 1) Límites de estabilidad del agua a 25.00 °C (Image 2 & Image 5)
+            eph.establecer_temperatura(298.15);
+            CHECK(near(eph.eh_agua_oxidacion(0.0, 1.0), 1.229, 2e-3));
+            CHECK(near(eph.eh_agua_reduccion(0.0, 1.0), 0.0, 1e-4));
+
+            // 2) Sistema Cu - S a 25.00 °C con Cu como elemento principal (Image 1, 2, 3)
+            cma::domain::EpHSystemParameters p_cu;
+            p_cu.elementos = {{ "Cu", 1.0, 1.0 }, { "S", 1.0, 1.0 }};
+            p_cu.elemento_principal = "Cu";
+            p_cu.T_K = 298.15;
+            p_cu.temp_en_celsius = true;
+            p_cu.pH_min = 0.0; p_cu.pH_max = 14.0;
+            p_cu.Eh_min = -2.0; p_cu.Eh_max = 2.0;
+
+            auto cat_cu_s = eph.recolectar_especies_sistema(p_cu);
+            CHECK(cat_cu_s.size() >= 25);
+
+            auto res_cu = eph.calcular_diagrama_eph(p_cu);
+            CHECK(res_cu.ok);
+            CHECK(res_cu.titulo_diagrama == "Cu - S - System at 25.00 °C");
+            CHECK(near(res_cu.constante_dielectrica, 78.382, 1e-3));
+            CHECK(near(res_cu.dG_H2O_kcal, -56.678, 1e-3));
+            CHECK(!res_cu.poligonos.empty());
+            CHECK(!res_cu.fronteras.empty());
+            CHECK(!res_cu.especies_tabla.empty());
+
+            bool eph_cu2a = false, eph_cuoh2 = false, eph_cu2o = false, eph_cu2s = false, eph_cu = false;
+            for (const auto& pol : res_cu.poligonos) {
+                CHECK(!pol.vertices.empty());
+                if (pol.etiqueta == "Cu(+2a)") eph_cu2a = true;
+                if (pol.etiqueta == "Cu(OH)2") eph_cuoh2 = true;
+                if (pol.etiqueta == "Cu2O")    eph_cu2o = true;
+                if (pol.etiqueta == "Cu2S")    eph_cu2s = true;
+                if (pol.etiqueta == "Cu")      eph_cu = true;
+            }
+            CHECK(eph_cu2a && eph_cuoh2 && eph_cu2o && eph_cu2s && eph_cu);
+
+            // 3) Sistema S - Cu a 25.00 °C cambiando el elemento principal a S (Image 4)
+            cma::domain::EpHSystemParameters p_s = p_cu;
+            p_s.elemento_principal = "S";
+            auto res_s = eph.calcular_diagrama_eph(p_s);
+            CHECK(res_s.ok);
+            CHECK(res_s.titulo_diagrama == "S - Cu - System at 25.00 °C");
+            bool eph_hs2o8 = false, eph_hs2o7 = false, eph_so4 = false, eph_cu2s_s = false, eph_hs = false, eph_s2 = false;
+            for (const auto& pol : res_s.poligonos) {
+                if (pol.etiqueta == "HS2O8(-a)") eph_hs2o8 = true;
+                if (pol.etiqueta == "HS2O7(-a)") eph_hs2o7 = true;
+                if (pol.etiqueta == "SO4(-2a)")  eph_so4 = true;
+                if (pol.etiqueta == "Cu2S")      eph_cu2s_s = true;
+                if (pol.etiqueta == "HS(-a)")    eph_hs = true;
+                if (pol.etiqueta == "S(-2a)")    eph_s2 = true;
+            }
+            CHECK(eph_hs2o8 && eph_hs2o7 && eph_so4 && eph_cu2s_s && eph_hs && eph_s2);
+
+            // 4) Superposición de áreas de predominancia de iones y escalas de electrodo (SCE / Ag-AgCl)
+            cma::domain::EpHSystemParameters p_eph_ion = p_cu;
+            p_eph_ion.mostrar_areas_iones = true;
+            p_eph_ion.escala_potencial = cma::domain::PourbaixPotentialScale::SCE;
+            auto res_ion = eph.calcular_diagrama_eph(p_eph_ion);
+            CHECK(res_ion.ok);
+            CHECK(!res_ion.fronteras_iones.empty());
+            CHECK(!res_ion.poligonos_iones.empty());
+
+            // 5) Combiner isotérmico (25, 50, 75, 100 °C) y serialización .eph8
+            auto res_comb = eph.calcular_combiner_eph(p_cu, {25.0, 50.0, 75.0, 100.0});
+            CHECK(res_comb.size() == 4);
+
+            std::string csv_eph = eph.exportar_tabla_eph_csv(res_cu);
+            CHECK(csv_eph.find("Dielectric Constant: 78.382") != std::string::npos);
+            CHECK(csv_eph.find("DeltaG H2O: -56.678 kcal/mol") != std::string::npos);
+
+            std::string eph8_txt = eph.serializar_eph8(p_cu);
+            cma::domain::EpHSystemParameters p_loaded;
+            CHECK(eph.deserializar_eph8(eph8_txt, p_loaded));
+            CHECK(p_loaded.elemento_principal == "Cu");
+            CHECK(p_loaded.elementos.size() == 2);
+        }
+
+        // ============================================================
+        // T-11: Diagramas H, S, Cp, G, Delta H, Delta S, Delta G (Ellingham) y Exergía (HSC Dia)
+        // ============================================================
+        {
+            cma::application::modules::PropertyDiagrams dia_mod;
+
+            // 1) Balance Element Amount (Fig. 2 y Fig. 3: O = 2.00)
+            CHECK(near(dia_mod.balancear_cantidad_elemento("Cu2O", "O", 2.0), 2.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("FeO", "O", 2.0), 2.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("Fe2O3", "O", 2.0), 2.0 / 3.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("Cr2O3", "O", 2.0), 2.0 / 3.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("MgO", "O", 2.0), 2.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("CO2(g)", "O", 2.0), 1.0, 1e-6));
+            CHECK(near(dia_mod.balancear_cantidad_elemento("H2O(g)", "O", 2.0), 2.0, 1e-6));
+
+            // 2) Evaluación de los 9 tipos de diagrama y normalización por kg (Fig. 1–4)
+            auto c_coo = dia_mod.calcular_curva_especie(repo, "CoO", 273.15, 2273.15, 40, true, 1.0);
+            CHECK(!c_coo.points.empty());
+            CHECK(c_coo.molar_mass_g > 70.0);
+            for (int t_id = 0; t_id <= 9; ++t_id) {
+                if (t_id == static_cast<int>(cma::domain::PropertyDiagramType::Log10K)) continue;
+                auto dt = static_cast<cma::domain::PropertyDiagramType>(t_id);
+                double v_mol = c_coo.evaluar_propiedad(dt, 10, false, false);
+                double v_kg  = c_coo.evaluar_propiedad(dt, 10, false, true);
+                CHECK(std::isfinite(v_mol));
+                CHECK(std::isfinite(v_kg));
+                CHECK(near(v_kg, v_mol * (1000.0 / c_coo.molar_mass_g), 1e-3));
+            }
+
+            // 3) Fig. 1: Fe3O4 presenta saltos de transición de fase en H Heat Content
+            auto c_fe3o4 = dia_mod.calcular_curva_especie(repo, "Fe3O4", 273.15, 2273.15, 80, true, 1.0);
+            CHECK(c_fe3o4.phase_transitions.size() >= 2);
+            CHECK(c_fe3o4.evaluar_propiedad(cma::domain::PropertyDiagramType::HeatContent_dH298, c_fe3o4.points.size() - 1) > 450.0);
+
+            // 4) Fig. 7: Cruce de 2ZnO = 2Zn + O2(g) vs 2ZnO = 2Zn(g) + O2(g) en T_eb(Zn) ~ 907 °C (1180.15 K)
+            auto c_zn_cond = dia_mod.calcular_curva_especie(repo, "Zn", 273.15, 2273.15, 80, true, 2.0);
+            auto c_zn_gas  = dia_mod.calcular_curva_especie(repo, "Zn(g)", 273.15, 2273.15, 80, false, 2.0);
+            CHECK(!c_zn_cond.points.empty());
+            CHECK(!c_zn_gas.points.empty());
+            // A 500 °C (773.15 K, debajo de 907 °C), Zn(l) tiene menor G que Zn(g)
+            // A 1180.15 K (907 °C), G(Zn, l) == G(Zn, g)
+            auto c_zn_eb_l = dia_mod.calcular_curva_especie(repo, "Zn", 1180.15, 1180.15, 1, true, 1.0);
+            auto c_zn_eb_g = dia_mod.calcular_curva_especie(repo, "Zn(g)", 1180.15, 1180.15, 1, false, 1.0);
+            CHECK(near(c_zn_eb_l.points[0].G, c_zn_eb_g.points[0].G, 0.5));
+        }
+
+        // ============================================================
+        // T-12: HSC Sim Common Tools (Cap. 40: Propiedades de corriente, Reports Fig. 24-25,
+        //       Clear Internal Streams Fig. 37, Conexiones Azul/Negro/Rojo Fig. 40 y Monte Carlo Fig. 33)
+        // ============================================================
+        {
+            // 1) Propiedades de corriente de Hydro_example.Sim (Cooler: 197.38 t/h de agua de 25 °C a 60 °C, Fig. 24-25)
+            cma::diagrama_flujo::Flowsheet fs_hydro;
+            int64_t n_cooler = fs_hydro.agregar_nodo(cma::nucleo::TipoNodo::IntercambiadorCalor, "Cooler");
+            fs_hydro.nodo_por_id(n_cooler)->params["T_salida"] = 273.15 + 60.0;
+            int64_t f_cold = fs_hydro.agregar_flujo("Cold Water");
+            int64_t f_hot  = fs_hydro.agregar_flujo("Hot Water");
+            auto* fc = fs_hydro.flujo_por_id(f_cold);
+            fc->temperatura = 273.15 + 25.0;
+            fc->presion = 1.0;
+            fc->agua_kg_h = 197380.0; // 197.38 t/h
+            fc->nodo_origen = -1;
+            fc->nodo_destino = n_cooler;
+            auto* fh = fs_hydro.flujo_por_id(f_hot);
+            fh->nodo_origen = n_cooler;
+            fh->nodo_destino = -1;
+            fs_hydro.nodo_por_id(n_cooler)->ids_flujos_entrada.push_back(f_cold);
+            fs_hydro.nodo_por_id(n_cooler)->ids_flujos_salida.push_back(f_hot);
+
+            CHECK(fs_hydro.clasificar_conexion_flujo(f_cold) == 0); // Azul (Input)
+            CHECK(fs_hydro.clasificar_conexion_flujo(f_hot) == 2);  // Rojo (Output)
+
+            cma::motores::BalanceMasa bm_hydro(repo);
+            auto res_hydro = bm_hydro.resolver(fs_hydro);
+            CHECK(res_hydro.convergio);
+            CHECK(near(res_hydro.error_balance_masa_pct, 0.0, 1e-6));
+            CHECK(near(res_hydro.masa_entrada_kg_s * 3.6, 197.38, 1e-2));
+            CHECK(near(res_hydro.masa_salida_kg_s * 3.6, 197.38, 1e-2));
+
+            for (const auto& f_out : res_hydro.flujos_salida) {
+                if (f_out.id == f_cold) {
+                    CHECK(near(f_out.cp_especifico_kJ_kgK(repo), 4.184, 0.02));
+                    CHECK(near(f_out.calor_contenido_Hc_kW(repo), 0.0, 1e-3));
+                } else if (f_out.id == f_hot) {
+                    CHECK(near(f_out.temperatura - 273.15, 60.0, 1e-4));
+                    CHECK(near(f_out.cp_especifico_kJ_kgK(repo), 4.184, 0.02));
+                    // Fig. 24 y Fig. 25: Hc(Hot Water) ~ 8028 kW, Ex(Hot Water) ~ 3295 kW
+                    CHECK(near(f_out.calor_contenido_Hc_kW(repo), 8028.0, 15.0));
+                    CHECK(f_out.exergia_flujo_kW(repo) > 3000.0);
+                }
+            }
+
+            // 2) Clear Internal Streams (Sec. 40.2.4, Fig. 37): conserva Input, limpia Internal/Output
+            int64_t n_u2 = fs_hydro.agregar_nodo(cma::nucleo::TipoNodo::Mezclador, "Mixer");
+            int64_t f_int = fs_hydro.agregar_flujo("Internal Stream");
+            fs_hydro.conectar(n_cooler, n_u2, f_int);
+            fs_hydro.flujo_por_id(f_int)->agua_kg_h = 50000.0;
+            fs_hydro.flujo_por_id(f_hot)->agua_kg_h = 197380.0;
+            CHECK(fs_hydro.clasificar_conexion_flujo(f_int) == 1); // Negro (Internal)
+
+            size_t n_cleared = fs_hydro.limpiar_corrientes_internas();
+            CHECK(n_cleared == 2); // f_int y f_hot limpiadas
+            CHECK(near(fs_hydro.flujo_por_id(f_cold)->agua_kg_h, 197380.0, 1e-3));
+            CHECK(near(fs_hydro.flujo_por_id(f_int)->agua_kg_h, 0.0, 1e-9));
+            CHECK(near(fs_hydro.flujo_por_id(f_hot)->agua_kg_h, 0.0, 1e-9));
+
+            // 3) Propiedades de pulpa mineral (% Solids, Pulp SG, Fig. 9)
+            cma::nucleo::Flujo f_pulp;
+            f_pulp.agua_kg_h = 50000.0; // 50 t/h agua
+            f_pulp.particulas.push_back({"FeS", 75.0, 50000.0}); // 50 t/h mineral
+            CHECK(near(f_pulp.porcentaje_solidos_wt(repo), 50.0, 1e-3));
+            CHECK(f_pulp.densidad_pulpa_g_cm3(repo) > 1.35 && f_pulp.densidad_pulpa_g_cm3(repo) < 1.65);
+
+            // 4) Monte Carlo con las 4 distribuciones (Uniform, Normal, Laplace, Trapezoid, Fig. 33)
+            cma::application::modules::SimOptimization mc_opt;
+            std::vector<cma::application::modules::VariableDecision> vars_mc = {
+                {"V_Unif", 10.0, 20.0, 15.0, true, cma::application::modules::DistribucionMonteCarlo::Uniforme},
+                {"V_Norm", 10.0, 20.0, 15.0, true, cma::application::modules::DistribucionMonteCarlo::Normal},
+                {"V_Lapl", 10.0, 20.0, 15.0, true, cma::application::modules::DistribucionMonteCarlo::Laplace},
+                {"V_Trap", 10.0, 20.0, 15.0, true, cma::application::modules::DistribucionMonteCarlo::Trapezoide}
+            };
+            auto res_mc = mc_opt.optimizar(
+                vars_mc,
+                [](const std::map<std::string, double>& m) {
+                    return m.at("V_Unif") + m.at("V_Norm") + m.at("V_Lapl") + m.at("V_Trap");
+                },
+                cma::application::modules::MetodoOptimizacion::MonteCarlo, 120, 12345);
+            CHECK(res_mc.convergio);
+            CHECK(res_mc.muestras_variables.size() == 4);
+            for (const auto& [vname, samples] : res_mc.muestras_variables) {
+                CHECK(samples.size() == 120);
+                for (double sv : samples) {
+                    CHECK(sv >= 10.0 && sv <= 20.0);
+                }
+            }
+        }
     }
 
     std::cout << checks << " checks; " << failures << " failures\n";

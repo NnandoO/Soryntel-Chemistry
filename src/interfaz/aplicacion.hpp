@@ -5,6 +5,7 @@
 #include "interfaz/lienzo.hpp"
 #include "interfaz/paneles.hpp"
 #include "interfaz/panels/scientific.hpp"
+#include "interfaz/panels/panel_sim_tools.hpp"
 
 #include "diagrama_flujo/flowsheet.hpp"
 #include "base_datos/gestor_db.hpp"
@@ -162,6 +163,7 @@ private:
     PanelMapGPS panel_map_gps_;
     PanelPourbaix panel_pourbaix_;
     PanelMaterialDB panel_material_db_;
+    PanelSimCommonTools panel_sim_tools_;
 
     // Portapapeles y deshacer
     struct NodoClipboard {
@@ -234,6 +236,7 @@ private:
     // Estado del panel Sim
     bool sim_resuelto_ = false;
     diagrama_flujo::Flowsheet::ResultadoConvergencia sim_ultimo_resultado_;
+    motores::ResultadoBalanceMasa sim_ultimo_balance_masa_;
     std::vector<std::string> logs_simulacion_;
 
     // Cambios sin guardar

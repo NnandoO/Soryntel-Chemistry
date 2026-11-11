@@ -79,8 +79,42 @@ ResultadoOptimizacion SimOptimization::monte_carlo(
                 x[j] = vars[j].valor_inicial;
                 continue;
             }
-            std::uniform_real_distribution<double> unif(vars[j].min, vars[j].max);
-            x[j] = unif(rng);
+            const double lo = std::min(vars[j].min, vars[j].max);
+            const double hi = std::max(vars[j].min, vars[j].max);
+            const double span = std::max(1e-12, hi - lo);
+            const double center = (vars[j].valor_inicial > lo && vars[j].valor_inicial < hi)
+                                ? vars[j].valor_inicial : 0.5 * (lo + hi);
+            double sample = center;
+            switch (vars[j].distribucion) {
+                case DistribucionMonteCarlo::Uniforme: {
+                    std::uniform_real_distribution<double> unif(lo, hi);
+                    sample = unif(rng);
+                    break;
+                }
+                case DistribucionMonteCarlo::Normal: {
+                    std::normal_distribution<double> norm(center, span / 6.0);
+                    sample = std::clamp(norm(rng), lo, hi);
+                    break;
+                }
+                case DistribucionMonteCarlo::Laplace: {
+                    std::uniform_real_distribution<double> u(-0.499999, 0.499999);
+                    double rv = u(rng);
+                    double b = span / 8.0;
+                    double sgn = (rv < 0.0) ? -1.0 : 1.0;
+                    sample = center - b * sgn * std::log(1.0 - 2.0 * std::abs(rv));
+                    sample = std::clamp(sample, lo, hi);
+                    break;
+                }
+                case DistribucionMonteCarlo::Trapezoide: {
+                    // Suma de dos uniformes: U(lo, lo + 0.75*span) + U(0, 0.25*span) -> trapezoide simétrico en [lo, hi]
+                    std::uniform_real_distribution<double> u1(0.0, 0.75 * span);
+                    std::uniform_real_distribution<double> u2(0.0, 0.25 * span);
+                    sample = std::clamp(lo + u1(rng) + u2(rng), lo, hi);
+                    break;
+                }
+            }
+            x[j] = sample;
+            res.muestras_variables[vars[j].nombre].push_back(sample);
         }
 
         double val = evaluar(f, vars, x);

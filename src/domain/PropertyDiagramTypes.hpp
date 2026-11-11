@@ -12,13 +12,16 @@ enum class PropertyDiagramMode : int {
 };
 
 enum class PropertyDiagramType : int {
-    Enthalpy_H = 0,       // H(T) o Delta H(T) [kJ/mol o kcal/mol]
-    HeatContent_dH298 = 1,// H(T) - H(298.15 K) [kJ/mol o kcal/mol]
-    Entropy_S = 2,        // S(T) o Delta S(T) [J/(mol*K) o cal/(mol*K)]
-    HeatCapacity_Cp = 3,  // Cp(T) o Delta Cp(T) [J/(mol*K) o cal/(mol*K)]
-    Gibbs_G = 4,          // G(T) = H(T) - T*S(T) [kJ/mol o kcal/mol]
-    DeltaG_Ellingham = 5, // Delta G°(T) de formacion o normalizado por mol de O2/S2/Cl2 [kJ o kcal]
-    Log10K = 6            // log10 K(T) = -Delta G°(T) / (R * T * ln(10))
+    Enthalpy_H = 0,       // H(T) Enthalpy (total) [kJ/mol o kcal/mol]
+    HeatContent_dH298 = 1,// H(T) - H(298.15 K) Heat Content [kJ/mol o kcal/mol]
+    Entropy_S = 2,        // S(T) Entropy [J/(mol*K) o cal/(mol*K)]
+    HeatCapacity_Cp = 3,  // Cp(T) Heat Capacity [J/(mol*K) o cal/(mol*K)]
+    Gibbs_G = 4,          // G(T) = H(T) - T*S(T) Gibbs Energy [kJ/mol o kcal/mol]
+    DeltaG_Ellingham = 5, // Delta G (Ellingham) [kJ o kcal]
+    Log10K = 6,           // log10 K(T) = -Delta G°(T) / (R * T * ln(10))
+    DeltaH = 7,           // Delta H°f(T) desde elementos [kJ/mol o kcal/mol]
+    DeltaS = 8,           // Delta S°f(T) desde elementos [J/(mol*K) o cal/(mol*K)]
+    Exergy_Ex = 9         // Ex(T) Exergy (total) [kJ/mol o kcal/mol]
 };
 
 enum class EllinghamNormalizationBasis : int {
@@ -49,6 +52,7 @@ struct PuntoPropiedadTermo {
     double dGf = 0.0;          // Delta G°f(T) desde elementos o Delta G°_rxn(T) normalizado [kJ/mol]
     double dHf = 0.0;          // Delta H°f(T) desde elementos o Delta H°_rxn(T) normalizado [kJ/mol]
     double dSf = 0.0;          // Delta S°f(T) desde elementos o Delta S°_rxn(T) normalizado [J/(mol*K)]
+    double Ex = 0.0;           // Ex°(T) = (H(T)-H298) - 298.15*(S(T)-S298)/1000 [kJ/mol]
     double log10K = 0.0;       // log10 K(T)
     std::string active_phase;  // Formula/nombre del polimorfo activo a esta T
     bool en_rango = true;      // Pertinencia al dominio termico validado
@@ -65,18 +69,23 @@ struct TransicionFasePunto {
 struct CurvaDiagramaTermo {
     std::string label;                  // Etiqueta corta (ej. "2 Fe + O2 = 2 FeO" o "Fe2O3")
     std::string equation_normalized;    // Ecuacion quimica normalizada
-    double norm_factor = 1.0;           // Factor estequiometrico aplicado
+    double norm_factor = 1.0;           // Factor estequiometrico aplicado (Coef.)
+    double molar_mass_g = 100.0;        // Masa molar de 1 mol de especie base [g/mol]
+    double T_min_db_C = 25.0;           // TMin (°C) de la base de datos
+    double T_max_db_C = 3726.85;        // TMax (°C) de la base de datos
     bool visible = true;
     std::vector<PuntoPropiedadTermo> points;
     std::vector<TransicionFasePunto> phase_transitions;
     std::vector<std::string> warnings;  // Advertencias de extrapolacion termica
 
-    double evaluar_propiedad(PropertyDiagramType tipo, size_t idx, bool en_kcal = false) const {
+    double evaluar_propiedad(PropertyDiagramType tipo, size_t idx, bool en_kcal = false, bool por_kg = false) const {
         if (idx >= points.size()) {
             return 0.0;
         }
         const auto& p = points[idx];
-        const double k_faktor = en_kcal ? (1.0 / 4.184) : 1.0;
+        const double u_faktor = en_kcal ? (1.0 / 4.184) : 1.0;
+        const double mass_kg = std::max(1e-6, (molar_mass_g * std::max(1e-6, norm_factor)) / 1000.0);
+        const double k_faktor = por_kg ? (u_faktor / mass_kg) : u_faktor;
         switch (tipo) {
         case PropertyDiagramType::Enthalpy_H:
             return p.H * k_faktor;
@@ -88,8 +97,14 @@ struct CurvaDiagramaTermo {
             return p.Cp * k_faktor;
         case PropertyDiagramType::Gibbs_G:
             return p.G * k_faktor;
+        case PropertyDiagramType::DeltaH:
+            return p.dHf * k_faktor;
+        case PropertyDiagramType::DeltaS:
+            return p.dSf * k_faktor;
         case PropertyDiagramType::DeltaG_Ellingham:
             return p.dGf * k_faktor;
+        case PropertyDiagramType::Exergy_Ex:
+            return p.Ex * k_faktor;
         case PropertyDiagramType::Log10K:
             return p.log10K;
         }

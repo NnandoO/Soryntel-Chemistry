@@ -15,6 +15,13 @@ struct ResultadoBalanceMasa {
     std::map<int64_t, double> balance_global; // especie_id -> balance neto
     int      iteraciones = 0;  // iteraciones usadas en lazos de recirculación
     double   error_final = 0.0; // error de convergencia final (lazos de reciclo)
+    // Indicadores globales de convergencia (HSC Sim Sec. 40.2.4, pág. 23-24)
+    double   masa_entrada_kg_s = 0.0;
+    double   masa_salida_kg_s = 0.0;
+    double   error_balance_masa_pct = 0.0;     // MB% = |m_in - m_out| / |m_in| * 100
+    double   entalpia_entrada_kW = 0.0;
+    double   entalpia_salida_kW = 0.0;
+    double   error_balance_entalpia_pct = 0.0; // EB% = |H_in - H_out| / |H_in| * 100
 };
 
 class BalanceMasa {

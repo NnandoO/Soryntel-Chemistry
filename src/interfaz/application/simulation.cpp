@@ -54,18 +54,24 @@ void Aplicacion::ejecutar_simulacion() {
     add_log("Iniciando simulación de flowsheet (" + std::to_string(flowsheet_->conteo_nodos()) +
             " unidades, " + std::to_string(flowsheet_->conteo_flujos()) + " corrientes)...");
 
-    // ── Validación previa ──
+    // ── Validación previa (soporta Fuentes/Sumideros explícitos y corrientes Input/Output de HSC Sim) ──
     bool tiene_fuente = false;
     bool tiene_sumidero = false;
     for (const auto& nodo : flowsheet_->nodos()) {
         if (nodo.tipo == nucleo::TipoNodo::Fuente) { tiene_fuente = true; }
         if (nodo.tipo == nucleo::TipoNodo::Sumidero) { tiene_sumidero = true; }
     }
+    for (const auto& [fid, f] : flowsheet_->mapa_flujos()) {
+        if (f.es_energia) continue;
+        int tc = flowsheet_->clasificar_conexion_flujo(fid);
+        if (tc == 0) tiene_fuente = true;
+        if (tc == 2) tiene_sumidero = true;
+    }
     if (!tiene_fuente || !tiene_sumidero) {
         std::string err = "No se puede simular: el flowsheet necesita al menos ";
-        if (!tiene_fuente && !tiene_sumidero) err += "una Fuente y un Sumidero.";
-        else if (!tiene_fuente) err += "una Fuente de entrada.";
-        else err += "un Sumidero de salida.";
+        if (!tiene_fuente && !tiene_sumidero) err += "una corriente/nodo de entrada y una de salida.";
+        else if (!tiene_fuente) err += "una corriente o Fuente de entrada.";
+        else err += "una corriente o Sumidero de salida.";
         panel_resultados_.poner_resultado_masa(err, false);
         sim_resuelto_ = true;
         sim_ultimo_resultado_.convergio = false;
@@ -89,6 +95,7 @@ void Aplicacion::ejecutar_simulacion() {
     try {
         application::SimulationService simulation(repository_);
         auto res_masa = simulation.run_steady_state(*flowsheet_);
+        sim_ultimo_balance_masa_ = res_masa;
         masa_ok = res_masa.convergio;
         masa_msg = res_masa.mensaje;
 
