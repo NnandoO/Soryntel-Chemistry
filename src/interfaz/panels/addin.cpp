@@ -13,7 +13,7 @@ void cma::interfaz::PanelAddIn::evaluar_fila(cma::interfaz::PanelAddIn::FilaAddI
     if (arg1_str.empty()) return;
 
     const domain::ThermoRepository& gestor =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
 
     auto calcular_propiedad = [&](const cma::nucleo::Reaccion& rxn, double T_K, int prop_tipo) -> double {
         double val_total = 0.0;
