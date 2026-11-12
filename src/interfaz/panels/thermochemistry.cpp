@@ -14,7 +14,7 @@ void PanelCalculadora::renderizar(const std::map<int64_t, nucleo::Especie>& db) 
     ImGui::SameLine();
     if (ImGui::Button(tr("Buscar"))) {
         const domain::ThermoRepository& gestor =
-            repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(db_ ? *db_ : base_datos::GestorDB::instancia());
+            static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
         auto res = gestor.buscar_especies(busqueda_);
         if (!res.empty()) id_especie_ = res[0]->id;
     }

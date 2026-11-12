@@ -32,6 +32,7 @@
 #include "tools/ExternalAPI.hpp"
 #include "motores/pourbaix.hpp"
 #include "panels/panel_balance_hoja.hpp"
+#include "panels/panel_perdida_calor.hpp"
 #include "panels/panel_lca.hpp"
 #include "panels/panel_balance_metalurgico.hpp"
 #include "panels/panel_material_db.hpp"
@@ -699,54 +700,6 @@ private:
     int values_min_ = 1, values_max_ = 5000;
 };
 
-// ── Panel de Pérdida de Calor ───────────────────────────────────────────
-class PanelPerdidaCalor {
-public:
-    PanelPerdidaCalor();
-    void renderizar();
-    void inicializar_valores_defecto();
-
-private:
-    struct LayerColumn {
-        char name[64] = "";
-        int type = 1; // 0: Surface, 1: Solid Layer, 2: Contact Layer, 3: Enclosure
-        char material[64] = "";
-        char surface_material[64] = "";
-        double temp_left = 0.0;
-        double temp_right = 0.0;
-        double thickness = 0.0; // cm
-        int grid_points = 10;
-        double conductivity = 1.0; // W/(mK)
-        double convection_hc = 5.0; // W/(m²K)
-        double radiation_hr = 0.0; // W/(m²K)
-        double resistance = 0.0; // °C/kW
-        double heat_flow = 0.0; // kW
-        double heat_flux = 0.0; // kW/m²
-
-        // Fixed value indicators
-        bool fix_temp_left = false;
-        bool fix_temp_right = false;
-        bool fix_convection = false;
-        bool fix_radiation = false;
-        bool fix_resistance = false;
-        bool fix_conductivity = false;
-    };
-
-    std::vector<LayerColumn> columnas_;
-    int active_sheet_ = 0; // 0: Wall, 1: Roof, 2: Bottom
-    int geometry_type_ = 2; // 0: Wall, 1: Cube, 2: Cylinder, 3: Sphere
-    double geom_height_ = 1.0; // m
-    double geom_diameter_ = 0.5; // m
-    double total_heat_flow_ = 0.0; // kW
-    int calc_type_ = 1; // 0: Temperature profile, 1: Heat flow
-    bool show_diagram_ = false;
-    bool calculated_ = false;
-
-    void calcular_perfil_temperatura();
-    void calcular_flujo_calor();
-    void reciclar_calculos();
-};
-
 // ── Panel de Convertidor de Especies (análisis químico a minerales) ─────
 class PanelConvertidorEspecies {
 public:
@@ -929,7 +882,7 @@ private:
     int celda_colo_ = 0;        // columna activa (índice de columna RULE)
     int foco_fila_ = -1;         // objetivo de foco teclado pendiente (Enter/Tab)
     int foco_colo_ = -1;
-    char nombre_celda_buf_[12] = "A1";
+    char nombre_celda_buf_[24] = "A1";
     int nombre_fila_prev_ = -1, nombre_colo_prev_ = -1;
 
     void cargar_ejemplo_hsc();
@@ -944,7 +897,7 @@ private:
 // ── Panel de ReactionSolver ─────────────────────────────────────────────
 class PanelReactionSolver {
 public:
-    explicit PanelReactionSolver(const domain::ThermoRepository& repository) : motor_(repository) {}
+    explicit PanelReactionSolver(const domain::ThermoRepository& repository) : repo_(&repository), motor_(repository) {}
     void renderizar();
 private:
     char ecuacion_[128] = "2CO(g) + O2(g) = 2CO2(g)";
@@ -990,6 +943,7 @@ private:
     bool error_parsing_ = false;
     bool balance_ok_ = true;
 
+    const domain::ThermoRepository* repo_ = nullptr;
     cma::application::modules::ReactionSolver motor_;
 
     void balancear_ecuacion();

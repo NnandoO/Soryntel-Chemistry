@@ -7,7 +7,7 @@ PanelEspecies::PanelEspecies() { busqueda_[0] = '\0'; }
 
 void PanelEspecies::refrescar() {
     const domain::ThermoRepository& db =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(base_datos::GestorDB::instancia());
     std::string q = busqueda_;
     if (q.empty())
         lista_ = db.todas_especies();

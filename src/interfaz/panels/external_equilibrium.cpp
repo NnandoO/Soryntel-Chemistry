@@ -191,7 +191,7 @@ void PanelEquilibriumCalc::renderizar() {
     ImGui::TextWrapped(tr("Calculate equilibrium composition and phase amounts using Gibbs energy minimization."));
 
     const domain::ThermoRepository& gestor =
-        repo_ ? *repo_ : static_cast<const domain::ThermoRepository&>(cma::base_datos::GestorDB::instancia());
+        static_cast<const domain::ThermoRepository&>(cma::base_datos::GestorDB::instancia());
     auto db = gestor.mapa_especies();
 
     // ── Input section ──
