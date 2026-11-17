@@ -1,108 +1,205 @@
-name: Build Rust portable packages and deploy
+name: Publicar versión
+
+# Publicar: subir la versión en soryntel/Cargo.toml ([workspace.package]),
+# hacer commit y empujar la etiqueta correspondiente:
+#   git tag v0.2.0 && git push origin v0.2.0
+# Con workflow_dispatch se compilan los paquetes como artefactos sin publicar.
 on:
   push:
-    tags: ['v*']
-    branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  build-linux:
+  version:
+    name: Versión
+    # Solo el fork publica versiones (y la web lee sus descargas de ahí);
+    # en NnandoO/Soryntel-Chemistry el flujo se omite para no duplicar trabajo.
+    # El resto de trabajos depende de este y se omite con él.
+    if: github.repository == 'jhulio435m/Soryntel-Chemistry'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    outputs:
+      version: ${{ steps.v.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y pkg-config libxkbcommon-dev libwayland-dev libgl1-mesa-dev
-      - run: cargo test --locked --workspace
-        working-directory: soryntel
-      - run: cargo build --locked --release -p soryntel-desktop
-        working-directory: soryntel
-      - run: python3 soryntel/packaging/package.py --binary soryntel/target/release/soryntel-desktop --platform linux-x86_64 --output dist
-      - name: Verify portable package
-        shell: bash
+      - id: v
+        name: Leer Cargo.toml y comprobar la etiqueta
         run: |
-          for package in dist/*.tar.gz dist/*.zip; do
-            [ -f "$package" ] || continue
-            python soryntel/packaging/verify-package.py "$package"
-          done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cma-chemistry-linux-packages
-          path: dist/*
-  build-windows:
-    runs-on: windows-latest
-    timeout-minutes: 40
+          version=$(awk '/^\[workspace.package\]/{f=1;next} /^\[/{f=0} f && /^version *=/{gsub(/[" ]/,"",$0); split($0,a,"="); print a[2]; exit}' soryntel/Cargo.toml)
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${version}" ]]; then
+            echo "::error::La etiqueta ${GITHUB_REF_NAME} no coincide con la versión ${version} de soryntel/Cargo.toml"
+            exit 1
+          fi
+          echo "Versión ${version}"
+
+  linux:
+    name: Linux (.run y .tar.gz)
+    needs: version
+    # 22.04 (glibc 2.35) para que el binario funcione en distribuciones no tan recientes.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: cargo build --locked --release -p soryntel-desktop
-        working-directory: soryntel
-      - run: python soryntel/packaging/package.py --binary soryntel/target/release/soryntel-desktop.exe --platform win64 --output dist
-      - name: Verify portable package
-        shell: bash
+      - name: Dependencias del sistema
         run: |
-          for package in dist/*.tar.gz dist/*.zip; do
-            [ -f "$package" ] || continue
-            python soryntel/packaging/verify-package.py "$package"
-          done
-      - uses: actions/upload-artifact@v4
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libx11-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          name: cma-chemistry-windows-packages
-          path: dist/*
-  deploy:
-    name: Deploy All Packages to AWS S3
-    needs: [build-linux, build-windows]
+          workspaces: soryntel
+          key: release-linux
+      - name: Tests
+        working-directory: soryntel
+        run: cargo test --workspace --locked
+      - name: Compilar y empaquetar
+        run: soryntel/packaging/build-releases.sh linux
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-linux
+          path: soryntel/dist/*
+          if-no-files-found: error
+      - name: Binario para el paquete de Arch
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: linux-binary
+          path: soryntel/target/release/soryntel-desktop
+          if-no-files-found: error
+
+  windows:
+    name: Windows (instalador y portable)
+    needs: version
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Toolchain MinGW y NSIS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 nsis zip
+      - run: |
+          rustup toolchain install stable --profile minimal && rustup default stable
+          rustup target add x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: soryntel
+          key: release-windows
+      - name: Compilar y empaquetar
+        run: soryntel/packaging/build-releases.sh windows
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-windows
+          path: soryntel/dist/*
+          if-no-files-found: error
+
+  arch:
+    name: Arch Linux (.pkg.tar.zst)
+    needs: linux
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          name: linux-binary
+          path: soryntel/target/release
+      - name: Empaquetar con makepkg
+        run: |
+          chmod 755 soryntel/target/release/soryntel-desktop
+          useradd -m builder
+          chown -R builder: "$GITHUB_WORKSPACE"
+          # makepkg no se ejecuta como root.
+          su builder -c "cd '$GITHUB_WORKSPACE' && soryntel/packaging/build-releases.sh arch"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-arch
+          path: soryntel/dist/*.pkg.tar.zst
+          if-no-files-found: error
+
+  publish:
+    name: Publicar en GitHub Releases
+    needs: [version, linux, windows, arch]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: write
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      AWS_CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DIST_ID }}
-
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Download Linux Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          name: cma-chemistry-linux-packages
+          persist-credentials: false
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: dist-*
           path: dist
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: cma-chemistry-windows-packages
-          path: dist
-
-      - name: Inspect Packages
-        run: ls -lh dist/
-
-      - name: Configure AWS Credentials
-        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy to AWS S3
-        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
+          merge-multiple: true
+      - name: Comprobar los archivos que ofrece la web
         run: |
-          echo "Subiendo paquetes a s3://${AWS_S3_BUCKET}/releases/ ..."
-          aws s3 cp dist/ s3://${AWS_S3_BUCKET}/releases/ --recursive --exclude "*" --include "*.tar.gz" --include "*.deb" --include "*.zip"
-          echo "Despliegue a S3 completado con éxito."
-
-      - name: Invalidate CloudFront Cache (Optional)
-        if: env.AWS_CLOUDFRONT_DIST_ID != '' && env.AWS_ACCESS_KEY_ID != ''
+          cd dist
+          expected=(
+            "Soryntel-Chemistry-${VERSION}-win64-setup.exe"
+            "Soryntel-Chemistry-${VERSION}-win64-portable.zip"
+            "Soryntel-Chemistry-${VERSION}-linux-x86_64.run"
+            "Soryntel-Chemistry-${VERSION}-linux-x86_64.tar.gz"
+            "soryntel-chemistry-${VERSION}-1-x86_64.pkg.tar.zst"
+          )
+          for f in "${expected[@]}"; do
+            [[ -s "$f" ]] || { echo "::error::Falta $f"; exit 1; }
+          done
+          sha256sum "${expected[@]}" > SHA256SUMS.txt
+          ls -lh
+      - name: Crear o actualizar la versión
+        if: github.ref_type == 'tag'
         run: |
-          echo "Invalidando caché de CloudFront para /releases/* ..."
-          aws cloudfront create-invalidation --distribution-id ${AWS_CLOUDFRONT_DIST_ID} --paths "/releases/*"
+          tag="${GITHUB_REF_NAME}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --title "Soryntel Chemistry ${VERSION}" --generate-notes --verify-tag
+          fi
+      - uses: actions/setup-node@v5
+        if: github.ref_type == 'tag'
+        with:
+          node-version: 26
+      - name: Verificar que la web puede enlazar cada descarga
+        if: github.ref_type == 'tag'
+        run: node web/scripts/sync-release.mjs --tag "${GITHUB_REF_NAME}" --check
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+      # Cloudflare Pages construye la web desde el repositorio y, al compilar,
+      # toma descargas y tamaños de la última versión publicada. Una etiqueta no
+      # es un commit, así que se pide la reconstrucción con un Deploy Hook.
+      - name: Reconstruir la web en Cloudflare Pages
+        if: github.ref_type == 'tag' && env.CF_PAGES_DEPLOY_HOOK != ''
+        run: curl -fsS -X POST "$CF_PAGES_DEPLOY_HOOK" > /dev/null
+        env:
+          CF_PAGES_DEPLOY_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+      - name: Artefactos (ejecución manual)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: soryntel-chemistry-${{ env.VERSION }}
+          path: dist/*

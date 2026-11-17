@@ -1,6 +1,6 @@
 # Maintainer: Soryntel Chemistry Team
 pkgname=soryntel-chemistry
-pkgver=0.1.0
+pkgver=0.1.0  # packaging/build-releases.sh sets this from Cargo.toml
 pkgrel=1
 pkgdesc="Simulador Termodinámico y Metalúrgico (Reaction, Balance, Heat Loss, Equilibrium, Sim, LCA)"
 arch=('x86_64')

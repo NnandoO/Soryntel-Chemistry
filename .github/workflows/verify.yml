@@ -1,27 +1,65 @@
-name: Rust scientific and desktop checks
-on: [push, pull_request, workflow_dispatch]
+name: Verificación
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  verify:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+  rust:
+    name: Rust (tests del workspace)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: soryntel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Install desktop dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libxkbcommon-dev libwayland-dev libgl1-mesa-dev
-      - name: Show toolchain
-        run: rustc --version && cargo --version
-      - name: Audit documentation and translation keys
+      - name: Dependencias del sistema (egui/winit)
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libx11-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
+      - name: Toolchain de Rust
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: soryntel
+      - name: Auditoría de documentación y textos
         run: |
           python3 scripts/audit-repository.py
           python3 scripts/audit-architecture.py
-      - name: Test all modules including local HTTP transport
-        run: cargo test --locked --workspace
+          python3 scripts/audit-ui-texts.py
+      - name: Tests
+        run: cargo test --workspace --locked
       - name: Build desktop
         run: cargo build --locked --release -p soryntel-desktop
+
+  web:
+    name: Web (lint y build estático)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
