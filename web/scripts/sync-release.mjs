@@ -7,14 +7,14 @@
 //   node scripts/sync-release.mjs --check         # also fail if an expected file is missing
 //   node scripts/sync-release.mjs --soft          # keep the committed file when offline / no release yet
 //
-// Env: GITHUB_REPOSITORY (owner/repo, default NnandoO/Soryntel-Chemistry), GITHUB_TOKEN (optional).
+// Env: GITHUB_REPOSITORY (owner/repo, default jhulio435m/Soryntel-Chemistry), GITHUB_TOKEN (optional).
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(n);
 const tagArg = args.includes("--tag") ? args[args.indexOf("--tag") + 1] : null;
-const repo = process.env.GITHUB_REPOSITORY || "NnandoO/Soryntel-Chemistry";
+const repo = process.env.GITHUB_REPOSITORY || "jhulio435m/Soryntel-Chemistry";
 const out = fileURLToPath(new URL("../src/content/release.json", import.meta.url));
 
 /** The files the site offers; {v} is the version without the leading "v". */

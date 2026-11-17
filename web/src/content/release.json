@@ -1,5 +1,5 @@
 {
-  "repo": "NnandoO/Soryntel-Chemistry",
+  "repo": "jhulio435m/Soryntel-Chemistry",
   "tag": "v0.1.0",
   "version": "0.1.0",
   "publishedAt": null,
@@ -7,27 +7,27 @@
     {
       "name": "Soryntel-Chemistry-0.1.0-linux-x86_64.run",
       "size": 9053588,
-      "url": "https://github.com/NnandoO/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.run"
+      "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.run"
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-linux-x86_64.tar.gz",
       "size": 9053256,
-      "url": "https://github.com/NnandoO/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.tar.gz"
+      "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.tar.gz"
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-win64-portable.zip",
       "size": 8971710,
-      "url": "https://github.com/NnandoO/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-win64-portable.zip"
+      "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-win64-portable.zip"
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-win64-setup.exe",
       "size": 6533536,
-      "url": "https://github.com/NnandoO/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-win64-setup.exe"
+      "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-win64-setup.exe"
     },
     {
       "name": "soryntel-chemistry-0.1.0-1-x86_64.pkg.tar.zst",
       "size": 8567767,
-      "url": "https://github.com/NnandoO/Soryntel-Chemistry/releases/download/v0.1.0/soryntel-chemistry-0.1.0-1-x86_64.pkg.tar.zst"
+      "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/soryntel-chemistry-0.1.0-1-x86_64.pkg.tar.zst"
     }
   ]
 }
