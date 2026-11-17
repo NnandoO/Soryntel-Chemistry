@@ -1,0 +1,9 @@
+[package]
+name = "soryntel-solver"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+soryntel-core = { path = "../soryntel-core" }
+serde.workspace = true
+thiserror.workspace = true

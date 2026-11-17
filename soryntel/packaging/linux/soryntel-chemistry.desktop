@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Soryntel Chemistry
+GenericName=Thermodynamic & Metallurgical Process Simulator
+Comment=Simulador Termodinámico y Metalúrgico (Reaction, Balance, Heat Loss, Equilibrium, Sim, LCA)
+Exec=soryntel-desktop
+Icon=soryntel-chemistry
+Terminal=false
+Categories=Science;Chemistry;Engineering;Education;
+Keywords=chemistry;thermodynamics;hsc;metallurgy;equilibrium;
+StartupNotify=true

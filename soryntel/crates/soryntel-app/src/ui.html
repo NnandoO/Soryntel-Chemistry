@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soryntel Chemistry — Reaction Equations</title>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --border: #334155;
+      --text: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8; --accent-hover: #0284c7;
+      --ok: #22c55e; --err: #ef4444; --input-bg: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #020617; border-bottom: 1px solid var(--border); }
+    header h1 { margin: 0; font-size: 1.1rem; color: var(--accent); letter-spacing: 0.4px; }
+    header .badge { font-size: 0.8rem; color: var(--muted); }
+    .container { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .spec-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.grow { flex: 1 1 360px; }
+    label { font-size: 0.78rem; color: var(--muted); }
+    input, select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 0.92rem; }
+    input.formula { font-family: "JetBrains Mono", monospace; font-size: 1rem; border-color: #475569; }
+    button { background: #334155; color: var(--text); border: 1px solid #475569; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    button:hover { background: #475569; }
+    button.primary { background: var(--accent); color: #020617; border-color: var(--accent); }
+    button.primary:hover { background: var(--accent-hover); color: #fff; }
+    .checks { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 0.85rem; }
+    .checks label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text); cursor: pointer; }
+    .split { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; min-height: 480px; }
+    @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .table-wrap { overflow: auto; max-height: 360px; border: 1px solid var(--border); border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; font-family: "JetBrains Mono", monospace; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    th { background: #0f172a; color: var(--accent); position: sticky; top: 0; font-family: system-ui, sans-serif; font-weight: 600; }
+    td:first-child, th:first-child { text-align: left; }
+    tr.tr-row { background: rgba(56, 189, 248, 0.08); }
+    .status { font-size: 0.85rem; padding: 8px 12px; border-radius: 6px; background: #0f172a; border: 1px solid var(--border); }
+    .status.err { border-color: var(--err); color: #fca5a5; }
+    .status.ok { border-color: var(--ok); color: #86efac; }
+    svg { width: 100%; height: 390px; background: #0b1120; border: 1px solid var(--border); border-radius: 6px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.78rem; color: var(--muted); }
+    .examples button { padding: 4px 8px; font-size: 0.76rem; font-weight: 500; }
+    dialog { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px; width: min(720px, 92vw); padding: 16px; }
+    dialog::backdrop { background: rgba(0,0,0,0.65); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Soryntel Chemistry — Reaction Equations (Módulo 01)</h1>
+    <span class="badge" id="dbInfo">Cargando base de datos...</span>
+  </header>
+
+  <div class="container">
+    <div class="spec-panel">
+      <div class="row">
+        <div class="field grow">
+          <label>Ecuación de Reacción o Fórmula Química</label>
+          <input id="formulaInput" class="formula" value="Al2O3" placeholder="Ej: Al2O3 | Mg = Mg(g) | FeS2 + H2O = Fe2O3 + SO4(-2a) + H(+a) + e-" />
+        </div>
+        <div class="field" style="width:110px">
+          <label>Smallest Coeff.</label>
+          <input id="smallCoeff" type="number" step="any" value="1" />
+        </div>
+        <button onclick="doBalance()">Balance</button>
+        <button onclick="openBrowser()">Browse DB...</button>
+        <button class="primary" onclick="doCalculate()">Calculate</button>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>From</label><input id="tFrom" type="number" step="any" value="0" style="width:95px" /></div>
+        <div class="field"><label>To</label><input id="tTo" type="number" step="any" value="2000" style="width:95px" /></div>
+        <div class="field"><label>Step</label><input id="tStep" type="number" step="any" value="100" style="width:95px" /></div>
+        <div class="field"><label>Temp. Unit</label>
+          <select id="tUnit"><option value="Celsius" selected>°C</option><option value="Kelvin">K</option><option value="Fahrenheit">°F</option></select>
+        </div>
+        <div class="field"><label>Energy Unit</label>
+          <select id="eUnit"><option value="Kilojoules" selected>kJ</option><option value="Joules">J</option><option value="Kilocalories">kcal</option><option value="Calories">cal</option></select>
+        </div>
+        <div class="field"><label>Format (Pure)</label>
+          <select id="resFmt"><option value="Normal" selected>Normal</option><option value="Delta">Delta</option></select>
+        </div>
+        <div class="checks">
+          <label><input id="showTr" type="checkbox" checked /> Show Transitions</label>
+          <label><input id="crissCobble" type="checkbox" /> Criss-Cobble</label>
+        </div>
+      </div>
+
+      <div class="examples">
+        <span>Ejemplos rápidos:</span>
+        <button onclick="loadEx('Al2O3',0,2000,100)">Al2O3</button>
+        <button onclick="loadEx('Mg = Mg(g)',500,1500,50)">Mg = Mg(g)</button>
+        <button onclick="loadEx('Ni + 4CO(g) = Ni(CO)4(g)',70,160,10)">Mond (Ni(CO)4)</button>
+        <button onclick="loadEx('FeS2 + H2O = Fe2O3 + SO4(-2a) + H(+a) + e-',0,175,25)">FeS2 Redox (unbalanced)</button>
+        <button onclick="exportCsv()">Exportar CSV</button>
+      </div>
+    </div>
+
+    <div id="statusBox" class="status">Listo. Presiona Calculate.</div>
+
+    <div class="split">
+      <div class="card">
+        <strong id="tableTitle">Reaction / Substance Data</strong>
+        <div class="table-wrap"><table id="mainTable"></table></div>
+        <strong>Species Data (Balances de Masa y Volumen)</strong>
+        <div class="table-wrap" style="max-height: 180px;"><table id="speciesTable"></table></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <strong>Gráfico Termodinámico</strong>
+          <select id="yAxisSelect" onchange="renderChart()"></select>
+        </div>
+        <svg id="chartSvg" viewBox="0 0 640 390"></svg>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="dbDialog">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong>Database Browser</strong>
+      <button onclick="document.getElementById('dbDialog').close()">Cerrar</button>
+    </div>
+    <div class="row" style="margin-bottom:10px;">
+      <input id="dbSearch" class="formula" style="flex:1" placeholder="Buscar fórmula o nombre (ej. TiO2, Mg, Cu)..." oninput="searchDb()" />
+    </div>
+    <div class="table-wrap" style="max-height:300px;"><table id="dbTable"></table></div>
+  </dialog>
+
+  <script>
+    let lastData = null;
+
+    async function init() {
+      const r = await fetch('/api/info');
+      const info = await r.json();
+      document.getElementById('dbInfo').textContent = `Especies en DB: ${info.species_count}`;
+      doCalculate();
+    }
+
+    function loadEx(eq, f, t, s) {
+      document.getElementById('formulaInput').value = eq;
+      document.getElementById('tFrom').value = f;
+      document.getElementById('tTo').value = t;
+      document.getElementById('tStep').value = s;
+      doCalculate();
+    }
+
+    function setStatus(msg, ok = true) {
+      const el = document.getElementById('statusBox');
+      el.textContent = msg;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    async function doBalance() {
+      const eq = document.getElementById('formulaInput').value;
+      const sc = parseFloat(document.getElementById('smallCoeff').value) || 1.0;
+      const r = await fetch('/api/balance', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ equation: eq, smallest_coeff: sc })
+      });
+      const data = await r.json();
+      if (!r.ok) { setStatus(data.error || 'Error al balancear', false); return; }
+      document.getElementById('formulaInput').value = data.balanced;
+      setStatus(`Balanceado: ${data.balanced}`, true);
+    }
+
+    async function doCalculate() {
+      const payload = {
+        input: document.getElementById('formulaInput').value,
+        t_from: parseFloat(document.getElementById('tFrom').value),
+        t_to: parseFloat(document.getElementById('tTo').value),
+        t_step: parseFloat(document.getElementById('tStep').value),
+        temp_unit: document.getElementById('tUnit').value,
+        energy_unit: document.getElementById('eUnit').value,
+        result_format: document.getElementById('resFmt').value,
+        show_transitions: document.getElementById('showTr').checked,
+        criss_cobble: document.getElementById('crissCobble').checked
+      };
+      const r = await fetch('/api/calculate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      if (!r.ok) { setStatus(data.error || 'Error de cálculo', false); return; }
+      lastData = data;
+      setStatus(`Cálculo completado: ${data.normalized_input}`, true);
+      renderTables(data);
+      populateYAxis(data);
+      renderChart();
+    }
+
+    function renderTables(d) {
+      const tbl = document.getElementById('mainTable');
+      if (d.is_single_substance) {
+        document.getElementById('tableTitle').textContent = `Formula: ${d.normalized_input}`;
+        let html = `<thead><tr><th>T (${d.temp_unit_label})</th><th>Cp (${d.entropy_unit_label})</th><th>H (${d.energy_unit_label}/mol)</th><th>S (${d.entropy_unit_label})</th><th>G (${d.energy_unit_label}/mol)</th><th>Reference</th></tr></thead><tbody>`;
+        for (const r of d.substance_rows) {
+          html += `<tr class="${r.is_transition ? 'tr-row' : ''}"><td>${r.temperature.toFixed(3)}</td><td>${r.cp.toFixed(3)}</td><td>${r.h.toFixed(3)}</td><td>${r.s.toFixed(3)}</td><td>${r.g.toFixed(3)}</td><td style="text-align:left">${r.reference}</td></tr>`;
+        }
+        tbl.innerHTML = html + '</tbody>';
+      } else {
+        document.getElementById('tableTitle').textContent = `Reaction: ${d.normalized_input}`;
+        let html = `<thead><tr><th>T (${d.temp_unit_label})</th><th>ΔH (${d.energy_unit_label})</th><th>ΔS (${d.entropy_unit_label})</th><th>ΔG (${d.energy_unit_label})</th><th>K</th><th>Log K</th>${d.has_electrochemical_potential ? '<th>E vs SHE (V)</th>' : ''}</tr></thead><tbody>`;
+        for (const r of d.reaction_rows) {
+          html += `<tr><td>${r.temperature.toFixed(3)}</td><td>${r.delta_h.toFixed(3)}</td><td>${r.delta_s.toFixed(3)}</td><td>${r.delta_g.toFixed(3)}</td><td>${r.k_eq.toExponential(3)}</td><td>${r.log10_k.toFixed(3)}</td>${d.has_electrochemical_potential ? `<td>${r.e_vs_she_v.toFixed(3)}</td>` : ''}</tr>`;
+        }
+        tbl.innerHTML = html + '</tbody>';
+      }
+
+      const st = document.getElementById('speciesTable');
+      let sh = `<thead><tr><th>Formula</th><th>Side</th><th>M (g/mol)</th><th>wt-%</th><th>mol</th><th>g</th><th>Volume</th><th>Extrap. K</th></tr></thead><tbody>`;
+      for (const s of d.species_data) {
+        sh += `<tr><td>${s.formula}</td><td style="text-align:left">${s.side}</td><td>${s.molar_mass.toFixed(3)}</td><td>${s.conc_wt_pct.toFixed(3)}</td><td>${s.mol.toFixed(3)}</td><td>${s.mass_g.toFixed(3)}</td><td>${s.volume.toFixed(3)} ${s.volume_unit}</td><td>${s.extrapolated_from_k ? s.extrapolated_from_k.toFixed(2) : '-'}</td></tr>`;
+      }
+      st.innerHTML = sh + '</tbody>';
+    }
+
+    function populateYAxis(d) {
+      const sel = document.getElementById('yAxisSelect');
+      if (d.is_single_substance) {
+        sel.innerHTML = `<option value="cp">Cp</option><option value="h">H</option><option value="s">S</option><option value="g">G</option>`;
+      } else {
+        sel.innerHTML = `<option value="log10_k">Log K</option><option value="delta_g">ΔG</option><option value="delta_h">ΔH</option><option value="delta_s">ΔS</option><option value="k_eq">K</option>${d.has_electrochemical_potential ? '<option value="e_vs_she_v">E vs SHE (V)</option>' : ''}`;
+      }
+    }
+
+    function renderChart() {
+      if (!lastData) return;
+      const svg = document.getElementById('chartSvg');
+      const key = document.getElementById('yAxisSelect').value;
+      const rows = lastData.is_single_substance ? lastData.substance_rows : lastData.reaction_rows;
+      if (!rows.length) { svg.innerHTML = ''; return; }
+
+      const xs = rows.map(r => r.temperature);
+      const ys = rows.map(r => r[key] ?? 0);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      let minY = Math.min(...ys), maxY = Math.max(...ys);
+      if (Math.abs(maxY - minY) < 1e-12) { minY -= 1; maxY += 1; }
+
+      const padL = 68, padR = 20, padT = 24, padB = 40, W = 640, H = 390;
+      const mapX = x => padL + ((x - minX) / (maxX - minX || 1)) * (W - padL - padR);
+      const mapY = y => H - padB - ((y - minY) / (maxY - minY)) * (H - padT - padB);
+
+      let pts = rows.map((r, i) => `${mapX(xs[i]).toFixed(1)},${mapY(ys[i]).toFixed(1)}`).join(' ');
+      let grid = '';
+      for (let i = 0; i <= 4; i++) {
+        const yv = minY + (i / 4) * (maxY - minY);
+        const yp = mapY(yv);
+        grid += `<line x1="${padL}" y1="${yp}" x2="${W-padR}" y2="${yp}" stroke="#1e293b" stroke-width="1"/>`;
+        grid += `<text x="${padL-6}" y="${yp+4}" fill="#94a3b8" font-size="11" text-anchor="end">${Math.abs(yv) > 1e4 || (Math.abs(yv) < 1e-2 && yv !== 0) ? yv.toExponential(2) : yv.toFixed(2)}</text>`;
+        const xv = minX + (i / 4) * (maxX - minX);
+        const xp = mapX(xv);
+        grid += `<line x1="${xp}" y1="${padT}" x2="${xp}" y2="${H-padB}" stroke="#1e293b" stroke-width="1"/>`;
+        grid += `<text x="${xp}" y="${H-padB+16}" fill="#94a3b8" font-size="11" text-anchor="middle">${xv.toFixed(0)}</text>`;
+      }
+
+      svg.innerHTML = `
+        ${grid}
+        <rect x="${padL}" y="${padT}" width="${W-padL-padR}" height="${H-padT-padB}" fill="none" stroke="#475569"/>
+        <polyline fill="none" stroke="#38bdf8" stroke-width="2.5" points="${pts}"/>
+        <text x="${W/2}" y="${H-8}" fill="#cbd5e1" font-size="12" text-anchor="middle">T (${lastData.temp_unit_label})</text>
+      `;
+    }
+
+    async function openBrowser() {
+      document.getElementById('dbDialog').showModal();
+      searchDb();
+    }
+
+    async function searchDb() {
+      const q = document.getElementById('dbSearch').value;
+      const r = await fetch(`/api/species?q=${encodeURIComponent(q)}`);
+      const list = await r.json();
+      let html = `<thead><tr><th>Formula</th><th>Name</th><th>M (g/mol)</th><th>Intervals</th><th></th></tr></thead><tbody>`;
+      for (const s of list) {
+        html += `<tr><td>${s.formula}</td><td style="text-align:left">${s.name}</td><td>${s.molecular_weight.toFixed(3)}</td><td>${s.intervals.length}</td><td><button onclick="importSp('${s.formula.replace(/'/g, "\\'")}')">Import</button></td></tr>`;
+      }
+      document.getElementById('dbTable').innerHTML = html + '</tbody>';
+    }
+
+    function importSp(f) {
+      document.getElementById('formulaInput').value = f;
+      document.getElementById('dbDialog').close();
+      doCalculate();
+    }
+
+    function exportCsv() {
+      if (!lastData) return;
+      const rows = lastData.is_single_substance ? lastData.substance_rows : lastData.reaction_rows;
+      if (!rows.length) return;
+      const keys = Object.keys(rows[0]);
+      const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = 'soryntel_reaction.csv';
+      a.click();
+    }
+
+    init();
+  </script>
+</body>
+</html>

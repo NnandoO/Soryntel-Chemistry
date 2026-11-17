@@ -1,0 +1,15 @@
+[package]
+name = "soryntel-desktop"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+soryntel-core = { path = "../soryntel-core" }
+soryntel-solver = { path = "../soryntel-solver" }
+soryntel-thermo = { path = "../soryntel-thermo" }
+soryntel-application = { path = "../soryntel-application" }
+soryntel-db = { path = "../soryntel-db" }
+eframe = "0.29"
+egui_plot = "0.29"
+serde = { workspace = true }
+serde_json = { workspace = true }

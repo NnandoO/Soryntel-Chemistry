@@ -1,0 +1,12 @@
+[package]
+name = "soryntel-app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+soryntel-core = { path = "../soryntel-core" }
+soryntel-solver = { path = "../soryntel-solver" }
+soryntel-thermo = { path = "../soryntel-thermo" }
+soryntel-db = { path = "../soryntel-db" }
+serde.workspace = true
+serde_json.workspace = true

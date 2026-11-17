@@ -1,0 +1,17 @@
+# Maintainer: Soryntel Chemistry Team
+pkgname=soryntel-chemistry
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Simulador Termodinámico y Metalúrgico (Reaction, Balance, Heat Loss, Equilibrium, Sim, LCA)"
+arch=('x86_64')
+license=('MIT')
+depends=('gcc-libs' 'libglvnd' 'libxkbcommon' 'wayland' 'libx11')
+options=('!strip' '!debug')
+
+package() {
+    local repo_root="${SRCDEST:-$(cd "${startdir}/../../.." && pwd)}"
+    install -Dm755 "${repo_root}/target/release/soryntel-desktop" "${pkgdir}/usr/bin/soryntel-desktop"
+    install -Dm644 "${repo_root}/packaging/linux/soryntel-chemistry.desktop" "${pkgdir}/usr/share/applications/soryntel-chemistry.desktop"
+    install -Dm644 "${repo_root}/packaging/soryntel-icon.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/soryntel-chemistry.png"
+    install -Dm644 "${repo_root}/packaging/soryntel-icon.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/soryntel-chemistry.svg"
+}

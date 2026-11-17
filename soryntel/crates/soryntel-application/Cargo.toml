@@ -1,0 +1,10 @@
+[package]
+name = "soryntel-application"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+soryntel-core = { path = "../soryntel-core" }
+soryntel-solver = { path = "../soryntel-solver" }
+soryntel-thermo = { path = "../soryntel-thermo" }

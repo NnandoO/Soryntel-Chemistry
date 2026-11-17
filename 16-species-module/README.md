@@ -1,0 +1,20 @@
+# Módulo 16: Species & Thermochemical Databases (`HSC - Databases`)
+
+## Propósito
+El módulo **Species** (`28. HSC - Databases`, `31. Thermochemical Data Sources`, `33. Data References` y `34. Species` en HSC Chemistry 6) constituye el **núcleo de datos termoquímicos** y gestor maestro de especies químicas de toda la suite. Opera simultáneamente sobre **dos bases de datos activas**:
+1. **`MainDB6.HSC` (Base Principal):** Contiene **`21 090` fórmulas únicas** distribuidas en **`36 537` registros binarios de intervalos de temperatura** (`9 353 472` bytes), compilados de **`948` fuentes bibliográficas** catalogadas en `MainDB6.REF` (barin, JANAF, NIST, SGTE, Glushko, Landolt, IUPAC, Shock-Helgeson, etc.).
+2. **`OwnDB6.HSC` (Base Propia del Usuario):** Reservada para nuevas especies creadas o editadas por el usuario (hasta `60 000` especies en HSC6). Tiene **precedencia absoluta** sobre `MainDB6.HSC` en todas las búsquedas y módulos de cálculo (`Reaction`, `Balance`, `Equilibrium`, `Eh-pH`, `Diagrams`, `Phase Stability`, `Excel Add-Ins`).
+
+En **Soryntel**, actualmente solo existe un visor mínimo de solo lectura (`show_browser_ui` en `soryntel-desktop`). Este módulo 16 especifica el **gestor completo de Especies y Bases de Datos**, añadiendo:
+- Navegación, búsqueda por **elementos (`All`/`Some`)**, por **estequiometría (`Fix Ratio`)** y por **palabras clave** (`Formula`, `Structural Formula`, `Chemical Name`, `Common Name`, `CAS Number`).
+- Editor CRUD completo sobre **OwnDB** (y visor protegido sobre **MainDB**) con soporte multi-intervalo, validación automática de peso molecular, colores `0–53`, clases de fiabilidad `1–10`, y reglas `ΔtrS = ΔtrH / Ttr`.
+- Herramientas de **ajuste e ingeniería de datos termoquímicos**: `Cp Fitting` (regresión lineal de tablas $C_p(T)$ a coeficientes Kelley $A, B, C, D$), `Convert Cp Functions` (conversión desde Shomate, NASA-7/9, DIPPR u otras ecuaciones) y `Convert G(T) / ΔG(T) -> H, S, Cp` con transformación automática `Delta to Normal`.
+- Utilidades de mantenimiento, migración de versiones heredadas (`HSC 2.0/3.0/4.0/5.0 -> HSC 6.0` / JSON / CSV), fusión con resolución de duplicados (`HSC1 -> HSC2`) y extrapolación de iones acuosos (**Criss-Cobble** y escalas H⁺ / Tercera Ley / entropía de mezcla).
+
+## Documentos de la Especificación REA
+- [REA_ANALYSIS.md](./REA_ANALYSIS.md) — Ingeniería inversa del formato binario de `256` bytes de `Maindb6.HSC`, índices `*.CAT`, diccionario `MainDB6.REF`, reglas de nomenclatura química y brecha respecto al estado actual de `soryntel-db` / `soryntel-desktop`.
+- [MATHEMATICAL_SPECIFICATION.md](./MATHEMATICAL_SPECIFICATION.md) — Ecuaciones de estado termoquímico por intervalos $C_p(T), H(T), S(T), G(T)$, regresión por mínimos cuadrados de Kelley, conversión analítica $G(T)/\Delta G(T) \to H,S,C_p$, algoritmo Criss-Cobble para iones acuosos y escalas `ao`/`ai`.
+- [FUNCTIONAL_SPECIFICATION.md](./FUNCTIONAL_SPECIFICATION.md) — Casos de uso completos (`CU-01` a `CU-10`): búsqueda por elementos, búsqueda estequiométrica, listado/inspección multi-criterio, editor CRUD en `OwnDB`, ajuste $C_p$, conversión de funciones $C_p$ y $G(T)$, gestión de bases activas y fusión/exportación.
+- [UI_SPECIFICATION.md](./UI_SPECIFICATION.md) — Especificación visual fiel a las `18` figuras de `Help/28 HSC - Databases.txt` (`Database Menu`, `Search Elements`, `Find Stoichiometry`, `List Names/Formulae`, `Find Key Word`, `Database Editor`, `Fit Cp Data`, `Convert Cp Functions`, `Convert G(T)`, `Database Manipulation / Merge / Convert` y `Select Active Databases`).
+- [VALIDATION_PLAN.md](./VALIDATION_PLAN.md) — Casos de prueba (`S1–S8`) verificados directamente contra registros reales extraídos de `Maindb6.HSC` (`Cu2S`, `NaF`, `*2FeO*SiO2`, `FeS2`, `Mg(+2a)`, `SO4(-2a)`, `MgSO4(ia)`) y ejemplos del manual oficial (`28.6`, `28.11–28.14`).
+- [SCIENTIFIC_REFERENCES.md](./SCIENTIFIC_REFERENCES.md) — Fuentes primarias documentadas en `Help/28 HSC - Databases.txt`, `Help/31 Thermochemical Data Sources.txt`, `Databases/MainDB6.REF` y estándares internacionales (IUPAC, NIST-JANAF, SGTE, Criss-Cobble).

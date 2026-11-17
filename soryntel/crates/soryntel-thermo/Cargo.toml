@@ -1,0 +1,13 @@
+[package]
+name = "soryntel-thermo"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+soryntel-core = { path = "../soryntel-core" }
+soryntel-solver = { path = "../soryntel-solver" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+approx.workspace = true
