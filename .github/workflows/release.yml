@@ -22,6 +22,10 @@ env:
 jobs:
   version:
     name: Versión
+    # Solo el fork publica versiones (y la web lee sus descargas de ahí);
+    # en NnandoO/Soryntel-Chemistry el flujo se omite para no duplicar trabajo.
+    # El resto de trabajos depende de este y se omite con él.
+    if: github.repository == 'jhulio435m/Soryntel-Chemistry'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}

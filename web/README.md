@@ -22,6 +22,8 @@ npm run build   # genera out/, listo para cualquier hosting estático
 
 La etiqueta debe coincidir con la versión de `Cargo.toml`; si no, el flujo se detiene.
 
+Las versiones solo se publican desde `jhulio435m/Soryntel-Chemistry`: en `NnandoO/Soryntel-Chemistry` el flujo de publicación se omite aunque se empuje una etiqueta, y Cloudflare Pages solo despliega desde el fork. NnandoO ejecuta únicamente «Verificación».
+
 ## Despliegue en Cloudflare Pages
 
 El proyecto `soryntel-chemistry` de Cloudflare Pages está conectado a `jhulio435m/Soryntel-Chemistry` y publica `chemistry.soryntel.com`:
