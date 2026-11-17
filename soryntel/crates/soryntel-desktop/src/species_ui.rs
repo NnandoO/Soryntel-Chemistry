@@ -595,7 +595,7 @@ impl SpeciesModuleState {
     fn show_menu_bar(&mut self, ctx: &egui::Context, db: &mut ThermoDatabase) {
         egui::TopBottomPanel::top("species_top_menu").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
+                ui.menu_button(crate::i18n::text("common.001"), |ui| {
                     if ui.button("Open OwnDB (.HSC)...").clicked() {
                         self.active_tab = SpeciesViewTab::DbTools;
                         ui.close_menu();
@@ -610,14 +610,14 @@ impl SpeciesModuleState {
                     }
                     if ui.button("Export Resolved View -> CSV").clicked() {
                         let csv = db.export_csv(self.source_filter);
-                        match std::fs::write(&self.csv_io_path, csv) {
+                        match crate::storage::write_atomic(&self.csv_io_path, csv) {
                             Ok(_) => self.set_status(format!("Exported CSV -> {}", self.csv_io_path), false),
                             Err(e) => self.set_status(format!("CSV write failed: {e}"), true),
                         }
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Edit", |ui| {
+                ui.menu_button(crate::i18n::text("common.006"), |ui| {
                     if ui.button("New Blank Species in OwnDB Editor").clicked() {
                         self.editor = EditableSpeciesForm::default();
                         self.active_tab = SpeciesViewTab::Editor;
@@ -640,14 +640,14 @@ impl SpeciesModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("View", |ui| {
+                ui.menu_button(crate::i18n::text("common.028"), |ui| {
                     ui.radio_value(&mut self.use_calories, true, "Units: Calories (kcal, cal)");
                     ui.radio_value(&mut self.use_calories, false, "Units: Joules (kJ, J)");
                     ui.separator();
                     ui.radio_value(&mut self.use_kelvin, true, "Temperature: K");
                     ui.radio_value(&mut self.use_kelvin, false, "Temperature: °C");
                 });
-                ui.menu_button("Tools", |ui| {
+                ui.menu_button(crate::i18n::text("common.018"), |ui| {
                     for (tab, lbl) in [
                         (SpeciesViewTab::FitCp, "Fit Cp Data (Kelley OLS)"),
                         (SpeciesViewTab::ConvertCp, "Convert Cp Functions"),
@@ -693,7 +693,7 @@ impl SpeciesModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Help", |ui| {
+                ui.menu_button(crate::i18n::text("common.003"), |ui| {
                     if ui.button("Module 16 Guide & Validation Reference").clicked() {
                         self.show_help_dialog = true;
                         ui.close_menu();
@@ -833,7 +833,7 @@ impl SpeciesModuleState {
                 }
                 BrowserQueryMode::Stoichiometry => {
                     cols[0].horizontal(|ui| {
-                        ui.label("Formula:");
+                        ui.label(crate::i18n::text("common.079"));
                         if ui.text_edit_singleline(&mut self.stoich_text).changed() {
                             changed = true;
                         }
@@ -986,7 +986,7 @@ impl SpeciesModuleState {
                             .clicked()
                         {
                             self.import_to_reaction_formula = Some(sel.formula.clone());
-                            let _ = std::fs::write(
+                            let _ = crate::storage::write_atomic(
                                 crate::ui_common::temp_file_path("soryntel_import_formula.txt"),
                                 &sel.formula,
                             );
@@ -1028,13 +1028,13 @@ impl SpeciesModuleState {
                 egui::Grid::new("browser_19_fields_grid")
                     .spacing([14.0, 4.0])
                     .show(&mut cols[2], |ui| {
-                        ui.label("Structural Formula:");
+                        ui.label(crate::i18n::text("common.080"));
                         ui.monospace(&sel.metadata.structural_formula);
                         ui.label("Molecular Weight:");
                         ui.monospace(format!("{:.4} g/mol", sel.species.molecular_weight));
                         ui.end_row();
 
-                        ui.label("Common Name:");
+                        ui.label(crate::i18n::text("common.081"));
                         ui.label(&sel.metadata.common_name);
                         ui.label("CAS Number:");
                         ui.monospace(&sel.metadata.cas_number);
@@ -1221,7 +1221,7 @@ impl SpeciesModuleState {
                 ui.text_edit_singleline(&mut self.editor.formula);
                 ui.label("Structural Formula (32 ch):");
                 ui.text_edit_singleline(&mut self.editor.structural_formula);
-                ui.label("Molecular Weight (g/mol):");
+                ui.label(crate::i18n::text("common.082"));
                 ui.text_edit_singleline(&mut self.editor.mw_str);
                 ui.end_row();
 
@@ -1990,9 +1990,9 @@ impl SpeciesModuleState {
                 ui.label("CSV Interchange:");
                 ui.add(egui::TextEdit::singleline(&mut self.csv_io_path).desired_width(300.0));
                 ui.horizontal(|ui| {
-                    if ui.button("Export CSV").clicked() {
+                    if ui.button(crate::i18n::text("common.031")).clicked() {
                         let csv = db.export_csv(self.source_filter);
-                        match std::fs::write(&self.csv_io_path, csv) {
+                        match crate::storage::write_atomic(&self.csv_io_path, csv) {
                             Ok(_) => self.set_status(format!("CSV saved -> {}", self.csv_io_path), false),
                             Err(e) => self.set_status(format!("{e}"), true),
                         }

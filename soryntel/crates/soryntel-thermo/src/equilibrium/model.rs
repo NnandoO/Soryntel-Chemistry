@@ -76,9 +76,9 @@ impl CalculationMode {
     pub fn label(self) -> &'static str {
         match self {
             Self::Normal => "Normal",
-            Self::InfinitePhase => "Infinite Phase",
-            Self::FixedActivity => "Fixed Activity",
-            Self::CellMode => "Cell Mode",
+            Self::InfinitePhase => "Fase infinita",
+            Self::FixedActivity => "Actividad fija",
+            Self::CellMode => "Modo celda",
         }
     }
 }
@@ -97,12 +97,12 @@ pub enum StepMode {
 impl StepMode {
     pub fn label(self) -> &'static str {
         match self {
-            Self::AddAmount => "Add Amount",
-            Self::FinalAmount => "Final Amount",
-            Self::RemovePercent => "Remove % (Add Amount)",
-            Self::RemovePercentFinalAmount => "Remove % (Final Amount)",
-            Self::ReactorStandard => "Reactor (Standard)",
-            Self::ReactorSheetsView => "Reactor (Sheets View)",
+            Self::AddAmount => "Añadir cantidad",
+            Self::FinalAmount => "Cantidad final",
+            Self::RemovePercent => "Retirar % (añadir cantidad)",
+            Self::RemovePercentFinalAmount => "Retirar % (cantidad final)",
+            Self::ReactorStandard => "Reactor (estándar)",
+            Self::ReactorSheetsView => "Reactor (vista de hojas)",
         }
     }
 }
@@ -121,8 +121,8 @@ impl CellPhaseType {
     pub fn label(self) -> &'static str {
         match self {
             Self::Gas => "Gas",
-            Self::Liquid => "Liquid",
-            Self::Solid => "Solid",
+            Self::Liquid => "Líquido",
+            Self::Solid => "Sólido",
             Self::Metal => "Metal",
         }
     }
@@ -141,11 +141,11 @@ pub enum SolutionModel {
 impl SolutionModel {
     pub fn label(self) -> &'static str {
         match self {
-            Self::IdealMixture => "Mixture",
-            Self::PureSubstance => "Pure",
+            Self::IdealMixture => "Mezcla",
+            Self::PureSubstance => "Sustancia pura",
             Self::Aqua => "Aqua",
-            Self::GaAsMixture => "Ga-As Mixture",
-            Self::AlZnMixture => "Al-Zn Mixture",
+            Self::GaAsMixture => "Mezcla Ga-As",
+            Self::AlZnMixture => "Mezcla Al-Zn",
         }
     }
 }
@@ -165,13 +165,13 @@ pub enum SweepVariable {
 impl SweepVariable {
     pub fn label(self) -> &'static str {
         match self {
-            Self::TemperatureC => "Temperature (°C)",
-            Self::PressureBar => "Pressure (bar)",
-            Self::XAmount => "X-amount (kmol)",
-            Self::ZAmount => "Z-amount (kmol)",
-            Self::EnthalpyMj => "Enthalpy (MJ)",
-            Self::VolumeM3 => "Volume (m3)",
-            Self::DischargeLevelKmolE => "Discharge level (kmol e-)",
+            Self::TemperatureC => "Temperatura (°C)",
+            Self::PressureBar => "Presión (bar)",
+            Self::XAmount => "Cantidad X (kmol)",
+            Self::ZAmount => "Cantidad Z (kmol)",
+            Self::EnthalpyMj => "Entalpía (MJ)",
+            Self::VolumeM3 => "Volumen (m³)",
+            Self::DischargeLevelKmolE => "Nivel de descarga (kmol e-)",
         }
     }
 }

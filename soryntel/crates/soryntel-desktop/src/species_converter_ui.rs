@@ -319,7 +319,7 @@ impl SpeciesConverterModuleState {
             let _ = std::fs::create_dir_all(parent);
         }
         match serde_json::to_string_pretty(&self.sheets) {
-            Ok(json) => match std::fs::write(path, json) {
+            Ok(json) => match crate::storage::write_atomic(path, json) {
                 Ok(_) => self.status_msg = Some(format!("Saved workbook to {path}")),
                 Err(e) => self.status_msg = Some(format!("Save error: {e}")),
             },
@@ -379,7 +379,7 @@ impl SpeciesConverterModuleState {
         // Element Balance Modal Window (Fig. 4)
         if self.show_element_balance {
             let mut open = self.show_element_balance;
-            egui::Window::new("Element Balance")
+            egui::Window::new(crate::i18n::text("common.086"))
                 .open(&mut open)
                 .resizable(true)
                 .default_size([560.0, 260.0])
@@ -419,15 +419,15 @@ impl SpeciesConverterModuleState {
                     egui::Frame::group(ui.style()).show(ui, |ui| {
                         ui.vertical(|ui| {
                             ui.horizontal(|ui| {
-                                if ui.button("New").clicked() {
+                                if ui.button(crate::i18n::text("common.033")).clicked() {
                                     self.sheets = vec![ConverterSheet::new_blank("Sheet1")];
                                     self.active_sheet = 0;
                                     self.solve_active(catalog);
                                 }
-                                if ui.button("Open").clicked() {
+                                if ui.button(crate::i18n::text("common.087")).clicked() {
                                     self.open_workbook();
                                 }
-                                if ui.button("Save").clicked() {
+                                if ui.button(crate::i18n::text("common.034")).clicked() {
                                     self.save_workbook();
                                 }
                             });
@@ -484,12 +484,12 @@ impl SpeciesConverterModuleState {
                                     self.initialize_active();
                                 }
                                 if ui
-                                    .button(egui::RichText::new("Solve").strong())
+                                    .button(egui::RichText::new(crate::i18n::text("common.088")).strong())
                                     .clicked()
                                 {
                                     self.solve_active(catalog);
                                 }
-                                if ui.button("Element Balance").clicked() {
+                                if ui.button(crate::i18n::text("common.086")).clicked() {
                                     self.show_element_balance = !self.show_element_balance;
                                 }
                                 if ui.selectable_label(self.show_charts, "Charts").clicked() {
@@ -670,9 +670,9 @@ impl SpeciesConverterModuleState {
 
         // Top metadata bar (Rows 1–3 matching Fig. 3)
         ui.horizontal(|ui| {
-            ui.label("Name:");
+            ui.label(crate::i18n::text("common.030"));
             ui.add(egui::TextEdit::singleline(&mut sheet.doc_name).desired_width(150.0));
-            ui.label("Date:");
+            ui.label(crate::i18n::text("common.089"));
             ui.add(egui::TextEdit::singleline(&mut sheet.doc_date).desired_width(90.0));
             ui.label("Author:");
             ui.add(egui::TextEdit::singleline(&mut sheet.doc_author).desired_width(90.0));
@@ -909,7 +909,7 @@ impl SpeciesConverterModuleState {
                     weight_str: "1.000".into(),
                 });
             }
-            if ui.button("Solve").clicked() {
+            if ui.button(crate::i18n::text("common.088")).clicked() {
                 self.solve_active(catalog);
             }
         });

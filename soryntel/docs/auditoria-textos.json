@@ -1,0 +1,6515 @@
+{
+  "alcance": "Inventario de literales de presentación que siguen fuera del catálogo.\n\nEs un inventario para revisión humana: incluye español y notación técnica, y no\nabarca todas las expresiones dinámicas ni demuestra cobertura total del idioma.\n",
+  "literales": [
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 443,
+      "texto": "HSC Presets"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 444,
+      "texto": "Preset: Na–S–H2O (40 °C, Fig. 3/4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 448,
+      "texto": "Preset: Millero Seawater (S=35, Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 452,
+      "texto": "Preset: NaCl–HCl–H2O (25 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 457,
+      "texto": "New Blank Water Phase"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 467,
+      "texto": "Save Case (*.aqu8.json)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 471,
+      "texto": "Load Last Saved Case"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 476,
+      "texto": "Plot Ionic AC vs T (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 496,
+      "texto": "Energy / Entropy / Cp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 666,
+      "texto": "Find / Replace..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 671,
+      "texto": "+ Add Species Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 675,
+      "texto": "Delete Selected Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 684,
+      "texto": "Database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 693,
+      "texto": "Main Pitzer Database..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 697,
+      "texto": "Parameter Sets (Active / Missing)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 701,
+      "texto": "Own Pitzer Database Editor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 707,
+      "texto": "Units..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 712,
+      "texto": "Density Calculator..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 716,
+      "texto": "Plot Ionic AC vs T..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 729,
+      "texto": "Aqua Module Help..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 733,
+      "texto": "About Soryntel Aqua..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 759,
+      "texto": "Chosen method:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 813,
+      "texto": "Load HSC presets, new sheet, save/load case, or open Plot"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 838,
+      "texto": "Cut selected cell value"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 844,
+      "texto": "Paste cell or row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 852,
+      "texto": "Copy selected cell value"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 858,
+      "texto": "Find and replace species or values"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 870,
+      "texto": "Calculate Pitzer / Harvie / Davies properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 916,
+      "texto": "Select temperature, energy & pressure units"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 942,
+      "texto": "Give Own Pitzer Database precedence over Main Database (Fig. 8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 959,
+      "texto": "Open Main Pitzer Database parameter catalog (Figs. 5 & 9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 971,
+      "texto": "Inspect Active & Missing Pitzer parameters for active solution (Fig. 6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 983,
+      "texto": "Open editable Own Pitzer Database (Fig. 8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 999,
+      "texto": "Laliberté–Cooper (2004) 59-salt aqueous solution density calculator (Fig. 7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1011,
+      "texto": "Plot Ionic Activity Coefficient vs Temperature (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1030,
+      "texto": "Switch back to classic Aqua tools view"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1239,
+      "texto": "Soryntel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1247,
+      "texto": "● Inputs modified — click Calculate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1609,
+      "texto": "Main Pitzer Database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1618,
+      "texto": "View:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1630,
+      "texto": "■ MainDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1632,
+      "texto": "■ OwnDB Only"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1637,
+      "texto": "■ OwnDB Overwrites MainDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1642,
+      "texto": "■ Inactive / Excluded"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1755,
+      "texto": "Pitzer interaction parameters used from the database based on specified solution and calculation method."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1767,
+      "texto": "T = temp. dependent   |   C = constant at 25 °C   |   * = unavailable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1922,
+      "texto": "OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1929,
+      "texto": "Table"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1930,
+      "texto": "Open (load temp JSON)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1954,
+      "texto": "Save As Timestamped..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 1964,
+      "texto": "Reset to HSC Fig. 8 Sample"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2241,
+      "texto": "Density Calculator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2248,
+      "texto": "Add ➡"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2256,
+      "texto": "⬅ Remove"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2277,
+      "texto": "Density of Aqueous Solution"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2283,
+      "texto": "Laliberté & Cooper (2004) · 59 Electrolytes (Aqueous Solution Density.xls)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2292,
+      "texto": "H2O density"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2299,
+      "texto": "Solution density"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2486,
+      "texto": "Ionic AC vs Temperature (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2493,
+      "texto": "Activity Coefficients (Molal Scale) vs T (0..40 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2498,
+      "texto": "Load Millero Seawater (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2541,
+      "texto": "Ionic AC (Molal Sc.)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2555,
+      "texto": "Find / Replace"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2561,
+      "texto": "Find what:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2564,
+      "texto": "Replace with:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2569,
+      "texto": "Find Next"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2578,
+      "texto": "Replace All"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2596,
+      "texto": "Aqua Help"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2600,
+      "texto": "HSC Aqua — Aqueous Solutions"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2602,
+      "texto": "1. Enter aqueous species formulas in column A (e.g. H2O, Na(+a), SO4(-2a)), temperature in column B, and kmol amounts in column C."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2603,
+      "texto": "2. Click Calculate (blue play button) to evaluate Pitzer, Harvie–Møller–Weare, or Davies activity coefficients, osmotic coefficient, vapour pressure, pH, freezing/boiling points, and estimated H/Cp."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2604,
+      "texto": "3. Toggle Use OwnDB to give your editable OwnDB precedence over the built-in Main Pitzer Database."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2605,
+      "texto": "4. Open Density Calculator for 59-electrolyte solution density using Laliberté & Cooper (2004)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2612,
+      "texto": "About Soryntel Aqua"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2617,
+      "texto": "Soryntel Chemistry® 10 — Aqua"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2618,
+      "texto": "Clean-room Rust implementation of Module 17 (Aqueous Electrolyte Solutions)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2619,
+      "texto": "Models: Pitzer–Harvie–Møller–Weare, Davies, Bradley–Pitzer Aφ, Appendix A p₀(T), Laliberté–Cooper (2004)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2641,
+      "texto": "Authors: Pertti Koukkari (98), Risto Pajarre (98), Justin Salminen (98, 09, 10), Hannu Sippola (98), Matias Hultgren (09, 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2647,
+      "texto": "Temperature dependence:  a + b/T + c·ln(T) + d·T + e·T² + f·T⁻²"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2655,
+      "texto": "Pitzer–Harvie Activity Coefficient Equation"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2657,
+      "texto": "ln γ_+,M = z_+² F + Σ_a m_a (2 B_Ma + Z C_Ma) + Σ_c m_c (2 Φ_Mc + Σ_a m_a ψ_Mca) + ..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/aqua_ui.rs",
+      "linea": 2662,
+      "texto": "ln γ_-,X = z_-² F + Σ_c m_c (2 B_Xc + Z C_Xc) + Σ_a m_a (2 Φ_Xa + Σ_c m_c ψ_Xca) + ..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 358,
+      "texto": "Built-in HSC Examples (Ch. 11.11):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 360,
+      "texto": "🔥 CH4_Cooling.bal8 (CH4 Burner + Cooling Water Diagram)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 366,
+      "texto": "📘 CUCONV1.bal8 (Copper Converter, Figs. 1–5)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 370,
+      "texto": "🔥 BUTANE.bal8 (Adiabatic Flame, Fig. 2)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 374,
+      "texto": "🏭 CUSMELT.bal8 (Copper Smelting)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 378,
+      "texto": "💧 H2O.bal8 (Steam Evaporator)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 382,
+      "texto": "⛓ FSF_process.bal8 (5-Area Flash Smelting, Figs. 10–14)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 394,
+      "texto": "📋 Copy Stream (Ch. 11.9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 399,
+      "texto": "📌 Paste Stream (Linked ='OUTx'!Dy)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 410,
+      "texto": "📊 BALANCE Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 414,
+      "texto": "📥 Active IN Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 418,
+      "texto": "📤 Active OUT Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 422,
+      "texto": "🎯 Target Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 431,
+      "texto": "➕ Balance Area (INx + OUTx)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 443,
+      "texto": "🌊 Stream (Substance Group)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 447,
+      "texto": "🔬 Row (Species from Database)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 452,
+      "texto": "🔥 Heat Flow / Air-Cooled Loss (Eq. 1)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 456,
+      "texto": "📄 Sheet (Custom Excel Worksheet)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 549,
+      "texto": "🔥 Temperature Balance (Adiabatic)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 553,
+      "texto": "📊 Stream Compositions (In-% / Out-%)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 575,
+      "texto": "🔥 CH4_Cooling"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 576,
+      "texto": "Quemador CH4(g) + Agua de Enfriamiento (Diagram 1..12 Nm³)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 581,
+      "texto": "⛓ FSF_process"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 587,
+      "texto": "🏭 CUSMELT"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 590,
+      "texto": "🔥 BUTANE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 593,
+      "texto": "📘 CUCONV1"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 605,
+      "texto": "Abrir archivo .bal8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 612,
+      "texto": "💾 Save .bal8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 613,
+      "texto": "Guardar workbook en .bal8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 619,
+      "texto": "📊 Excel .xlsx"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 620,
+      "texto": "Exportar todas las hojas a MS Excel (.xlsx)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 627,
+      "texto": "🔄 ReCalc"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 628,
+      "texto": "Recalcular todas las áreas y referencias circulares"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 634,
+      "texto": "🔥 Temp. Balance"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 635,
+      "texto": "Calcular temperatura adiabática de productos (ΔH = 0)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 641,
+      "texto": "🎯 Iterate (F8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 642,
+      "texto": "Iterar filas activas de Target (F8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 649,
+      "texto": "Abrir configuración de Diagrama paramétrico"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 655,
+      "texto": "🔥 CH4_Cooling (Diagram)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 656,
+      "texto": "Cargar ejemplo CH4 Burner + Cooling Water y abrir gráfica Diagram (1..12 Nm³)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 664,
+      "texto": "Copiar corriente seleccionada"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 671,
+      "texto": "Pegar corriente con fórmulas vinculadas ='OUTx'!Dy"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 678,
+      "texto": "Proteger celdas: solo permitir edición en celdas de entrada rojas"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 685,
+      "texto": "Mostrar/ocultar panel lateral derecho de herramientas"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 728,
+      "texto": "Soryntel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1210,
+      "texto": "Ir a BALANCE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1213,
+      "texto": "Área anterior"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1219,
+      "texto": "Área siguiente"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1225,
+      "texto": "Ir a Target"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1527,
+      "texto": "Editar presión (bar) de todo el grupo de corriente"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1547,
+      "texto": "Editar total kmol del grupo (escala especies proporcionalmente)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1565,
+      "texto": "Editar total kg del grupo (escala especies proporcionalmente)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1583,
+      "texto": "Editar total Nm³ del grupo (escala especies proporcionalmente)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 1674,
+      "texto": "Presión de la especie (bar)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2123,
+      "texto": "Usar la celda activa de la barra de fórmulas como Variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2132,
+      "texto": "Usar BALANCE1!H4 o la celda activa como Target"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2326,
+      "texto": "🎯 Target Dialog — Target Calculation Sheet (Goal seek)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2346,
+      "texto": "MIN:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2348,
+      "texto": "MAX:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2387,
+      "texto": "X Min:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2389,
+      "texto": "X Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2391,
+      "texto": "Y Min:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2393,
+      "texto": "Y Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2399,
+      "texto": "📌 Set X cell (from Formula Bar)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2465,
+      "texto": "Min"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2470,
+      "texto": "Max"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2483,
+      "texto": "Recalcular barrido con el nuevo rango X"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2517,
+      "texto": "Aplicar límites de los ejes X e Y"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2542,
+      "texto": "Exportar datos del diagrama"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2549,
+      "texto": "Copiar serie al portapapeles"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2562,
+      "texto": "Reescalar ejes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2686,
+      "texto": "🔥 Heat Loss Estimator (Ch. 11.1 Eq. 1 — Air-Cooled Reactor)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2691,
+      "texto": "H_loss [kcal/h] = (6.8 + 0.046 * T2) * (T2 - T1) * A"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2785,
+      "texto": "Buscar especie:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2787,
+      "texto": "kmol:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2843,
+      "texto": "❓ Help — Heat and Material Balance Module (Chapter 11)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2848,
+      "texto": "11. Heat and Material Balance Module"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2849,
+      "texto": "• Balance Areas (11.1, 11.9): Each Balance Area consists of an INx and OUTx sheet pair collected automatically into the BALANCE summary sheet."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2850,
+      "texto": "• Streams & Amounts (11.3): Edit amounts in kmol, kg, or Nm³ either on individual species rows or directly on the Stream header row (which scales all species in the group proportionally)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2851,
+      "texto": "• Formulae & Defined Element Names (11.4): Use Excel-type cell references (e.g. =0.938*IN1!D7 or ='OUT4'!D12) and auto-defined element names (InCu, OutFe, InCa2, etc.)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2852,
+      "texto": "• Target Dialog & F8 (11.7): Specify variable cells and target cells (e.g. BALANCE1!H4 = 0) and press F8 or Iterate Selected Rows."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/balance_ui.rs",
+      "linea": 2853,
+      "texto": "• Copy / Paste Stream (11.9): Copy an OUTx stream and Paste Stream into INy to create linked recycle/return streams."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 258,
+      "texto": "Outotec"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 330,
+      "texto": "📄\nFile ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 331,
+      "texto": "New / Clear Workspace"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 338,
+      "texto": "Enter / Edit SMILES..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 343,
+      "texto": "Load Showcase Preset"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 367,
+      "texto": "Export Report (CSV)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 378,
+      "texto": "⊕\nAdd structural\nblock ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 409,
+      "texto": "↶\nUndo last"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 427,
+      "texto": "➜\nCalculate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 498,
+      "texto": "💾\nSave image\nas..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 501,
+      "texto": "📋\nCopy to\nclipboard"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 506,
+      "texto": "▦\nModel position\nand background ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 507,
+      "texto": "Reset Camera Position"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 514,
+      "texto": "Top View (XY Plane)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 519,
+      "texto": "Space-Filling Preset (3.60x Sky Blue · Fig. 4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 525,
+      "texto": "Ball-and-Stick Preset (1.00x Dark Radial)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 532,
+      "texto": "Background:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 551,
+      "texto": "❓\nHelp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 554,
+      "texto": "ℹ\nAbout this\nmodule"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 568,
+      "texto": "Please select"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 640,
+      "texto": "Selected group"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 677,
+      "texto": "Molecular formula:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 695,
+      "texto": "Molecular weight"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 713,
+      "texto": "Quick SMILES:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 722,
+      "texto": "Cc1ccc(N)cc1"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 861,
+      "texto": "Formula"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 863,
+      "texto": "Common name"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 871,
+      "texto": "Chemical name"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 964,
+      "texto": "σ_tot:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 966,
+      "texto": "n_opt:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 968,
+      "texto": "Gauche:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 970,
+      "texto": "Cis:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 972,
+      "texto": "Ring strain (kcal/mol):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1019,
+      "texto": "Save to own database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1048,
+      "texto": "Copy to clipboard"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1082,
+      "texto": "Enter / Edit SMILES Structure"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1086,
+      "texto": "Enter a SMILES string (e.g. c1ccccc1, Cc1ccc(N)cc1, CCO, CC(=O)O, C1CCCCC1):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1089,
+      "texto": "Build Molecule"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1115,
+      "texto": "HSC-BEN Help — Benson GAV Estimation"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1118,
+      "texto": "1. Load a skeleton from 'Add structural block' (e.g. Aromatic group -> Benzene) or File -> SMILES."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1119,
+      "texto": "2. Select an atom in the right 'Please select' palette (C, N, O, S, F, Cl, Br, I, B, P, Si, H)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1120,
+      "texto": "3. Click any white Hydrogen atom in the 3D viewport to replace it with that functional group (e.g. C -> -CH3, N -> -NH2)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1121,
+      "texto": "4. Left-drag to rotate the 3D model, right-drag to pan, mouse wheel to zoom."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1122,
+      "texto": "5. Adjust Atom size (1.00 = Ball-and-stick, 3.60 = Space-filling) and Camera (Perspective / Orthographic)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1123,
+      "texto": "6. Click 'Calculate' to view Gas / Liquid / Solid estimates, DB comparison, and save to database."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1132,
+      "texto": "About HSC-BEN (Benson Estimation)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1136,
+      "texto": "Estimates standard gas-phase ΔfH°, S°, and Cp(T) via Benson (1958, 1969, 1976) second-order group contributions, Kelley 4-parameter regression, and Joback/Trouton condensed phase transitions."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/benson_ui.rs",
+      "linea": 1137,
+      "texto": "Integrated with Soryntel Hexagonal Architecture & Maindb6 SpeciesCatalogPort."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 593,
+      "texto": "Open (.dia8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 598,
+      "texto": "Save (.dia8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 604,
+      "texto": "Example: Ellingham Oxides (Fig. 2–4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 625,
+      "texto": "Example: H Heat Content (Fig. 1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 645,
+      "texto": "Example: Exergy (total) Curves"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 663,
+      "texto": "Export Chart SVG..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 667,
+      "texto": "Export Y-data CSV..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 676,
+      "texto": "Fit Y-Axis Now"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 683,
+      "texto": "H, S, C and G Diagrams Guide (Ch. 19)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 735,
+      "texto": "+ Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 766,
+      "texto": "Diagram Type"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 784,
+      "texto": "X-axis Range (Temperature)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 791,
+      "texto": "MIN"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 792,
+      "texto": "MAX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 793,
+      "texto": "STEP"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 841,
+      "texto": "Y-axis Range"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 845,
+      "texto": "MIN"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 846,
+      "texto": "MAX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 893,
+      "texto": "Balance Element Amount"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1049,
+      "texto": "Click to cycle: Auto -> 1:OwnDB -> 2:MainDB (§19 step 4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1075,
+      "texto": "Click Diagram to compute Y-data."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1087,
+      "texto": "No visible species series."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1142,
+      "texto": "Click Diagram to plot."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1387,
+      "texto": "Browse Database — Add Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1402,
+      "texto": "+ Add"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1462,
+      "texto": "H, S, C and G Diagrams Guide (HSC Ch. 19)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1466,
+      "texto": "• Supports all 9 diagram types: H Total, H Heat Content, S, Cp, G, Delta H, Delta S, Delta G (Ellingham), and Ex Exergy (total)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1467,
+      "texto": "• For Ellingham diagrams, pick the shared element (e.g. O = 2.00 for O2(g), S = 2.00 for S2(g)) and click 'Balance Element Amount'."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1468,
+      "texto": "• Solid curves denote species inside their database interval [TMin, TMax]; dashed segments denote extrapolation."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1469,
+      "texto": "• Use the DB column in X-data to select Auto (Own>Main), 1:OwnDB, or 2:MainDB."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/diagrams_ui.rs",
+      "linea": 1470,
+      "texto": "• Hover over Ellingham charts to inspect live equilibrium log10 p(O2), CO/CO2, and H2/H2O scales (Ch. 19 Appendix 1)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 892,
+      "texto": "New / Default (Cu-S-H2O)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 896,
+      "texto": "Open (.eph8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 901,
+      "texto": "Save (.eph8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 907,
+      "texto": "Example: CUS25.eph8 (Cu-S-H2O, 25 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 911,
+      "texto": "Example: Cu-S-H2O + Ions Overlay (25 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 915,
+      "texto": "Example: Fe-H2O (m=1e-6, 25 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 920,
+      "texto": "Export Active Chart SVG..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 924,
+      "texto": "Export Active Table CSV..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 930,
+      "texto": "H2O Stability Lines..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 934,
+      "texto": "Labels Font & Bold..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 938,
+      "texto": "Reset Label Positions & Text"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 950,
+      "texto": "Eh-pH Diagrams Guide (Ch. 17)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 973,
+      "texto": "Add new Dataset"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 983,
+      "texto": "Draw Combiner"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 993,
+      "texto": "Line Text:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1008,
+      "texto": "Print Preview..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1052,
+      "texto": "Select Elements"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1158,
+      "texto": "Search Mode"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1233,
+      "texto": "Dielectric Constant"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1246,
+      "texto": "kcal/mol"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1277,
+      "texto": "Ion Strength"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1285,
+      "texto": "mol/kg H2O"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1287,
+      "texto": "Auto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1288,
+      "texto": "Estimate ionic strength from element molalities (§17.3.4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1302,
+      "texto": "Correction Factor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1319,
+      "texto": "Diagram Axes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1324,
+      "texto": "Min Eh"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1332,
+      "texto": "Max Eh"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1340,
+      "texto": "Min pH"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1348,
+      "texto": "Max pH"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1360,
+      "texto": "Potential Scale"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1579,
+      "texto": "Select elements and click Draw to generate an Eh-pH diagram."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1588,
+      "texto": "No computed diagram yet. Click Draw first."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1936,
+      "texto": "Recalculate Diagram with Table ΔG"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 1954,
+      "texto": "Reset ΔG Overrides"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2144,
+      "texto": "Sync"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2145,
+      "texto": "Sync elements & main element from EpH view"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2168,
+      "texto": "Main Element:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2315,
+      "texto": "Combiner Chart"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2458,
+      "texto": "Print Settings/Preview"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2464,
+      "texto": "Header:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2468,
+      "texto": "Footer:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2472,
+      "texto": "Orientation:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2478,
+      "texto": "Export SVG..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2481,
+      "texto": "Export CSV..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2580,
+      "texto": "Text (leave empty to hide label):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2602,
+      "texto": "Reset Label"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2629,
+      "texto": "Format H2O Stability Lines"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2634,
+      "texto": "Line Style:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2666,
+      "texto": "Default Label Font"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2675,
+      "texto": "Apply to All Pages"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2723,
+      "texto": "Eh-pH Diagrams Help (HSC Ch. 17)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2727,
+      "texto": "• Select Elements + Main Element, adjust Molality & Pressure, and click Draw."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2728,
+      "texto": "• Double-click a species in 'Select Species' to inspect ΔG°(T), intervals & (ia) Criss-Cobble info."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2729,
+      "texto": "• Enable 'Show predominance areas of ions' to draw the aqueous-species-only diagram in blue dotted lines on top of the solid+aqueous diagram."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2730,
+      "texto": "• Drag labels directly on the chart, double-click a label to rename/hide/style it, or click an axis to open Parameters and Axes."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2731,
+      "texto": "• In Table (Basic Settings), edit ΔG° kcal/mol values and click 'Recalculate Diagram with Table ΔG' to test sensitivity."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/ehph_ui.rs",
+      "linea": 2732,
+      "texto": "• Use Combiner to superimpose diagrams at multiple T, P, or molalities."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 456,
+      "texto": "Resize window larger to display Periodic Chart."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 859,
+      "texto": "Periodic Chart (Return)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 863,
+      "texto": "Plot Selected Row as Diagram"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 876,
+      "texto": "Export CSV (/tmp/soryntel_elements_export.csv)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 880,
+      "texto": "Reset Default Element4 Database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 889,
+      "texto": "Copy Active Cell"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 894,
+      "texto": "Toggle Diagram TRUE/FALSE on Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 905,
+      "texto": "Insert Custom Property Row..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 914,
+      "texto": "Delete Active Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 940,
+      "texto": "About Elements Module"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 981,
+      "texto": "Periodic Chart"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1005,
+      "texto": "Outotec"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1467,
+      "texto": "No matching element-containing entries loaded in Maindb6."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1515,
+      "texto": "Insert Custom Element Property Row"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1523,
+      "texto": "Property Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1529,
+      "texto": "Diagram Plottable:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1564,
+      "texto": "About Elements Module (Element4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1568,
+      "texto": "Soryntel / HSC Elements Module — Z = 1..=103 (H..Lr)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1569,
+      "texto": "• Periodic Chart with category coloring, state colors, and proportional 3D-shaded property spheres."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1570,
+      "texto": "• Interactive Elements spreadsheet with Fix Left 3 Columns, Diagram toggles, VB6 RGB color swatches, custom rows, and CSV export."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/elements_ui.rs",
+      "linea": 1571,
+      "texto": "• Integrated with Maindb6 species catalog lookup (double-click any element)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1084,
+      "texto": "Preset: Ni-CO(g) (NICO.gem9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1088,
+      "texto": "Preset: FeS2 Decomposition"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1092,
+      "texto": "Preset: CaCO3 + CO2(g) + Aqua"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1096,
+      "texto": "Preset: FeSO4*4H2O Target (Fig. 7-8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1100,
+      "texto": "Preset: Na2SO4 + C Reduction (NA2SO4.gem9, Fig. 34)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1104,
+      "texto": "Preset: FeSO4*7H2O Adiabatic (FESO4_adiabatic.gem9, Fig. 37)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1108,
+      "texto": "Preset: Lead-Acid Battery Cell Mode (LEADBATT.gem9, Fig. 41-44)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1112,
+      "texto": "Preset: CO2 Dissolution — Remove % (Fig. 9-10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1116,
+      "texto": "Preset: CO2 Dissolution — Infinite Phase (Fig. 11-12)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1120,
+      "texto": "Preset: CO2 Dissolution — Fixed Activity (Fig. 13-15)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1124,
+      "texto": "Preset: Al-Zn Redlich-Kister Alloy (Appendix C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 1128,
+      "texto": "Preset: H-C-O-Ca 3D (CO2 x T)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2488,
+      "texto": "X-amount"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2495,
+      "texto": "Z-amount"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2509,
+      "texto": "P (bar)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2538,
+      "texto": "Q (kmol e-)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2961,
+      "texto": "Window -> Add-Ins (Activity Coefficient Models)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2967,
+      "texto": "1. Al - Zn Mixture (Appendix C Redlich-Kister: Liquid, Solid FCC, Solid HCP)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2968,
+      "texto": "2. Ga - As Mixture (Appendix A & B Redlich-Kister: Liquid GaAs)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2969,
+      "texto": "3. Aqua (Extended Debye-Huckel + 55.508435 molality conversion)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 2970,
+      "texto": "4. Column-C Formula Evaluator (T, X_row, EXP, LN, LOG10, ln(f))"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3042,
+      "texto": "No calculation results."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3073,
+      "texto": "All"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3076,
+      "texto": "None"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3081,
+      "texto": "Filter:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3353,
+      "texto": "Select data for axes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3386,
+      "texto": "Or Species Amount:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3428,
+      "texto": "Finish"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3440,
+      "texto": "Equilibrium Results (Diagram Table)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3462,
+      "texto": "Property:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 3480,
+      "texto": "Copy All (TSV)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/equilibrium_ui.rs",
+      "linea": 4042,
+      "texto": "Causa comun: en 'System State', alguna de las 2 variables tiene Steps = 1 o Initial == Final (ej. P: 1.0..1.0 o T: 25..25). Cambia Initial != Final, Steps >= 2 y vuelve a pulsar Calculate."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 678,
+      "texto": "📄\nFile ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 680,
+      "texto": "New (Blank Sheet)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 686,
+      "texto": "Open Sheet (.est8 / .tsv)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 691,
+      "texto": "Save Sheet (.est8 / .tsv / .csv)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 697,
+      "texto": "Load Fig. 1 Example"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 704,
+      "texto": "Load Fig. 5 Oxides & Sulfates Example"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 715,
+      "texto": "Load Classic Example (Na2SO4, MgO*Al2O3, POP)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 724,
+      "texto": "Load Fig. 2 Example (C2H4(g))"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 734,
+      "texto": "Load Fig. 3 Example (FeVO4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 747,
+      "texto": "Main"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 761,
+      "texto": "Species Type"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 794,
+      "texto": "Organic Group"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 819,
+      "texto": "Functional Group"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 866,
+      "texto": "Estimation Settings"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 898,
+      "texto": "📊\nGraphics ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 917,
+      "texto": "Database Scatter (Gas Species)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 923,
+      "texto": "Database Scatter (Aqueous Species)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 929,
+      "texto": "Database Scatter (All Maindb6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 955,
+      "texto": "🗄\nBrowse HSC\nDatabase"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 958,
+      "texto": "💾\nSave to HSC\nDatabase ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 990,
+      "texto": "❓\nHelp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 993,
+      "texto": "ℹ\nAbout"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1029,
+      "texto": "Species:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1043,
+      "texto": "Estimate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1083,
+      "texto": "Sheet1"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1093,
+      "texto": "Soryntel Estimate Engine"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1131,
+      "texto": "Paste Formulas / TSV"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1135,
+      "texto": "Pega fórmulas (una por línea o separadas por tab/coma con Temp °C):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1142,
+      "texto": "Paste Rows"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1156,
+      "texto": "Help — HSC Estimate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1160,
+      "texto": "• Escribe una fórmula en la columna A (ej. FeVO4, MgSO4*2H2O, NaBO3*4H2O, H2Sn(OH)6, (C2H5)2O, Fe0.998O, FeS2(M), C(D), OH(-a))."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1161,
+      "texto": "• Limitaciones (Sec. 16.3): sin superíndices/subíndices; el último paréntesis se reserva para fase/polimorfo/carga (usa AlO2H / AlOOH / AlO*OH, no AlO*(OH))."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1162,
+      "texto": "• Selecciona varias filas (Ctrl+Click / Shift+Click) y pulsa Graphics para Parity / Individual Series / Comparison / Differences."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1163,
+      "texto": "• Save to HSC Database > Cp at 25°C o Cp Range -> Fit Cp -> Update Species -> Save guarda realmente en OwnDB."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1165,
+      "texto": "Cerrar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1171,
+      "texto": "About — HSC Estimate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1176,
+      "texto": "Neumann-Kopp Cp + Einstein-Kelley Curvature, Latimer Entropy, Oxo/Halide/Hydrate Enthalpy, Benson Organics & 4-Param Kelley Fit."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1358,
+      "texto": "Browse HSC Database..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1362,
+      "texto": "Graphics..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1384,
+      "texto": "Save to HSC Database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1780,
+      "texto": "Browse HSC Database — Insert Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1785,
+      "texto": "Buscar fórmula:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1874,
+      "texto": "HSC Estimate — Graphics"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1897,
+      "texto": "🔄 Reset Chart Positions"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1904,
+      "texto": "✖ Close"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 1910,
+      "texto": "Scope:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2235,
+      "texto": "Chart Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2237,
+      "texto": "Chart"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2243,
+      "texto": "Statistics"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2248,
+      "texto": "Species Count"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2251,
+      "texto": "Maximum Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2254,
+      "texto": "Max Error Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2257,
+      "texto": "Mean Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2260,
+      "texto": "Median Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2263,
+      "texto": "RMSE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2289,
+      "texto": "Cp Range Data"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2300,
+      "texto": "Tmin (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2303,
+      "texto": "Tmax (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2306,
+      "texto": "Steps"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2369,
+      "texto": "HSC Cp Data"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2388,
+      "texto": "Cp Exp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2389,
+      "texto": "Cp Fitting"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2390,
+      "texto": "Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2391,
+      "texto": "Cp Estimate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2419,
+      "texto": "⬆ Update Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2426,
+      "texto": "Range:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2433,
+      "texto": "+ Range"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2436,
+      "texto": "- Range"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2453,
+      "texto": "Tmin (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2456,
+      "texto": "Tmax (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2459,
+      "texto": "Cp coefficient A J/(mol*K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2471,
+      "texto": "Average Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2479,
+      "texto": "➕ Fit Cp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2482,
+      "texto": "🔄 Calculate Cp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2516,
+      "texto": "▶ Estimate Cp"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2524,
+      "texto": "Cp Heat Capacity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2527,
+      "texto": "Temperature K"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2528,
+      "texto": "J/(mol*K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2594,
+      "texto": "Database Editor — Save Estimated Species (OwnDB)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2605,
+      "texto": "Chemical Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2614,
+      "texto": "CAS:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2617,
+      "texto": "Phase:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2640,
+      "texto": "H° formation at 298.15 K (kJ/mol):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2643,
+      "texto": "S° at 298.15 K (J/(mol*K)):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2646,
+      "texto": "Cp° at 298.15 K (J/(mol*K)):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2649,
+      "texto": "ΔG° at 298.15 K (kJ/mol):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2652,
+      "texto": "Reference / Rel. Class:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2694,
+      "texto": "OwnDB file:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/estimate_ui.rs",
+      "linea": 2730,
+      "texto": "Path:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2059,
+      "texto": "HSC Excel Add-Ins — Soryntel Chemistry"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2069,
+      "texto": "FILE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2144,
+      "texto": "Activar/detener servidor HTTP local para Excel, LibreOffice Calc, ONLYOFFICE y WPS"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2177,
+      "texto": "Recalcular todo (F9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2185,
+      "texto": "Decimales:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2192,
+      "texto": "Cargar Demo Worksheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2199,
+      "texto": "Plantilla StreamEQ en Worksheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2206,
+      "texto": "Limpiar Worksheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2218,
+      "texto": "Insertar Función (fx)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2221,
+      "texto": "Elegir Especie de BD..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2229,
+      "texto": "Buscar Mineral (3,812)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2234,
+      "texto": "Vista & Hoja:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2237,
+      "texto": "Exportar Libro (.xlsx / .ods)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2241,
+      "texto": "Guardar Worksheet .csv"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2255,
+      "texto": "Recalcular Hoja (F9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2258,
+      "texto": "StreamEQ Matriz (Ctrl+Shift+Enter)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2265,
+      "texto": "Separador argumentos:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2290,
+      "texto": "  HSC ▾  "
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2301,
+      "texto": "Recalculate Workbook (F9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2305,
+      "texto": "StreamEQ Array Sheet (Fig. 4-6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2309,
+      "texto": "Minerals Sample Sheet (Fig. 7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2314,
+      "texto": "Excel Add-Ins Manager (Go...)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2318,
+      "texto": "Cross-Suite Bridge & Packages (.oxt / ONLYOFFICE / VBA)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2326,
+      "texto": "Menu Commands"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2392,
+      "texto": "Add-Ins Options (Fig. 1-3)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2397,
+      "texto": "Excel / Calc / ONLYOFFICE..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2422,
+      "texto": "Descartar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2425,
+      "texto": "Aplicar (Enter)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2428,
+      "texto": "Abrir catálogo de funciones"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2437,
+      "texto": "Valor o fórmula (=H(\"Fe\";25), =StreamEQ(...), =SUM(C2:C5), =StreamEQ!C1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2555,
+      "texto": "Hoja de Cálculo Integrada (A1:H24)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2562,
+      "texto": "Clic selecciona la celda · Doble clic (o barra superior) edita valor o fórmula (=H, =Cp, =StreamEQ, =Mineral*, =SUM, =StreamEQ!C1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2951,
+      "texto": "+ Fila especie"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2956,
+      "texto": "+ Elegir desde BD..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2960,
+      "texto": "+ § PHASE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2981,
+      "texto": "Recalcular Matriz (Ctrl+Shift+Enter)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 2996,
+      "texto": "Flujo Matriz StreamEQ (Fig. 4–6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3054,
+      "texto": "Preajustes StreamEQ"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3055,
+      "texto": "Combustión C + Aire (1500 °C, Fig. 4-6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3090,
+      "texto": "Reformado CH4 + H2O (850 °C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3117,
+      "texto": "Balance Elemental (kmol)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3119,
+      "texto": "Sin datos válidos."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3275,
+      "texto": "Buscar mineral (3,812):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3280,
+      "texto": "Recalcular"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3285,
+      "texto": "Doble clic en Mineral 1..4 (Pyrite, Py, Py\\Joki, ID:12616) para editar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3348,
+      "texto": "You can get mineral properties by using:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3349,
+      "texto": "• Mineral name (e.g. Pyrite)  |  • Mineral Code (e.g. Py)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3350,
+      "texto": "• Mineral Code AND part of Location (e.g. Py\\Joki) -> first matching"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3351,
+      "texto": "• Mineral ID (e.g. ID:54 / ID:12616)  |  • Col F: Paste-values check"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3361,
+      "texto": "Example of using HSC Chemistry Add-in functions to create a table of minerals"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3367,
+      "texto": "Referencia oficial Cap. 30 Fig. 7 (clic en 'Probar' evalúa en Worksheet)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3391,
+      "texto": "Probar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3402,
+      "texto": "General HSC Command MineralProperty(MineralName; Property)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3407,
+      "texto": "Returns the property of given mineral. Property can be any of:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3435,
+      "texto": "AddInSample (Coordenadas reales =UNITS(D2;E2), =H(D8;E8), doble clic edita)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3439,
+      "texto": "Restaurar AddInSample"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3482,
+      "texto": "Scratchpad sobre celdas de AddInSample (clic y editar en la barra superior)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3527,
+      "texto": "Buscar:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3532,
+      "texto": "Categoría:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3618,
+      "texto": "Probador en vivo dentro de Soryntel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3638,
+      "texto": "Recalcular"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3641,
+      "texto": "Restaurar ejemplo"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3644,
+      "texto": "Insertar en celda activa del Worksheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3649,
+      "texto": "Copiar fórmula"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3654,
+      "texto": "Aplicar unidades a la app"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3694,
+      "texto": "Elegir Especie de la Base de Datos"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3699,
+      "texto": "Buscar:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3754,
+      "texto": "HSC Add-In Global Measurement Units"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3765,
+      "texto": "Temperature unit:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3780,
+      "texto": "Energy unit:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3795,
+      "texto": "Pressure unit:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3813,
+      "texto": "After changing the measurement units, the workbook is automatically recalculated."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3867,
+      "texto": "Add-Ins"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3876,
+      "texto": "Add-Ins available:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 3992,
+      "texto": "Ubicación:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4030,
+      "texto": "File name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4033,
+      "texto": "Add-Ins (*.xlam;*.xla;*.xll;*.oxt;*.zip;*.bas)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4103,
+      "texto": "← Volver a la hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4141,
+      "texto": "HSC Excel Add-Ins — Arquitectura Híbrida (Standalone + Cross-Suite)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4143,
+      "texto": "• Modo Standalone: 83 funciones activas + 5 HSC-Sim ejecutándose en Rust dentro de Soryntel sin dependencias externas."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4145,
+      "texto": "• Minerales integrados: 3,812 registros (Cap. 30 Fig. 7 editable inline)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4146,
+      "texto": "• Compatibilidad externa opcional: Microsoft Excel, LibreOffice Calc (.ods / .oxt), ONLYOFFICE (.zip) y WPS Office (.bas / =WEBSERVICE)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4149,
+      "texto": "Ir a Options -> Add-Ins (Fig. 2–3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4153,
+      "texto": "Ir a Cross-Suite Bridge & Exporters"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4159,
+      "texto": "Open — Recent Workbooks & HSC Cap. 30 Templates (Fig. 1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4200,
+      "texto": "Abrir hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4215,
+      "texto": "Cross-Suite HTTP Bridge & Workbook / Plugin Exporters"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4216,
+      "texto": "Usa Soryntel en modo Standalone o conecta Excel, LibreOffice Calc, ONLYOFFICE y WPS en tiempo real."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4223,
+      "texto": "Puerto:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4230,
+      "texto": "Detener HTTP Bridge"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4236,
+      "texto": "Iniciar HTTP Bridge"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4262,
+      "texto": "Estado: DETENIDO (Modo 100% interno en Soryntel)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4275,
+      "texto": "Carpeta:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4277,
+      "texto": "Nombre base:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4282,
+      "texto": "Guardar .xlsx (Excel / WPS / Calc / ONLYOFFICE)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4288,
+      "texto": "Guardar .ods (LibreOffice / OpenDocument)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4294,
+      "texto": "Guardar Worksheet .csv"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4303,
+      "texto": "Exportar LibreOffice Calc (.oxt)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4309,
+      "texto": "Exportar ONLYOFFICE Plugin (.zip)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4315,
+      "texto": "Exportar Excel / WPS VBA (.bas)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4336,
+      "texto": "Arg 1:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4338,
+      "texto": "Arg 2:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4353,
+      "texto": "Copiar fórmula"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4361,
+      "texto": "Excel Options — View and manage Add-ins (Cap. 30 Fig. 1–3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4402,
+      "texto": "Decimales por defecto en hojas:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4413,
+      "texto": "Separador de argumentos:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4429,
+      "texto": "Carpeta destino:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4433,
+      "texto": "Nombre base:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4445,
+      "texto": "Open Change measurement units..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4455,
+      "texto": "Los atajos de teclado (Ctrl+Shift+Enter para Array StreamEQ y F9 para Recalcular) están activos."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4456,
+      "texto": "La cinta ADD-INS expone Menu Commands -> HSC ▾ -> Change measurement units..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4460,
+      "texto": "El cálculo interno funciona 100% offline sin macros ni red."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4461,
+      "texto": "El HTTP Bridge opcional escucha exclusivamente en 127.0.0.1 (loopback local) con CORS para ONLYOFFICE / LibreOffice / Excel / WPS."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4465,
+      "texto": "View and manage Microsoft Office & Cross-Suite Add-ins."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4487,
+      "texto": "Active Application Add-ins"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4513,
+      "texto": "Excel Add-in (.xll)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4519,
+      "texto": "Inactive / External Add-ins"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4545,
+      "texto": "Inactive Add-in"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4578,
+      "texto": "Publisher:      Soryntel / HSC Compatible Engine"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4587,
+      "texto": "Manage:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4631,
+      "texto": "Migrador de fórmulas legacy HSC5.xla -> HSC 6–10"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4632,
+      "texto": "Convierte sintaxis antigua (unidades inline, argumentos obsoletos) a fórmulas modernas:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4639,
+      "texto": "Convertir"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/excel_addins_ui.rs",
+      "linea": 4649,
+      "texto": "Insertar resultado en Worksheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 164,
+      "texto": "New (Fig. 1 Default)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 173,
+      "texto": "Load Example (Fig. 2 CuS/FeS)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 183,
+      "texto": "Load Example (Sulphides Roasting 15-col)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 201,
+      "texto": "Open (.exe8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 221,
+      "texto": "Save (.exe8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 247,
+      "texto": "Insert stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 255,
+      "texto": "Delete stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 265,
+      "texto": "Delete species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 284,
+      "texto": "Energy"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 296,
+      "texto": "Methodology (Szargut 1988)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 481,
+      "texto": "All exergy calculations are based on Szargut theory with the standard state being 25°C and 1 bar.\nNormal stream accepts any species. Gas stream accepts gas species and adds pressure S to exergy.\nEnergy stream adds heat and electricity feed/loss. Carnot cycle is used to convert heat to exergy."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 512,
+      "texto": "Calculations"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 526,
+      "texto": "Soryntel Exergy Engine"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 547,
+      "texto": "Methodology — Szargut (1988)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 551,
+      "texto": "• Estado muerto estándar: T₀ = 298.15 K (25 °C), P₀ = 1.0 bar."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 552,
+      "texto": "• Exergía química estándar: ex_ch° = ΔfG°(T₀) + Σ ν_e · b_ch,e° (Szargut 1988)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 553,
+      "texto": "• Exergía física: Ex_phy = (H(T) - H(T₀)) - T₀·(S(T,P) - S(T₀,P₀))."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 554,
+      "texto": "• Mezcla ideal en Ex_tot_stream: + R·T₀·Σ n_i·ln(x_i)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 555,
+      "texto": "• Energy stream (Carnot): Ex = Q·(1 - T₀/T) + W."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 557,
+      "texto": "Cerrar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 1155,
+      "texto": "Insert/paste species here"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 1226,
+      "texto": "Browse Database — Insert Species into Exergy Stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/exergy_ui.rs",
+      "linea": 1231,
+      "texto": "Buscar fórmula:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 396,
+      "texto": "HSC Examples (Ch. 12.2.1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 397,
+      "texto": "🔥 Smelting1.htr8 (Fig. 1 — 1200/1400/1600°C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 401,
+      "texto": "🔥 Radiator.htr8 (Fig. 2 — 40/50/60°C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 405,
+      "texto": "💧 Hotwatertank.htr8 (Fig. 4 — 1.378 kW)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 409,
+      "texto": "📦 SimpleCase.htr8 (735 W)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 413,
+      "texto": "🏭 OilFurnace.htr8 (Internal Gas Radiation)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 424,
+      "texto": "📦 Conduction Database (HeatCond.XLS)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 428,
+      "texto": "💨 Convection Database (HeatConv.XLS)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 432,
+      "texto": "☀ Radiation Database (HeatRadi.XLS)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 436,
+      "texto": "🗄 Material Database (Ch. 90)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 452,
+      "texto": "📦 Conduction Database (Fig. 5)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 456,
+      "texto": "💨 Convection Calculator (Figs. 6-7)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 460,
+      "texto": "☀ Surface Radiation (Fig. 8)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 464,
+      "texto": "💨 Gas Mixture Radiation (Fig. 9)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 468,
+      "texto": "✨ Particle Suspension Radiation (Fig. 10)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 472,
+      "texto": "🗄 Material Database (Ch. 90, Figs. 1-3)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 518,
+      "texto": "📑 Own / Calculation Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 597,
+      "texto": "HSC Heat Loss & Material Database (Ch. 12 & Ch. 90)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 601,
+      "texto": "📤 Send Heat Loss -> Module 2"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 621,
+      "texto": "🏭 OilFurnace"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 624,
+      "texto": "📦 SimpleCase"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 627,
+      "texto": "💧 Hotwatertank"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 630,
+      "texto": "🔥 Radiator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 633,
+      "texto": "🔥 Smelting1"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 645,
+      "texto": "File.htr8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 647,
+      "texto": "Abrir archivo .htr8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 651,
+      "texto": "Guardar archivo .htr8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 655,
+      "texto": "📊 .xlsx"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 655,
+      "texto": "Exportar a Excel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 696,
+      "texto": "Base de datos de conducción térmica (HeatCond.XLS, Fig. 5)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 706,
+      "texto": "Base de datos de convección Table/Function (Figs. 6-7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 717,
+      "texto": "Base de datos de emisividad superficial (Fig. 8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 727,
+      "texto": "Calculadora de radiación de mezcla de gases EWBM (Fig. 9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 737,
+      "texto": "Calculadora de radiación de suspensión de partículas (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 745,
+      "texto": "🗄 Material DB (Ch. 90)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 746,
+      "texto": "Abrir módulo Material Database (Figs. 1-3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1462,
+      "texto": "FIX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1464,
+      "texto": "auto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1536,
+      "texto": "FIX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1538,
+      "texto": "auto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1749,
+      "texto": "FIX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1839,
+      "texto": "FIX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1841,
+      "texto": "auto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1929,
+      "texto": "FIX"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 1931,
+      "texto": "auto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 2821,
+      "texto": "📦 Conduction C:\\HSC8\\Databases\\HeatCond.XLS (Fig. 5)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 2942,
+      "texto": "💨 Convection Database & Calculator (Figs. 6-7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3278,
+      "texto": "Pulse Calculate para evaluar los números adimensionales."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3293,
+      "texto": "☀ Surface Radiation C:\\HSC8\\Databases\\HeatRadi.XLS (Fig. 8)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3299,
+      "texto": "(h)=hemispherical emissivity, (n)=normal emissivity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3356,
+      "texto": "💨 Gas Mixture Radiation Calculator (Fig. 9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3404,
+      "texto": "Load OilFurnace Flue Gas Preset"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3490,
+      "texto": "Optical Depth [m]:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3498,
+      "texto": "Auto L from Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3499,
+      "texto": "Calcular L según la geometría de la hoja (Tabla 1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3552,
+      "texto": "Emissivity:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3610,
+      "texto": "Transferir T_gas, T_surf, ε_g y α_g fijos a la columna activa"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3633,
+      "texto": "Iterar emisividad entre 0 °C y 3000 °C cada 50 °C (Ch. 12.3.7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3663,
+      "texto": "✨ Particle Suspension Radiation Calculator (Fig. 10)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3716,
+      "texto": "Gas Temp [°C]:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3723,
+      "texto": "Gas ε at Tg:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3731,
+      "texto": "Gas α at Ts:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3744,
+      "texto": "Surface Temp [°C]:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3749,
+      "texto": "Surface ε:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3829,
+      "texto": "🖼 Image (Cloud Schematic)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 3894,
+      "texto": "🎯 Target Dialog (Fig. 11)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4003,
+      "texto": "▶ Iterate Selected Rows"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4082,
+      "texto": "📈 HSC Diagrams — Heat Loss (Figs. 3, 12-14)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4131,
+      "texto": "X Min:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4135,
+      "texto": "X Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4139,
+      "texto": "Y Min:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4143,
+      "texto": "Y Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4181,
+      "texto": "Distance mm"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4204,
+      "texto": "MIN (K):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4206,
+      "texto": "MAX (K):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4208,
+      "texto": "Steps:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4212,
+      "texto": "🔄 Update"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4221,
+      "texto": "Temperature (left edge) °C"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4253,
+      "texto": "Thickness (cm)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4254,
+      "texto": "Annual Cost"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4322,
+      "texto": "📐 Shape and Dimensions — Schematic"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4391,
+      "texto": "🗄 HSC Material Database (Ch. 90, Figs. 1–3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4415,
+      "texto": "➕ New Material"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4421,
+      "texto": "⚡ Auto Calculate Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4428,
+      "texto": "📦 Send to Conduction DB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4429,
+      "texto": "Agregar este material a la base de datos de conducción térmica"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4569,
+      "texto": "➕ Add Component"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4579,
+      "texto": "⚖ Normalize 100%"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4662,
+      "texto": "➕ Add User Property"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4787,
+      "texto": "Tmin (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4797,
+      "texto": "Tmax (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4823,
+      "texto": "Cp coefficient A J/(kg*K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4863,
+      "texto": "Cp coefficient E"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4873,
+      "texto": "Cp coefficient F"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4883,
+      "texto": "➕ Add Temperature Range"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4914,
+      "texto": "Temperature (K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/heat_loss_ui.rs",
+      "linea": 4915,
+      "texto": "Heat Capacity (J/(kg*K))"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/launcher_ui.rs",
+      "linea": 209,
+      "texto": "Cerrar todas las ventanas"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/launcher_ui.rs",
+      "linea": 223,
+      "texto": "Soryntel:Thermo"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 233,
+      "texto": "Soryntel · Module 19: HSC Sim LCA"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 238,
+      "texto": "Mode:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 252,
+      "texto": "Load Benchmark:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 253,
+      "texto": "Zn TSL Fuming (49.3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 258,
+      "texto": "Iron Process (49.4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 380,
+      "texto": "LCA\nOpenLCA ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 394,
+      "texto": "Use Built-in OpenLCA Catalog"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 400,
+      "texto": "Set Active Database..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 478,
+      "texto": "💾\nTo JSON-LD\n(OpenLCA) ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 525,
+      "texto": "Synchronize boundary streams from active HSC Sim flowsheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 644,
+      "texto": "Stream Name"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 650,
+      "texto": "Use Exergy"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 653,
+      "texto": "Main Product"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 725,
+      "texto": "Select row then choose a Flow in the right Mapping dock"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 759,
+      "texto": "Clear LCA Equivalent"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 770,
+      "texto": "Delete manual stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 831,
+      "texto": "Indicator Streams (Wildcards: *, ?, #)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 843,
+      "texto": "Stream Name / Pattern"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 848,
+      "texto": "Action"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 922,
+      "texto": "Add new indicator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 932,
+      "texto": "Normalized Flows (per 1 kg Main Product)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 935,
+      "texto": "Click Normalize in the Ribbon after marking one Main Product stream."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 974,
+      "texto": "Unit type:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 997,
+      "texto": "Keyword Search:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1037,
+      "texto": "Flows"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1071,
+      "texto": "Matching Flows (Double-click / Assign)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1117,
+      "texto": "Select a flow above and assign it to the selected stream/indicator row."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1208,
+      "texto": "LCA\nopenLCA ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1230,
+      "texto": "IPC:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1233,
+      "texto": "Connect / Probe openLCA IPC"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1430,
+      "texto": "Inspect openLCA Synthetic Unit Processes (1.00000 kg / 3.6 MJ)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1501,
+      "texto": "Sync from Flowsheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1720,
+      "texto": "Select Location first (>15)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 1932,
+      "texto": "Select Impact Categories on the right and click 'Calculate Results' in the Ribbon."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2107,
+      "texto": "Sheet not found."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2136,
+      "texto": "Flows and Methods"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2160,
+      "texto": "Enter text to search..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2163,
+      "texto": "Find"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2314,
+      "texto": "Question"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2319,
+      "texto": "Apply mapping changes ?"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2322,
+      "texto": "Yes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2352,
+      "texto": "Process"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2354,
+      "texto": "Process Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2358,
+      "texto": "Technology:   "
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2361,
+      "texto": "General Comment:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2364,
+      "texto": "HSC Ver. (Last save):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2370,
+      "texto": "Location"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2372,
+      "texto": "Location:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2386,
+      "texto": "Location Comment:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2392,
+      "texto": "Developer"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2394,
+      "texto": "Author:        "
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2398,
+      "texto": "Date:          "
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2402,
+      "texto": "Version Number:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2421,
+      "texto": "Set Active Database (OpenLCA JSON-LD)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2425,
+      "texto": "Enter path to an uncompressed OpenLCA JSON-LD .zip archive:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2428,
+      "texto": "Load JSON-LD .zip"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2462,
+      "texto": "Custom Sheet Name (cannot start with 'Saved', 'Norm', 'Ext'):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2492,
+      "texto": "Flowsheet Tables"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2499,
+      "texto": "✔ Apply and close"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2545,
+      "texto": "✖ Cancel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2551,
+      "texto": "No custom Stream Tables defined — click Apply and close to import Flowsheet Summary."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2604,
+      "texto": "openLCA Internal Unit Processes & Main Process (1.00000 kg / 3.6 MJ)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2629,
+      "texto": "Error"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2645,
+      "texto": "HSC Sim LCA — Quick Guide (Ch. 49)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2649,
+      "texto": "Classic Mode (49.3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2650,
+      "texto": "• Extracts blue Input & red Output boundary streams (excludes black internal streams)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2651,
+      "texto": "• 1-hour basis: t/h -> 1000 kg, kW -> 1 kWh (or Use Exergy -> exergy kWh)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2652,
+      "texto": "• Indicators support *, ?, # wildcards and per-source Counted check to prevent double counting."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2653,
+      "texto": "• Mark 1 Main Product -> Normalize -> export EcoSpold v1.0 XML, OpenLCA JSON-LD .zip, or 6-sheet Excel."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2655,
+      "texto": "Beta IPC / LCIA Mode (49.4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2656,
+      "texto": "• Select a flow row -> assign LCA Flowtype -> map to P -/E - flows -> pick Location first when > 15 providers."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2657,
+      "texto": "• Mark 1 Reference Flow (Product) -> add Impact Categories from 1 parent Method -> Calculate Results."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/lca_ui.rs",
+      "linea": 2658,
+      "texto": "• Live updates automatically when flowsheet values change."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1097,
+      "texto": "MÓDULOS"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1108,
+      "texto": "20 módulos + Geo"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1115,
+      "texto": "Cada módulo se abre en una ventana independiente (paridad HSC 10 Grid)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1126,
+      "texto": "Buscar:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1133,
+      "texto": "Sim, Lca, Mas, Aqu, DB..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1203,
+      "texto": "No hay módulos que coincidan con el filtro actual."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1290,
+      "texto": "NUEVO"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1319,
+      "texto": "● Abierto"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1383,
+      "texto": "Cerrar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/main.rs",
+      "linea": 1418,
+      "texto": "HERRAMIENTAS Y BASE DE DATOS"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 404,
+      "texto": "Soryntel · Module 20: HSC - Mass Balance (Mas)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 409,
+      "texto": "Preset:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 410,
+      "texto": "Rougher Flotation (Figs. 3–23)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 415,
+      "texto": "Grinding Survey (Figs. 24–25)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 437,
+      "texto": "Mass Balancing"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 606,
+      "texto": "Save to\nFlowsheet ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 607,
+      "texto": "Save Balanced Flows, Grades & Recoveries"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 622,
+      "texto": "Save Recoveries / Properties Info Only"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 650,
+      "texto": "Backup ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 651,
+      "texto": "Export Backup (.HSCMas JSON)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 661,
+      "texto": "Restore from .HSCMas JSON..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 670,
+      "texto": "Load Benchmark: Rougher Flotation"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 675,
+      "texto": "Load Benchmark: Grinding Survey"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 693,
+      "texto": "Validate all 12 Chapter 51.6 rules"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 772,
+      "texto": "If pressed down, solids elemental assays (A) are excluded & colored gray"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 865,
+      "texto": "Copy Whole Table (TSV)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 878,
+      "texto": "Copy Empty Template"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 926,
+      "texto": "Convert elemental assays (A) to minerals (M) via HSC Geo NNLS"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1217,
+      "texto": "⚖ Calculate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1240,
+      "texto": "Batch\nRun ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1241,
+      "texto": "Run All Selected Data Sets"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1285,
+      "texto": "Copy Stream Summary (TSV)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1297,
+      "texto": "Calculate Vol.\nFlows ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1301,
+      "texto": "Liquid SG:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1309,
+      "texto": "Recalculate SG & m3/h"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1324,
+      "texto": "Stream\nTables ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1394,
+      "texto": "Add Default\nCharts ▾"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1396,
+      "texto": "1. Total Solids Bar Chart"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1405,
+      "texto": "2. Stream Composition (100% Stacked)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1511,
+      "texto": "Expand Balancing Navigator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1536,
+      "texto": "  Balancing Navigator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1542,
+      "texto": "Collapse Navigator"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1844,
+      "texto": "Quick Add:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1929,
+      "texto": "New Size Fraction Label:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1932,
+      "texto": "Index 0 ('Bulk') is reserved and cannot be deleted."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 1965,
+      "texto": "New Data Set Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2033,
+      "texto": "🔒 LOCKED"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2451,
+      "texto": "🔒 SD Table is Locked"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2561,
+      "texto": "Balance Convergence"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2572,
+      "texto": "Parity Chart (Obs. vs Est.)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2731,
+      "texto": "Run Calculate to inspect Balance Details."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2842,
+      "texto": "Run Calculate to view Goodness statistics."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2846,
+      "texto": "Goodness by Variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2870,
+      "texto": "Goodness by Stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2896,
+      "texto": "Run Calculate to view Unit Balance closures."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2957,
+      "texto": "Iteration"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 2958,
+      "texto": "log10(Iterated Tolerance)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3052,
+      "texto": "No Mass Balance solution yet. Switch to Balancing -> 1. Balance and press Calculate."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3146,
+      "texto": "No Size Fraction (SA) or Solids Flow (SF) variable present."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3221,
+      "texto": "Chart Panel Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3260,
+      "texto": "Run Calculate to populate Total Solids bar chart."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3264,
+      "texto": "No Solids Flow (SF) variable."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3329,
+      "texto": "Run Calculate to populate Stream Composition chart."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3339,
+      "texto": "No Mineral or Elemental Assay variables selected."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3426,
+      "texto": "Expand Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3442,
+      "texto": "  Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3444,
+      "texto": "Collapse Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3459,
+      "texto": "Selected Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3462,
+      "texto": "Selected:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3465,
+      "texto": "Size Transforming:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3478,
+      "texto": "Selected Variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3482,
+      "texto": "Mineral SG:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3631,
+      "texto": "Not calculated yet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3652,
+      "texto": "Feed Stream:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3667,
+      "texto": "Scaling:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3670,
+      "texto": "Mineral Sum=100:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3673,
+      "texto": "Assay Sum=100:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3689,
+      "texto": "Max Iter:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3692,
+      "texto": "Balance Tol.:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3699,
+      "texto": "Null SD Est.:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3706,
+      "texto": "Low Grade Coeff.:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3742,
+      "texto": "No summary yet (press Calculate)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3761,
+      "texto": "Low Grade Weighting"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3767,
+      "texto": "Coefficient (SD multiplier factor):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3776,
+      "texto": "Apply to Variables:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3785,
+      "texto": "Apply Coefficient & Recalculate"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3798,
+      "texto": "Mass Balance Equations"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3810,
+      "texto": "No active unit mass balance equations."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3824,
+      "texto": "Mass Balance Error Check"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3830,
+      "texto": "✔ Everything seems to be OK!"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3835,
+      "texto": "All 12 Chapter 51.6 pre-balance validation rules passed."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3860,
+      "texto": "Import HSC7 Mass Balance Data"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3864,
+      "texto": "Paste HSC7 'Flowsheet' incidence matrix (+1/-1/0, optional) and 'Analyses.xls' data:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3866,
+      "texto": "Flowsheet Matrix (optional):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3873,
+      "texto": "Analyses Data (TSV/CSV):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3880,
+      "texto": "Import & Parse HSC7 Data"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3912,
+      "texto": "Stream by Equation (Fig. 12)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3917,
+      "texto": "No streams defined."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3922,
+      "texto": "Target:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3941,
+      "texto": "Add Stream Equation"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3985,
+      "texto": "View Mineral Matrix (HSC Geo Catalog)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 3990,
+      "texto": "Search Mineral:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4009,
+      "texto": "+ Add Var"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4042,
+      "texto": "Add Assay Elements"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4084,
+      "texto": "Enter Recoveries for Model Fit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4107,
+      "texto": "Apply Recoveries to Active Dataset"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4142,
+      "texto": "Paste into Active Size Fraction"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4151,
+      "texto": "Apply SD Overrides"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4158,
+      "texto": "Load JSON as Active Workbook"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4187,
+      "texto": "HSC Mass Balance · Chapter 51 Reference"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4191,
+      "texto": "Two-Stage Reconciliation Engine (Eqs. 1–29)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4192,
+      "texto": "• Stage 1: Iterative EWTLS (Total Solids, Water + %Solids, Sieve PSD fractions)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4193,
+      "texto": "• Stage 2: Weighted Least Squares (LS, LS MinMax, NNLS, CLS, LLS) with optional Sum = 100."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4195,
+      "texto": "Semantic Color Legend"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4196,
+      "texto": "• Black: Measured values"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4197,
+      "texto": "• Blue: Estimated / Auto-SD / Balanced / ±CI"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4198,
+      "texto": "• Gray: Excluded assays (Balancing of Minerals ON)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/mass_balance_ui.rs",
+      "linea": 4199,
+      "texto": "• Green Cell: Stream by Equation target stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 365,
+      "texto": "Select 3 Elements"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 480,
+      "texto": "X-axis variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 492,
+      "texto": "Min"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 499,
+      "texto": "Max"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 506,
+      "texto": "Y-axis variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 518,
+      "texto": "Min"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 525,
+      "texto": "Max"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 538,
+      "texto": "Fixed variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 562,
+      "texto": "bar"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 657,
+      "texto": "Click 'Draw Diagram' to compute a phase stability diagram."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/phase_stability_ui.rs",
+      "linea": 665,
+      "texto": "No calculated diagram yet."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 702,
+      "texto": "Abrir archivo .rea8 (File -> Open)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 710,
+      "texto": "💾 Save .rea8"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 711,
+      "texto": "Guardar workbook en .rea8 (File -> Save As)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 717,
+      "texto": "📊 Excel .xlsx"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 718,
+      "texto": "Exportar todas las hojas a MS Excel (.xlsx)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 725,
+      "texto": "Copiar hoja activa al portapapeles (TSV para Excel)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 732,
+      "texto": "Vista previa de impresión / reporte"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 740,
+      "texto": "Balancear coeficientes estequiométricos y carga iónica"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 754,
+      "texto": "Ejecutar cálculo termodinámico (Enter)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 761,
+      "texto": "Abrir navegador de base de datos (Maindb6 / OwnDB6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 777,
+      "texto": "Funciones de formación ΔHf, ΔSf, ΔGf a partir de elementos"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 836,
+      "texto": "Soryntel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 898,
+      "texto": "Resolver coeficientes desconocidos (Ch. 10.3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1035,
+      "texto": "Copiar gráfico como SVG vectorial al portapapeles"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1042,
+      "texto": "Copiar puntos tabulados de la curva al portapapeles"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1049,
+      "texto": "Al2O3 (Fig.1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1052,
+      "texto": "Mond (Fig.3-4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1063,
+      "texto": "Mg=Mg(g) (Fig.5)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1074,
+      "texto": "Vap 3x (Fig.6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1077,
+      "texto": "FeS2 Redox (Fig.7-9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1357,
+      "texto": "(edita mol o g en Input Amounts para escalar cantidades)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1552,
+      "texto": "Primera hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1555,
+      "texto": "Hoja anterior"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1560,
+      "texto": "Siguiente hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1565,
+      "texto": "Última hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1579,
+      "texto": "Colectar cálculo actual en una nueva hoja"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1928,
+      "texto": "• Una sustancia (10.1): introduzca una fórmula, p. ej., Al2O3, Fe o SO4(-2a), para tabular y representar Cp, H, S y G frente a la temperatura."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1929,
+      "texto": "• Formatos Normal y Delta: Normal muestra H(T), S(T), Cp(T) y G(T) de la especie. Delta resta los elementos de referencia para calcular propiedades de formación e incluye el balance de carga de iones acuosos mediante H2(g)/H(+a)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1930,
+      "texto": "• Extrapolación de Criss–Cobble: estima Cp de iones acuosos por encima de 25 °C cuando los coeficientes B, C y D de Kelley son cero. Intervalo recomendado: 25–300 °C con paso de 25 °C. Revise el alcance aproximado del modelo."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1931,
+      "texto": "• Ecuaciones de reacción (10.3): introduzca una reacción química o una semirreacción iónica con e- y pulse Balancear para obtener los coeficientes estequiométricos."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1932,
+      "texto": "• Interpretación (10.4): K > 1 favorece productos en términos de estados estándar; ΔH < 0 indica reacción exotérmica. Compruebe la convención de signo del potencial frente al electrodo estándar de hidrógeno."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/reaction_ui.rs",
+      "linea": 1933,
+      "texto": "• Plot All Data: Superimposes multiple collected sheets (S1..Sn) when they share the same calculation mode, units, and format."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1061,
+      "texto": "Select Unit Model..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1065,
+      "texto": "Calculate Selected Unit (Ctrl+F9)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1069,
+      "texto": "Rename Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1077,
+      "texto": "Delete Unit (Del)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1087,
+      "texto": "Toggle Attached Stream Table"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1093,
+      "texto": "Add to Active Stream Table"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1104,
+      "texto": "Rename Stream"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1112,
+      "texto": "Delete Stream (Del)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1118,
+      "texto": "Edit Table (Table Editor)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1123,
+      "texto": "Delete Table"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1129,
+      "texto": "New Generic Unit Here"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1141,
+      "texto": "Reset Zoom & Pan (100%)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1152,
+      "texto": "Rename"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/canvas.rs",
+      "linea": 1158,
+      "texto": "New NameID:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 151,
+      "texto": "Availability%"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 181,
+      "texto": "Font size:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 232,
+      "texto": "Mass Flow (t/h):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 236,
+      "texto": "Temperature (°C):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 240,
+      "texto": "Pressure (bar):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 265,
+      "texto": "End Style"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 313,
+      "texto": "Edit All in Process Information..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 323,
+      "texto": "Grid Width / Height:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 383,
+      "texto": "Select any stream on the flowsheet to inspect phases and compositions."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 469,
+      "texto": "Search for units"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 538,
+      "texto": "Navigate to Diagram"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 619,
+      "texto": "Filter names..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 624,
+      "texto": "Type"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 625,
+      "texto": "NameID"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 626,
+      "texto": "Alias"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 701,
+      "texto": "Add Page"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 718,
+      "texto": "Search Controls"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 719,
+      "texto": "Control ON"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 724,
+      "texto": "Control OFF"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 729,
+      "texto": "Run Controls"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 782,
+      "texto": "Search Cell Refs"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 783,
+      "texto": "Sort"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 793,
+      "texto": "Cell Reference Name"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/docks.rs",
+      "linea": 851,
+      "texto": "Enter text to search. Supports AND, OR and NOT operators."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 83,
+      "texto": "Streams Source and Destination"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 88,
+      "texto": "No stream selected."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 123,
+      "texto": "Old"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 127,
+      "texto": "Source:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 139,
+      "texto": "Destination:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 166,
+      "texto": "Discard"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 176,
+      "texto": "Default Settings"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 193,
+      "texto": "Page Background Color"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 200,
+      "texto": "Show Grid"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 204,
+      "texto": "Grid Style"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 208,
+      "texto": "Grid Color"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 215,
+      "texto": "Grid Width / Height"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 224,
+      "texto": "Default Unit Fill Gradient: 255;255;255 -> 166;214;255"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 225,
+      "texto": "Default Border Line Width: 0.25 mm | Font: Arial 8pt"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 233,
+      "texto": "Input Stream Source: Hollow Circle"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 234,
+      "texto": "Stream End Arrowhead: Triangle (Size 3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 237,
+      "texto": "Header Label Default Font: Arial 12pt Bold"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 243,
+      "texto": "Apply and Exit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 246,
+      "texto": "Restore Default"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 257,
+      "texto": "Table Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 262,
+      "texto": "Select a Table or Title Table on the canvas first."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 269,
+      "texto": "Width/Height locked"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 275,
+      "texto": "Title:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 278,
+      "texto": "Organization / Author:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 281,
+      "texto": "HSC Version:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 287,
+      "texto": "Logo Text:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 314,
+      "texto": "Stream Table Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 321,
+      "texto": "StreamTableSets"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 338,
+      "texto": "Place Flow Table on Canvas"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 400,
+      "texto": "Properties"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 405,
+      "texto": "ViewMode"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 417,
+      "texto": "Stream Variables (22)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 429,
+      "texto": "> Add Variable"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 440,
+      "texto": "< Remove"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 450,
+      "texto": "Assigned Variables"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 461,
+      "texto": "Assigned Streams:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 473,
+      "texto": "Select Unit Models"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 548,
+      "texto": "Select & Insert Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 574,
+      "texto": "Import Custom Unit (.dll/.model):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 576,
+      "texto": "Import Unit..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 597,
+      "texto": "Unit Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 602,
+      "texto": "No unit selected."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 616,
+      "texto": "Run All Controls"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 619,
+      "texto": "Run This Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 642,
+      "texto": "Mass Flow (t/h)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 643,
+      "texto": "Temp (°C)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 645,
+      "texto": "Enthalpy (kW)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 661,
+      "texto": "Unit Model Behavior & Parameters"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 665,
+      "texto": "Target Temperature (°C):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 669,
+      "texto": "Coolant Flow (t/h):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 673,
+      "texto": "Target Duty (kW):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 679,
+      "texto": "Reaction Temp (°C):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 683,
+      "texto": "Acid Feed (t/h):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 687,
+      "texto": "Target Acid (g/l):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 691,
+      "texto": "Conversion (%):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 697,
+      "texto": "Cut Size d50 (um):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 701,
+      "texto": "Bypass Fines:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 707,
+      "texto": "Primary Output Split Fraction:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 713,
+      "texto": "Current Holdup (t):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 717,
+      "texto": "Max Capacity (t):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 721,
+      "texto": "Residence Time tau (s):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 726,
+      "texto": "PassThrough / Generic Model — balances total inputs to outputs."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 755,
+      "texto": "Run Control"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 758,
+      "texto": "Monitor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 780,
+      "texto": "Control Monitor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 786,
+      "texto": "No control loop available."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 866,
+      "texto": "Draw Function:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 868,
+      "texto": "Re-Sweep"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 876,
+      "texto": "Calculate Control"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 886,
+      "texto": "Scenario Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 892,
+      "texto": "No scenario sheets in project."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 896,
+      "texto": "Run Selected Scenario"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 900,
+      "texto": "Run All Scenarios"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 907,
+      "texto": "Runs:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 912,
+      "texto": "Clone Scenario"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 954,
+      "texto": "Row / Run"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 955,
+      "texto": "Rounds"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 969,
+      "texto": "Monte Carlo"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 976,
+      "texto": "OFF"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 981,
+      "texto": "Dist. Type"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1000,
+      "texto": "Min"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1006,
+      "texto": "Max"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1012,
+      "texto": "Mean"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1098,
+      "texto": "Refresh Reports"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1101,
+      "texto": "Copy Current Sheet as CSV"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1185,
+      "texto": "KPI"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1227,
+      "texto": "Convergence Monitor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1257,
+      "texto": "Iteration Round"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1258,
+      "texto": "Balance Error (%)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1269,
+      "texto": "Process Calculation Order (Tarjan SCC)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1276,
+      "texto": "Topological Unit Sequence:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1289,
+      "texto": "Cycle Detection: Acyclic DAG (0 tear streams)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1317,
+      "texto": "Stream Width Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1321,
+      "texto": "Color Mode:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1327,
+      "texto": "Min:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1329,
+      "texto": "Max:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1334,
+      "texto": "Multiplier 10^k:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1343,
+      "texto": "HSC Sim 7 -> Sim 10 Model Converter"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1347,
+      "texto": "Automatic translation of division denominators (`safediv`), external workbook links (`REF`), and `/` characters in Excel sheet names."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1350,
+      "texto": "Sheet Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1354,
+      "texto": "Legacy Formula:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1380,
+      "texto": "Load into Workspace"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1391,
+      "texto": "Copy All to Clipboard"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1409,
+      "texto": "About HSC Sim"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1415,
+      "texto": "Soryntel HSC Sim"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1416,
+      "texto": "Version 10.3.1.0 (Clean-Room Edition)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1418,
+      "texto": "Modules integrated:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1419,
+      "texto": "• Flowsheet Drawing, Rulers, Layers, Groups & Locking"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1420,
+      "texto": "• Tarjan SCC Tear Stream Solver & Dynamic Tank ODE"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1421,
+      "texto": "• Control Loops (Tangential / PID) + 50-pt Control Monitor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1422,
+      "texto": "• Scenario Editor & Monte Carlo PDF/CDF Sampling"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1423,
+      "texto": "• Multi-sheet Reports, Sankey Visualization, SVG & LCA JSON"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1430,
+      "texto": "Check for Updates"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1436,
+      "texto": "Soryntel HSC Sim 10.3.1.0 is up to date."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/editors.rs",
+      "linea": 1437,
+      "texto": "Offline clean-room thermodynamic database & solver engine verified."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 154,
+      "texto": "Open Reference Project..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 163,
+      "texto": "Open / Import .simjson..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 169,
+      "texto": "Save Project (.simjson)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 175,
+      "texto": "Save as LCA JSON..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 182,
+      "texto": "Export Flowsheet Image (.svg)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 191,
+      "texto": "Toolbars"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 195,
+      "texto": "Top Toolbars (15):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 212,
+      "texto": "Docking Panes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 219,
+      "texto": "Zoom 100%"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 226,
+      "texto": "Select"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 227,
+      "texto": "Select All Units"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 231,
+      "texto": "Select All Streams"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 235,
+      "texto": "Clear Selection"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 243,
+      "texto": "Flowsheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 248,
+      "texto": "Stream Table Editor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 253,
+      "texto": "Lock Drawing (Green Frame)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 258,
+      "texto": "Lock Entire Process (Red Frame)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 264,
+      "texto": "Unlock"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 271,
+      "texto": "Select Unit Models..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 275,
+      "texto": "Unit Editor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 282,
+      "texto": "Scenario Editor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 286,
+      "texto": "Reports..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 291,
+      "texto": "Control Monitor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 295,
+      "texto": "Visualization Color Picker..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 299,
+      "texto": "Process Information..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 303,
+      "texto": "Notes..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 308,
+      "texto": "Mass Balancing..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 313,
+      "texto": "LCA Evaluation..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 319,
+      "texto": "LCA Evaluation (beta)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 326,
+      "texto": "HSC Sim 7 -> Sim 10 Model Converter..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 333,
+      "texto": "Calculate Active Flowsheet (F5)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 337,
+      "texto": "Calculate Selected Units"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 341,
+      "texto": "Run All Active Controls"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 345,
+      "texto": "Clear Internal Streams"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 351,
+      "texto": "Start / Pause Dynamic Simulation"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 355,
+      "texto": "Step Dynamic +10s"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 359,
+      "texto": "Empty All Tanks"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 364,
+      "texto": "Convergence Monitor..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 368,
+      "texto": "Calculation Order..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 374,
+      "texto": "Diagnostics"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 375,
+      "texto": "Open Log Tab"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 379,
+      "texto": "Global Mass & Enthalpy Balance Check"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 390,
+      "texto": "Check for Updates..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 394,
+      "texto": "About HSC Sim..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 426,
+      "texto": "Open / Import .simjson"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 431,
+      "texto": "Save Project (.simjson)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 440,
+      "texto": "Copy Selected Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 448,
+      "texto": "Paste Unit onto Flowsheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 500,
+      "texto": "Colors"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 515,
+      "texto": "Max convergence rounds"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 584,
+      "texto": "Scenarios"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 587,
+      "texto": "Stream Tables"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 590,
+      "texto": "Models"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 599,
+      "texto": "Find unit..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 615,
+      "texto": "Info"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 796,
+      "texto": "Add Flowsheet Page"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 825,
+      "texto": "Drawing Locked"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/sim_ui/mod.rs",
+      "linea": 829,
+      "texto": "Process Locked"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 399,
+      "texto": "Cu-S-Fe-Ni (Fig. 3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 404,
+      "texto": "Example Conversion (Fig. 12)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 441,
+      "texto": "Add Calculation Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 448,
+      "texto": "Add Summary Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 480,
+      "texto": "Fix Element Balance"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 483,
+      "texto": "Initialize"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 507,
+      "texto": "Norm limit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 529,
+      "texto": "Small Meas Limit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 536,
+      "texto": "Method"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 557,
+      "texto": "Species type"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 581,
+      "texto": "Weighting coef."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 677,
+      "texto": "Author:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 899,
+      "texto": "+ Add Input"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 905,
+      "texto": "+ Add Output Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 959,
+      "texto": "Limit threshold (%):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_converter_ui.rs",
+      "linea": 969,
+      "texto": "Run Solve first to inspect element balance."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 568,
+      "texto": "HSC Databases (Module 16) Help"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 574,
+      "texto": "• Precedence: Calculation modules always resolve species from OwnDB first, then MainDB."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 575,
+      "texto": "• Search Modes: Elements (Some / All), Stoichiometry (Fix Ratio OFF = isomer/mineral match e.g. SiO4FeFe -> *2FeO*SiO2; ON = empirical ratio e.g. AsS -> As2S2), Keyword (Formula, Structural, Name, Common, CAS)."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 576,
+      "texto": "• Organic Filter: Unchecking 'Organic' skips molecules with H > 0 and C > 2 atoms."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 577,
+      "texto": "• Cp Tools: Kelley least-squares fitting with Y/N parameter masks & external Cp (Shomate/NASA-7/DIPPR/Custom) 10-interval conversion."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 578,
+      "texto": "• G(T) Converter: Converts G(T) polynomial -> (H, S, A, B, C, D) and runs Delta to Normal from reference elements."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 599,
+      "texto": "Open OwnDB (.HSC)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 603,
+      "texto": "Save OwnDB (.HSC)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 611,
+      "texto": "Export Resolved View -> CSV"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 621,
+      "texto": "New Blank Species in OwnDB Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 626,
+      "texto": "Edit Selected Species in OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 631,
+      "texto": "Delete Selected from OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 663,
+      "texto": "Databases"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 664,
+      "texto": "Active Layer: OwnDB > MainDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 669,
+      "texto": "Show OwnDB Only"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 674,
+      "texto": "Show MainDB Only"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 680,
+      "texto": "Sort OwnDB Alphabetically"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 686,
+      "texto": "Refresh Active .CAT Indexes"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 697,
+      "texto": "Module 16 Guide & Validation Reference"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 789,
+      "texto": "Layer:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 815,
+      "texto": "Key word:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 821,
+      "texto": "Field:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 845,
+      "texto": "Elements:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 854,
+      "texto": "Clear Elements"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 880,
+      "texto": "C count:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 896,
+      "texto": "Toggle elements:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 926,
+      "texto": "Search / Refresh Results"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 994,
+      "texto": "Edit Copy in OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1033,
+      "texto": "Molecular Weight:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1039,
+      "texto": "CAS Number:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1043,
+      "texto": "Density / Solubility:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1057,
+      "texto": "Phase / Charge:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1062,
+      "texto": "Color / Reliability:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1161,
+      "texto": "Select a species on the left to inspect its 19 HSC fields and thermochemical ranges."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1170,
+      "texto": "Load Selected"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1173,
+      "texto": "New Blank Species"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1176,
+      "texto": "Calc MW"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1185,
+      "texto": "Extrapolate X -> X(l) @ 298.15 K"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1190,
+      "texto": "Save to OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1197,
+      "texto": "Persist OwnDB File (.HSC)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1205,
+      "texto": "Delete from OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1220,
+      "texto": "Formula (24 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1222,
+      "texto": "Structural Formula (32 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1228,
+      "texto": "Chemical Name (52 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1230,
+      "texto": "Common Name (32 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1232,
+      "texto": "CAS Number (12 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1236,
+      "texto": "Density (g/cm³):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1238,
+      "texto": "Melting Pt (K):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1240,
+      "texto": "Boiling Pt (K):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1244,
+      "texto": "Solubility (14 ch):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1246,
+      "texto": "Reliability Class (1..10):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1248,
+      "texto": "Color (0..53):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1263,
+      "texto": "Select HSC Color Code (0..53):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1293,
+      "texto": "+ Add Interval"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1300,
+      "texto": "- Remove Last"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1303,
+      "texto": "Auto dS = dH / Ttr (Rows >= 1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1446,
+      "texto": "Load NaF Validation Preset (S6)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1453,
+      "texto": "+ Add Point"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1459,
+      "texto": "Fit Cp Curve"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1462,
+      "texto": "Copy A..D -> OwnDB Editor row 1"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1571,
+      "texto": "Click 'Fit Cp Curve' to compute Kelley A, B, C, D and inspect residuals."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1610,
+      "texto": "Template"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1634,
+      "texto": "Copy A..D -> OwnDB Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1654,
+      "texto": "Cp Function f(T):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1656,
+      "texto": "Source Units:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1666,
+      "texto": "Params A..F:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1742,
+      "texto": "Load Cu2S Validation Preset (S7)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1753,
+      "texto": "Convert G(T)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1756,
+      "texto": "Delta to Normal"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1776,
+      "texto": "Save Result -> OwnDB Editor"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1796,
+      "texto": "G(T) = h + s·10⁻³·T + a·10⁻³·T·ln(T) + b·10⁻⁶·T² + c·T⁻¹ + d·10⁻⁹·T³   (at T_ref = 298.15 K)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1801,
+      "texto": "Target Formula:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1805,
+      "texto": "h (const):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1809,
+      "texto": "a (×10⁻³ T·lnT):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1890,
+      "texto": "MainDB (.HSC):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1892,
+      "texto": "Open MainDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1903,
+      "texto": "OwnDB (.HSC):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1906,
+      "texto": "Open OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1915,
+      "texto": "Save OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1921,
+      "texto": "Create New Empty OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1933,
+      "texto": "Citations (.REF):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1935,
+      "texto": "Load .REF"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1947,
+      "texto": "Merge Source (HSC1):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1949,
+      "texto": "Target (HSC2):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1953,
+      "texto": "Inspect / Merge"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1978,
+      "texto": "Legacy HSC 2–5 -> 6:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1980,
+      "texto": "Output HSC 6:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1982,
+      "texto": "Convert Legacy -> HSC 6"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 1990,
+      "texto": "CSV Interchange:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 2000,
+      "texto": "Import CSV -> OwnDB"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 2020,
+      "texto": "Apply Merge Decisions"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/species_ui.rs",
+      "linea": 2051,
+      "texto": "Filter key or author (e.g. Barin, JANAF, SGTE)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 582,
+      "texto": "Clear Convert Sheet"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 590,
+      "texto": "Add Custom Unit..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 594,
+      "texto": "Add New Quantity..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 599,
+      "texto": "Export Active Sheet CSV..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 603,
+      "texto": "Reset Default HSC6 Database"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 614,
+      "texto": "Swap Units 1 <-> 2"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 626,
+      "texto": "Copy Active Cell Value"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 634,
+      "texto": "Sampler (All Equivalents)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 638,
+      "texto": "Water in Air (2D Curves)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 642,
+      "texto": "Water in Air 3D Graph"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 739,
+      "texto": "Outotec"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 834,
+      "texto": "Unit Conversion"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1038,
+      "texto": "Sampler and Graphs"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1318,
+      "texto": "Filter Quantity:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1322,
+      "texto": "e.g. Energy, Pressure, Mass..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1328,
+      "texto": "+ Add Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1331,
+      "texto": "+ Add Quantity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1491,
+      "texto": "Search Constant:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1495,
+      "texto": "Gas constant, Faraday, Planck..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1611,
+      "texto": "Sieve Interpolator (log-log):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1612,
+      "texto": "Mesh:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1625,
+      "texto": "<->  Opening [mm]:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1756,
+      "texto": "Air Humidity Calc:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1765,
+      "texto": "P (bar):"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 1968,
+      "texto": "Unit Sampler — All Equivalents"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2023,
+      "texto": "Water in Air — Psychrometric Curves (2D)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2029,
+      "texto": "Y Axis:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2080,
+      "texto": "WaterInAir 3D"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2094,
+      "texto": "Drag to orbit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2103,
+      "texto": "Water Content of Air"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2134,
+      "texto": "Add Custom Unit to Selected Quantity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2146,
+      "texto": "Unit Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2154,
+      "texto": "Units per 1 Base Unit:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2158,
+      "texto": "Add Unit"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2192,
+      "texto": "Add New Physical Quantity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2197,
+      "texto": "Quantity Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2205,
+      "texto": "SI Base Expression:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2209,
+      "texto": "Base Unit Name:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2213,
+      "texto": "Base Unit Symbol:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2217,
+      "texto": "Create Quantity"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2253,
+      "texto": "Soryntel Chemistry — Module 14: Measure Units (`UNITS4.UNI`)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2259,
+      "texto": "• 6-sheet workbook: Convert, Units, Constants, Mesh, Air, H2O."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/units_ui.rs",
+      "linea": 2260,
+      "texto": "• Includes WaterInAir 2D & 3D psychometric surface plots."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 361,
+      "texto": "Modelo aproximado de agua y vapor. La correlación de saturación procede de IAPWS; las demás propiedades no implementan IF97 completo."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 374,
+      "texto": "Preset 1: 180 °C Steam → Triple Point (Fig. 1)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 378,
+      "texto": "Preset 2: Ice Melting at 500 bar (Fig. 2)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 382,
+      "texto": "Preset 3: Boiler Evaporation 285 °C (Fig. 3)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 386,
+      "texto": "Preset 4: Steam Turbine 480 °C → 30 °C (Fig. 4)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 391,
+      "texto": "Export CSV (/tmp/soryntel_water_calc.csv)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 397,
+      "texto": "Point 2 = Triple Point (Steam Table Ref)"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 402,
+      "texto": "Point 1 = Triple Point"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 407,
+      "texto": "Swap Point 1 ↔ Point 2"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 448,
+      "texto": "Cp vs T Steam Curves (Fig. 5)..."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 495,
+      "texto": "Soryntel"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 620,
+      "texto": "kg/kmol"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 1710,
+      "texto": "Pressure-corrected steam Cp functions vs ideal-gas H2O(g) [J/(kg·K)] from Maindb6 & Water EOS:"
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 1756,
+      "texto": "• Límites numéricos: T = -270,15 a 2000 °C y P = 0,001 a 1000 bar. Estos límites no garantizan exactitud científica."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 1757,
+      "texto": "• Fases: sólido (s), líquido (l), gas (g), mezclas saturadas (g,l), (g,s), (l,s) y fluido supercrítico."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 1758,
+      "texto": "• Punto triple: 0,01 °C y 0,006117 bar. Punto crítico: 373,946 °C y 220,64 bar."
+    },
+    {
+      "archivo": "crates/soryntel-desktop/src/water_ui.rs",
+      "linea": 1759,
+      "texto": "• Modelo de exergía de Szargut con referencia a 25 °C y 1 bar."
+    }
+  ]
+}

@@ -1912,7 +1912,7 @@ impl ExcelAddInsModuleState {
             "ods" => SoryntelApplication::export_workbook_ods(&sheets),
             _ => return Err("Formato no soportado".into()),
         };
-        std::fs::write(&full_path, bytes).map_err(|e| format!("Error al escribir archivo: {e}"))?;
+        crate::storage::write_atomic(&full_path, bytes).map_err(|e| format!("Error al escribir archivo: {e}"))?;
         Ok(full_path.to_string_lossy().to_string())
     }
 
@@ -1935,7 +1935,7 @@ impl ExcelAddInsModuleState {
             _ => return Err("Conector de suite no reconocido".into()),
         };
         let full_path = dir.join(fname);
-        std::fs::write(&full_path, bytes)
+        crate::storage::write_atomic(&full_path, bytes)
             .map_err(|e| format!("Error escribiendo {fname}: {e}"))?;
         Ok(full_path.to_string_lossy().to_string())
     }
@@ -1961,7 +1961,7 @@ impl ExcelAddInsModuleState {
                 csv.push('\n');
             }
         }
-        std::fs::write(&full_path, csv).map_err(|e| format!("Error al escribir CSV: {e}"))?;
+        crate::storage::write_atomic(&full_path, csv).map_err(|e| format!("Error al escribir CSV: {e}"))?;
         Ok(full_path.to_string_lossy().to_string())
     }
 
@@ -2292,7 +2292,7 @@ impl ExcelAddInsModuleState {
                                             .size(12.0)
                                             .color(EXCEL_GREEN_DARK),
                                         |ui| {
-                                            if ui.button("Change measurement units...").clicked() {
+                                            if ui.button(crate::i18n::text("common.035")).clicked() {
                                                 self.pending_units = self.units.clone();
                                                 self.show_units_dialog = true;
                                                 ui.close_menu();
@@ -2331,7 +2331,7 @@ impl ExcelAddInsModuleState {
                             });
 
                         ui.separator();
-                        if ui.button("Change measurement units...").clicked() {
+                        if ui.button(crate::i18n::text("common.035")).clicked() {
                             self.pending_units = self.units.clone();
                             self.show_units_dialog = true;
                         }
@@ -3744,7 +3744,7 @@ impl ExcelAddInsModuleState {
         let mut apply = false;
         let mut cancel = false;
 
-        egui::Window::new("Change measurement units...")
+        egui::Window::new(crate::i18n::text("common.035"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
@@ -3818,13 +3818,13 @@ impl ExcelAddInsModuleState {
                 );
                 ui.separator();
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         cancel = true;
                     }
                     if ui
                         .add(
                             egui::Button::new(
-                                egui::RichText::new("  OK  ")
+                                egui::RichText::new(crate::i18n::text("common.023"))
                                     .strong()
                                     .color(egui::Color32::WHITE),
                             )
@@ -3982,7 +3982,7 @@ impl ExcelAddInsModuleState {
         let mut cancel = false;
         let sel = self.browse_selected_file.min(FILES.len() - 1);
 
-        egui::Window::new("Browse")
+        egui::Window::new(crate::i18n::text("common.115"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
@@ -4035,13 +4035,13 @@ impl ExcelAddInsModuleState {
                 });
                 ui.separator();
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         cancel = true;
                     }
                     if ui
                         .add(
                             egui::Button::new(
-                                egui::RichText::new("  OK  ")
+                                egui::RichText::new(crate::i18n::text("common.023"))
                                     .strong()
                                     .color(egui::Color32::WHITE),
                             )

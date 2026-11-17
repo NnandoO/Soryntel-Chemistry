@@ -381,7 +381,8 @@ pub fn calculate(
     req: &CalculationRequest,
     repo: &dyn SpeciesRepository,
 ) -> Result<CalculationResponse, SoryntelError> {
-    if req.t_step <= 0.0 || req.t_to < req.t_from {
+    if !req.t_from.is_finite() || !req.t_to.is_finite() || !req.t_step.is_finite()
+        || req.t_step <= 0.0 || req.t_to < req.t_from {
         return Err(SoryntelError::InvalidRange {
             from: req.t_from,
             to: req.t_to,
@@ -397,13 +398,20 @@ pub fn calculate(
     let t_from_k = req.temp_unit.to_kelvin(req.t_from);
     let t_to_k = req.temp_unit.to_kelvin(req.t_to);
     let step_k = req.temp_unit.step_to_kelvin(req.t_step);
-    if t_from_k <= 0.0 {
+    if t_from_k <= 0.0 || !t_from_k.is_finite() {
         return Err(SoryntelError::InvalidTemperature(t_from_k));
     }
 
     // Collect grid temperatures in K
     let mut temps_k = Vec::new();
-    let n_steps = ((t_to_k - t_from_k) / step_k + 1e-9).floor() as usize;
+    let steps = ((t_to_k - t_from_k) / step_k + 1e-9).floor();
+    // Bound allocation before casting: tiny increments can overflow or exhaust memory.
+    if !steps.is_finite() || steps > 100_000.0 {
+        return Err(SoryntelError::InvalidRange {
+            from: req.t_from, to: req.t_to, step: req.t_step,
+        });
+    }
+    let n_steps = steps as usize;
     for i in 0..=n_steps {
         temps_k.push(t_from_k + (i as f64) * step_k);
     }
@@ -582,7 +590,9 @@ pub(crate) fn sum_element_references(
     let mut g = 0.0;
     let mut cp = 0.0;
     for (el, &cnt) in &term.elements {
-        if let Some(ref_sp) = repo.get_reference_element(el) {
+        {
+            let ref_sp = repo.get_reference_element(el)
+                .ok_or_else(|| SoryntelError::SpeciesNotFound(format!("elemento de referencia {el}")))?;
             let (pt, _) = evaluate_species_si(&ref_sp, t_k, criss_cobble, false)?;
             // Determine exact stoichiometric atoms per mole of reference species (e.g. O2(g)->2, I2->2, P4->4, Fe->1)
             let atoms_per_mol = soryntel_solver::parse_term(&ref_sp.formula)
@@ -598,7 +608,9 @@ pub(crate) fn sum_element_references(
         }
     }
     if term.charge != 0 {
-        if let (Some(h2), Some(hp)) = (repo.get_species("H2(g)"), repo.get_species("H(+a)")) {
+        {
+            let h2 = repo.get_species("H2(g)").ok_or_else(|| SoryntelError::SpeciesNotFound("H2(g)".into()))?;
+            let hp = repo.get_species("H(+a)").ok_or_else(|| SoryntelError::SpeciesNotFound("H(+a)".into()))?;
             let (p_h2, _) = evaluate_species_si(&h2, t_k, criss_cobble, false)?;
             let (p_hp, _) = evaluate_species_si(&hp, t_k, criss_cobble, false)?;
             let z = term.charge as f64;
@@ -774,13 +786,13 @@ impl ReactionYAxis {
 
     pub fn chart_title(self) -> &'static str {
         match self {
-            Self::Cp => "Heat capacity",
-            Self::H => "Enthalpy",
-            Self::S => "Entropy",
-            Self::G => "Gibbs free energy",
-            Self::LogK => "Logarithm of equilibrium constant",
-            Self::K => "Equilibrium constant",
-            Self::EVsShe => "Standard reduction potential",
+            Self::Cp => "Capacidad calorífica",
+            Self::H => "Entalpía",
+            Self::S => "Entropía",
+            Self::G => "Energía de Gibbs",
+            Self::LogK => "Logaritmo de la constante de equilibrio",
+            Self::K => "Constante de equilibrio",
+            Self::EVsShe => "Potencial estándar de reducción",
         }
     }
 }
@@ -920,9 +932,9 @@ pub fn format_reaction_sheet_tsv(sheet: &ReactionCollectedSheet, decimals: usize
         let h_h = if is_delta { "ΔH" } else { "H" };
         let s_h = if is_delta { "ΔS" } else { "S" };
         let g_h = if is_delta { "ΔG" } else { "G" };
-        out.push_str(&format!("Formula\t{}\n", res.normalized_input));
-        out.push_str("Reaction Data\n");
-        out.push_str(&format!("T\t{cp_h}\t{h_h}\t{s_h}\t{g_h}\tReference\n"));
+        out.push_str(&format!("Fórmula\t{}\n", res.normalized_input));
+        out.push_str("Datos de reacción\n");
+        out.push_str(&format!("T\t{cp_h}\t{h_h}\t{s_h}\t{g_h}\tReferencia\n"));
         out.push_str(&format!(
             "{}\t{}\t{}/mol\t{}\t{}/mol\t\n",
             res.temp_unit_label,
@@ -944,8 +956,8 @@ pub fn format_reaction_sheet_tsv(sheet: &ReactionCollectedSheet, decimals: usize
             ));
         }
     } else {
-        out.push_str(&format!("Reaction Equation\t{}\n", res.normalized_input));
-        out.push_str("Reaction Data\n");
+        out.push_str(&format!("Ecuación de reacción\t{}\n", res.normalized_input));
+        out.push_str("Datos de reacción\n");
         if res.has_electrochemical_potential {
             out.push_str("T\tΔH\tΔS\tΔG\tK\tLog K\tE vs. SHE\n");
             out.push_str(&format!(
@@ -993,8 +1005,8 @@ pub fn format_reaction_sheet_tsv(sheet: &ReactionCollectedSheet, decimals: usize
         }
     }
 
-    out.push_str("\nSpecies Data\n");
-    out.push_str("Formula\tM\tConc.\tmol\tg\tVolume\tUnit\tExtrapolated\n");
+    out.push_str("\nDatos de especies\n");
+    out.push_str("Fórmula\tM\tConc.\tmol\tg\tVolume\tUnit\tExtrapolated\n");
     out.push_str("\tg/mol\twt-%\tmol\tg\tVolume\tUnit\tFrom T(K)\n");
     for s in &res.species_data {
         let ext = s
@@ -1054,7 +1066,7 @@ pub fn build_reaction_export_sheets(
             let title_lbl = if res.is_single_substance {
                 "Formula"
             } else {
-                "Reaction Equation"
+                "Ecuación de reacción"
             };
             push_txt(&mut cells, 0, 2, title_lbl, ExportCellStyle::Header);
             push_txt(
@@ -1064,7 +1076,7 @@ pub fn build_reaction_export_sheets(
                 &res.normalized_input,
                 ExportCellStyle::BoldBox,
             );
-            push_txt(&mut cells, 3, 0, "Reaction Data", ExportCellStyle::Header);
+            push_txt(&mut cells, 3, 0, "Datos de reacción", ExportCellStyle::Header);
 
             let mut cur_row = 4;
             if res.is_single_substance {
@@ -1075,7 +1087,7 @@ pub fn build_reaction_export_sheets(
                     if is_delta { "ΔH" } else { "H" },
                     if is_delta { "ΔS" } else { "S" },
                     if is_delta { "ΔG" } else { "G" },
-                    "Reference",
+                    "Referencia",
                 ];
                 let units = [
                     res.temp_unit_label.clone(),
@@ -1142,13 +1154,13 @@ pub fn build_reaction_export_sheets(
             }
 
             cur_row += 1;
-            push_txt(&mut cells, cur_row, 0, "Species Data", ExportCellStyle::Header);
+            push_txt(&mut cells, cur_row, 0, "Datos de especies", ExportCellStyle::Header);
             cur_row += 1;
             let sp_h1 = [
                 "Formula",
                 "M",
                 "Conc.",
-                "Input Amounts",
+                "Cantidades de entrada",
                 "",
                 "",
                 "",

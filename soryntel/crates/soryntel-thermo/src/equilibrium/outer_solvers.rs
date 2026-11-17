@@ -37,12 +37,54 @@ pub fn generate_axis_values(range: AxisRange, count: usize) -> Vec<f64> {
     vals
 }
 
+/// Check sweep sizes before allocating either axis or the result matrix.
+fn validate_sweep(params: &EquilibriumParams) -> Result<(), SoryntelError> {
+    let error = |message: &str| SoryntelError::ParseError(message.into());
+    if params.num_indep_vars > 2 {
+        return Err(error("El equilibrio admite como máximo dos variables independientes"));
+    }
+    if params.num_indep_vars == 0 { return Ok(()); }
+    let axis = |var| -> Result<usize, SoryntelError> {
+        let range = match var {
+            SweepVariable::TemperatureC => Some(params.temp_range),
+            SweepVariable::PressureBar => Some(params.pressure_range),
+            SweepVariable::EnthalpyMj => Some(params.enthalpy_range),
+            SweepVariable::VolumeM3 => Some(params.volume_range),
+            SweepVariable::DischargeLevelKmolE => Some(params.discharge_range),
+            _ => None,
+        };
+        let count = if let Some(r) = range {
+            if !r.initial.is_finite() || !r.final_val.is_finite()
+                || !(r.final_val - r.initial).is_finite()
+                || (r.log_scale && (r.initial <= 0.0 || r.final_val <= 0.0)) {
+                return Err(error("El eje requiere límites finitos y positivos para escala logarítmica"));
+            }
+            r.steps
+        } else if var == SweepVariable::XAmount { params.x_steps } else { params.z_steps };
+        if count == 0 || count > 100_001 {
+            return Err(error("El eje debe contener entre 1 y 100001 puntos"));
+        }
+        Ok(count)
+    };
+    let primary = axis(params.primary_var)?;
+    let secondary = if params.num_indep_vars == 2 {
+        let var = params.secondary_var.ok_or_else(|| error("Falta la segunda variable independiente"))?;
+        if var == params.primary_var { return Err(error("Las variables independientes deben ser distintas")); }
+        axis(var)?
+    } else { 1 };
+    if primary.checked_mul(secondary).filter(|&n| n <= 100_001).is_none() {
+        return Err(error("El barrido completo de equilibrio supera los 100001 puntos"));
+    }
+    Ok(())
+}
+
 /// Executes a full 0D, 1D, or 2D equilibrium sweep (including `N,H,P`, `N,P,V`, `Target`, and `Cell Mode`).
 pub fn solve_equilibrium_sweep<R: SpeciesRepository>(
     system: &EquilibriumSystem,
     params: &EquilibriumParams,
     repo: &R,
 ) -> Result<EquilibriumSweepResult, SoryntelError> {
+    validate_sweep(params)?;
     if params.target.enabled && params.num_indep_vars == 1 {
         let summary = solve_target_calculation(system, params, repo)?;
         return Ok(EquilibriumSweepResult {

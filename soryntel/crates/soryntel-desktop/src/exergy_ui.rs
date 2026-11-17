@@ -160,7 +160,7 @@ impl ExergyModuleState {
             )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
+                    ui.menu_button(crate::i18n::text("common.001"), |ui| {
                         if ui.button("New (Fig. 1 Default)").clicked() {
                             self.wb = ExergyWorkbook::new_default();
                             self.wb.calculate(db);
@@ -192,7 +192,7 @@ impl ExergyModuleState {
                         }
                         ui.separator();
                         ui.horizontal(|ui| {
-                            ui.label("File:");
+                            ui.label(crate::i18n::text("common.064"));
                             ui.add(
                                 egui::TextEdit::singleline(&mut self.file_path_input)
                                     .desired_width(140.0),
@@ -220,7 +220,7 @@ impl ExergyModuleState {
                         }
                         if ui.button("Save (.exe8)...").clicked() {
                             match self.wb.to_exe8_json().and_then(|j| {
-                                std::fs::write(&self.file_path_input, j).map_err(|e| e.to_string())
+                                crate::storage::write_atomic(&self.file_path_input, j).map_err(|e| e.to_string())
                             }) {
                                 Ok(()) => {
                                     self.status_msg =
@@ -233,13 +233,13 @@ impl ExergyModuleState {
                             ui.close_menu();
                         }
                         ui.separator();
-                        if ui.button("Exit").clicked() {
+                        if ui.button(crate::i18n::text("common.016")).clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     });
 
-                    ui.menu_button("Edit", |ui| {
-                        if ui.button("Calculate").clicked() {
+                    ui.menu_button(crate::i18n::text("common.006"), |ui| {
+                        if ui.button(crate::i18n::text("common.011")).clicked() {
                             self.wb.calculate(db);
                             self.status_msg = "Balance de exergía recalculado".to_string();
                             ui.close_menu();
@@ -272,8 +272,8 @@ impl ExergyModuleState {
                         }
                     });
 
-                    ui.menu_button("Units", |ui| {
-                        ui.label(egui::RichText::new("Temperature").strong().small());
+                    ui.menu_button(crate::i18n::text("common.027"), |ui| {
+                        ui.label(egui::RichText::new(crate::i18n::text("common.005")).strong().small());
                         ui.radio_value(&mut self.temp_unit, TemperatureUnit::Kelvin, "K (Kelvin)");
                         ui.radio_value(
                             &mut self.temp_unit,
@@ -287,12 +287,12 @@ impl ExergyModuleState {
                         ui.radio_value(&mut self.energy_unit, ExergyEnergyUnit::Kcal, "kcal");
                         ui.radio_value(&mut self.energy_unit, ExergyEnergyUnit::Kwh, "kWh");
                         ui.separator();
-                        ui.label(egui::RichText::new("Amount").strong().small());
+                        ui.label(egui::RichText::new(crate::i18n::text("common.017")).strong().small());
                         ui.radio_value(&mut self.amount_unit, ExergyAmountUnit::Mol, "mol");
                         ui.radio_value(&mut self.amount_unit, ExergyAmountUnit::Kmol, "kmol");
                     });
 
-                    ui.menu_button("Help", |ui| {
+                    ui.menu_button(crate::i18n::text("common.003"), |ui| {
                         if ui.button("Methodology (Szargut 1988)").clicked() {
                             self.show_help_modal = true;
                             ui.close_menu();
@@ -1244,7 +1244,7 @@ impl ExergyModuleState {
                 egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
                     for sp in matches {
                         ui.horizontal(|ui| {
-                            if ui.button("Insert").clicked() {
+                            if ui.button(crate::i18n::text("common.010")).clicked() {
                                 insert_formula = Some(sp.formula.clone());
                             }
                             ui.label(egui::RichText::new(&sp.formula).strong());

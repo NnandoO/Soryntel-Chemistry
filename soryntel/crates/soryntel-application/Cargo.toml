@@ -8,3 +8,6 @@ license.workspace = true
 soryntel-core = { path = "../soryntel-core" }
 soryntel-solver = { path = "../soryntel-solver" }
 soryntel-thermo = { path = "../soryntel-thermo" }
+
+[dev-dependencies]
+soryntel-db = { path = "../soryntel-db" }

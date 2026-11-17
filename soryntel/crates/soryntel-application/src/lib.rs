@@ -625,6 +625,15 @@ impl SoryntelApplication {
         domain_calculate_water_points(req, Some(catalog))
     }
 
+    /// Checked entry point for interactive and external requests.
+    pub fn try_calculate_water(
+        catalog: &dyn SpeciesCatalogPort,
+        req: &WaterCalcRequest,
+    ) -> Result<WaterCalcResult, SoryntelError> {
+        soryntel_thermo::water::validate_water_request(req)?;
+        Ok(domain_calculate_water_points(req, Some(catalog)))
+    }
+
     pub fn water_phase_curves() -> WaterDiagramCurves {
         domain_water_diagram_curves()
     }

@@ -421,7 +421,7 @@ impl AquaModuleState {
         self.sync_case_from_rows();
         let p = std::env::temp_dir().join("soryntel_aqua_case.aqu8.json");
         if let Ok(json) = serde_json::to_string_pretty(&self.case_file) {
-            if std::fs::write(&p, json).is_ok() {
+            if crate::storage::write_atomic(&p, json).is_ok() {
                 self.status_msg = format!("Saved case: {}", p.display());
             }
         }
@@ -482,7 +482,7 @@ impl AquaModuleState {
 
     fn render_units_menu_items(&mut self, ui: &mut egui::Ui, db: &ThermoDatabase) -> bool {
         let mut close = false;
-        ui.label(egui::RichText::new("Temperature").strong().size(11.0));
+        ui.label(egui::RichText::new(crate::i18n::text("common.005")).strong().size(11.0));
         for (tu, l) in [
             (AquaTempUnit::Celsius, "°C (Celsius)"),
             (AquaTempUnit::Kelvin, "K (Kelvin)"),
@@ -505,7 +505,7 @@ impl AquaModuleState {
             }
         }
         ui.separator();
-        ui.label(egui::RichText::new("Pressure").strong().size(11.0));
+        ui.label(egui::RichText::new(crate::i18n::text("common.106")).strong().size(11.0));
         for (pu, l) in [
             (AquaPressUnit::Pa, "Pa"),
             (AquaPressUnit::KPa, "kPa"),
@@ -644,21 +644,21 @@ impl AquaModuleState {
             )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button(egui::RichText::new("File").size(11.5).color(HSC_DARK_TEXT), |ui| {
+                    ui.menu_button(egui::RichText::new(crate::i18n::text("common.001")).size(11.5).color(HSC_DARK_TEXT), |ui| {
                         if self.render_file_menu_items(ui, db) {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button(egui::RichText::new("Edit").size(11.5).color(HSC_DARK_TEXT), |ui| {
-                        if ui.button("Cut").clicked() {
+                    ui.menu_button(egui::RichText::new(crate::i18n::text("common.006")).size(11.5).color(HSC_DARK_TEXT), |ui| {
+                        if ui.button(crate::i18n::text("common.075")).clicked() {
                             self.cut_selected_cell(db);
                             ui.close_menu();
                         }
-                        if ui.button("Copy").clicked() {
+                        if ui.button(crate::i18n::text("common.029")).clicked() {
                             self.copy_selected_cell(ctx);
                             ui.close_menu();
                         }
-                        if ui.button("Paste").clicked() {
+                        if ui.button(crate::i18n::text("common.076")).clicked() {
                             self.paste_selected_cell(db);
                             ui.close_menu();
                         }
@@ -676,7 +676,7 @@ impl AquaModuleState {
                             self.delete_selected_row(db);
                             ui.close_menu();
                         }
-                        if ui.button("Clear Sheet").clicked() {
+                        if ui.button(crate::i18n::text("common.093")).clicked() {
                             self.clear_sheet();
                             ui.close_menu();
                         }
@@ -703,7 +703,7 @@ impl AquaModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button(egui::RichText::new("Tools").size(11.5).color(HSC_DARK_TEXT), |ui| {
+                    ui.menu_button(egui::RichText::new(crate::i18n::text("common.018")).size(11.5).color(HSC_DARK_TEXT), |ui| {
                         ui.menu_button("Units...", |ui| {
                             if self.render_units_menu_items(ui, db) {
                                 ui.close_menu();
@@ -725,7 +725,7 @@ impl AquaModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button(egui::RichText::new("Help").size(11.5).color(HSC_DARK_TEXT), |ui| {
+                    ui.menu_button(egui::RichText::new(crate::i18n::text("common.003")).size(11.5).color(HSC_DARK_TEXT), |ui| {
                         if ui.button("Aqua Module Help...").clicked() {
                             self.show_help = true;
                             ui.close_menu();
@@ -1740,13 +1740,13 @@ impl AquaModuleState {
 
     fn render_param_sets_window(&mut self, ctx: &egui::Context) {
         let mut open = self.show_param_sets;
-        egui::Window::new("Active Pitzer Parameters")
+        egui::Window::new(crate::i18n::text("common.094"))
             .open(&mut open)
             .default_size([920.0, 520.0])
             .resizable(true)
             .show(ctx, |ui| {
                 ui.label(
-                    egui::RichText::new("Active Pitzer Parameters")
+                    egui::RichText::new(crate::i18n::text("common.094"))
                         .strong()
                         .size(15.0)
                         .color(HSC_DARK_TEXT),
@@ -1940,13 +1940,13 @@ impl AquaModuleState {
                             }
                             ui.close_menu();
                         }
-                        if ui.button("Save").clicked() {
+                        if ui.button(crate::i18n::text("common.034")).clicked() {
                             let p = self
                                 .own_db_json_path
                                 .get_or_insert_with(|| std::env::temp_dir().join("soryntel_own_pitzer.json"))
                                 .clone();
                             if let Ok(json) = serde_json::to_string_pretty(&self.own_db) {
-                                let _ = std::fs::write(&p, json);
+                                let _ = crate::storage::write_atomic(&p, json);
                                 self.status_msg = format!("Saved OwnDB to {}", p.display());
                             }
                             ui.close_menu();
@@ -1955,7 +1955,7 @@ impl AquaModuleState {
                             let p = std::env::temp_dir().join("soryntel_own_pitzer_backup.json");
                             self.own_db_json_path = Some(p.clone());
                             if let Ok(json) = serde_json::to_string_pretty(&self.own_db) {
-                                let _ = std::fs::write(&p, json);
+                                let _ = crate::storage::write_atomic(&p, json);
                                 self.status_msg = format!("Saved OwnDB As {}", p.display());
                             }
                             ui.close_menu();
@@ -1968,7 +1968,7 @@ impl AquaModuleState {
                         }
                     });
 
-                    if ui.button("Delete Row").clicked() {
+                    if ui.button(crate::i18n::text("common.078")).clicked() {
                         match self.own_db_tab {
                             PitzerSheetTab::Binary if self.own_db_selected_row < self.own_db.binaries.len() => {
                                 self.own_db.binaries.remove(self.own_db_selected_row);
@@ -1990,7 +1990,7 @@ impl AquaModuleState {
                         }
                     }
 
-                    if ui.button("+ Add Row").clicked() {
+                    if ui.button(crate::i18n::text("common.095")).clicked() {
                         match self.own_db_tab {
                             PitzerSheetTab::Binary => self.own_db.binaries.push(OwnBinaryRow {
                                 cation: "Na(+a)".into(),
@@ -2262,7 +2262,7 @@ impl AquaModuleState {
                             }
                         }
                     }
-                    if ui.button("Clear Sheet").clicked() {
+                    if ui.button(crate::i18n::text("common.093")).clicked() {
                         self.density_rows.clear();
                         self.density_selected_entry_idx = None;
                         recalc_density = true;
@@ -2308,7 +2308,7 @@ impl AquaModuleState {
                         ui.label(egui::RichText::new(sol_txt).strong().size(11.5).color(HSC_DARK_TEXT));
                         ui.end_row();
 
-                        ui.label(egui::RichText::new("Temperature").strong().size(11.0));
+                        ui.label(egui::RichText::new(crate::i18n::text("common.005")).strong().size(11.0));
                         ui.horizontal(|ui| {
                             let te = ui.add(
                                 egui::TextEdit::singleline(&mut self.density_temp_buf)

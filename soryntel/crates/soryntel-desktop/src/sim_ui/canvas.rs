@@ -1054,7 +1054,7 @@ pub fn render_flowsheet_canvas(ui: &mut egui::Ui, state: &mut SimModuleState) {
     resp.context_menu(|ui| {
         match state.selected {
             SelectedObject::Unit(uid) => {
-                if ui.button("Open Unit Editor...").clicked() {
+                if ui.button(crate::i18n::text("review.182")).clicked() {
                     state.open_unit_editor(uid);
                     ui.close_menu();
                 }
@@ -1080,7 +1080,7 @@ pub fn render_flowsheet_canvas(ui: &mut egui::Ui, state: &mut SimModuleState) {
                 }
             }
             SelectedObject::Stream(sid) => {
-                if ui.button("Streams Source and Destination...").clicked() {
+                if ui.button(crate::i18n::text("review.183")).clicked() {
                     state.open_stream_src_dest(sid);
                     ui.close_menu();
                 }
@@ -1134,7 +1134,7 @@ pub fn render_flowsheet_canvas(ui: &mut egui::Ui, state: &mut SimModuleState) {
                     state.selected = SelectedObject::Unit(id);
                     ui.close_menu();
                 }
-                if ui.button("Flowsheet Settings...").clicked() {
+                if ui.button(crate::i18n::text("review.184")).clicked() {
                     state.show_default_settings = true;
                     ui.close_menu();
                 }
@@ -1160,7 +1160,7 @@ pub fn render_flowsheet_canvas(ui: &mut egui::Ui, state: &mut SimModuleState) {
                     r.request_focus();
                 });
                 ui.horizontal(|ui| {
-                    if ui.button("Apply").clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if ui.button(crate::i18n::text("common.032")).clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         let new_name = state.inline_rename_buf.trim().to_string();
                         if !new_name.is_empty() {
                             state.push_undo();
@@ -1182,7 +1182,7 @@ pub fn render_flowsheet_canvas(ui: &mut egui::Ui, state: &mut SimModuleState) {
                         }
                         state.inline_rename_target = None;
                     }
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         state.inline_rename_target = None;
                     }
                 });

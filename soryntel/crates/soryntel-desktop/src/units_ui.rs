@@ -561,7 +561,7 @@ impl UnitsModuleState {
             "/tmp/soryntel_units_{}.csv",
             self.active_sheet.label().to_ascii_lowercase()
         );
-        match std::fs::write(&path, out) {
+        match crate::storage::write_atomic(&path, out) {
             Ok(()) => self.status_msg = format!("Exported {} sheet to {path}", self.active_sheet.label()),
             Err(e) => self.status_msg = format!("CSV export failed: {e}"),
         }
@@ -578,7 +578,7 @@ impl UnitsModuleState {
             )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
+                    ui.menu_button(crate::i18n::text("common.001"), |ui| {
                         if ui.button("Clear Convert Sheet").clicked() {
                             self.workbook.convert_rows.clear();
                             self.active_row = 2;
@@ -605,12 +605,12 @@ impl UnitsModuleState {
                             ui.close_menu();
                         }
                         ui.separator();
-                        if ui.button("Exit").clicked() {
+                        if ui.button(crate::i18n::text("common.016")).clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     });
 
-                    ui.menu_button("Edit", |ui| {
+                    ui.menu_button(crate::i18n::text("common.006"), |ui| {
                         if ui.button("Swap Units 1 <-> 2").clicked() {
                             std::mem::swap(&mut self.unit1, &mut self.unit2);
                             std::mem::swap(&mut self.prefix1, &mut self.prefix2);
@@ -630,7 +630,7 @@ impl UnitsModuleState {
                         }
                     });
 
-                    ui.menu_button("Help", |ui| {
+                    ui.menu_button(crate::i18n::text("common.003"), |ui| {
                         if ui.button("Sampler (All Equivalents)").clicked() {
                             self.show_sampler_modal = true;
                             ui.close_menu();
@@ -644,7 +644,7 @@ impl UnitsModuleState {
                             ui.close_menu();
                         }
                         ui.separator();
-                        if ui.button("About Measure Units").clicked() {
+                        if ui.button(crate::i18n::text("common.091")).clicked() {
                             self.show_about_modal = true;
                             ui.close_menu();
                         }
@@ -2008,7 +2008,7 @@ impl UnitsModuleState {
                             }
                         });
                     });
-                    if ui.button("Close").clicked() {
+                    if ui.button(crate::i18n::text("common.004")).clicked() {
                         self.show_sampler_modal = false;
                     }
                 });
@@ -2035,7 +2035,7 @@ impl UnitsModuleState {
                         Air3DMetric::GNm3 => "H2O (g/Nm³)",
                     };
                     Plot::new("water_in_air_2d_plot")
-                        .x_axis_label("Temperature (°C)")
+                        .x_axis_label(crate::i18n::text("common.090"))
                         .y_axis_label(y_lbl)
                         .legend(Legend::default())
                         .show(ui, |plot_ui| {
@@ -2086,7 +2086,7 @@ impl UnitsModuleState {
                         ui.selectable_value(&mut self.air_3d_metric, Air3DMetric::VolPct, "H2O Vol-%");
                         ui.selectable_value(&mut self.air_3d_metric, Air3DMetric::GNm3, "H2O g/Nm3");
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.small_button("Reset View").clicked() {
+                            if ui.small_button(crate::i18n::text("common.067")).clicked() {
                                 self.air_3d_yaw = -0.68;
                                 self.air_3d_pitch = 0.44;
                             }
@@ -2147,7 +2147,7 @@ impl UnitsModuleState {
                         ui.text_edit_singleline(&mut self.new_unit_name);
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Symbol:");
+                        ui.label(crate::i18n::text("common.092"));
                         ui.text_edit_singleline(&mut self.new_unit_sym);
                     });
                     ui.horizontal(|ui| {
@@ -2176,7 +2176,7 @@ impl UnitsModuleState {
                                 self.status_msg = "Coefficient must be numeric > 0.".to_string();
                             }
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(crate::i18n::text("common.000")).clicked() {
                             self.show_add_unit_modal = false;
                         }
                     });
@@ -2198,7 +2198,7 @@ impl UnitsModuleState {
                         ui.text_edit_singleline(&mut self.new_qty_name);
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Symbol:");
+                        ui.label(crate::i18n::text("common.092"));
                         ui.text_edit_singleline(&mut self.new_qty_sym);
                     });
                     ui.horizontal(|ui| {
@@ -2233,7 +2233,7 @@ impl UnitsModuleState {
                                 Err(e) => self.status_msg = e,
                             }
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(crate::i18n::text("common.000")).clicked() {
                             self.show_add_qty_modal = false;
                         }
                     });
@@ -2246,7 +2246,7 @@ impl UnitsModuleState {
         // 6. About Modal
         if self.show_about_modal {
             let mut open = true;
-            egui::Window::new("About Measure Units")
+            egui::Window::new(crate::i18n::text("common.091"))
                 .open(&mut open)
                 .collapsible(false)
                 .show(ctx, |ui| {
@@ -2258,7 +2258,7 @@ impl UnitsModuleState {
                     ));
                     ui.label("• 6-sheet workbook: Convert, Units, Constants, Mesh, Air, H2O.");
                     ui.label("• Includes WaterInAir 2D & 3D psychometric surface plots.");
-                    if ui.button("OK").clicked() {
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         self.show_about_modal = false;
                     }
                 });

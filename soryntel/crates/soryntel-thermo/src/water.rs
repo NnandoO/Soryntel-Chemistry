@@ -1,12 +1,8 @@
 //! Module 13 — Water / Steam Pressure-Temperature Calculator (`PTCalc`).
 //!
-//! Pure thermodynamic domain engine covering H2O over `T in [-270.15 °C, 2000 °C]`
-//! and `P in [0.001 bar, 1000 bar]` across Solid (Ice), Liquid, Gas (Steam),
-//! Saturated mixtures (`Sat. (g,l)`, `Sat. (g,s)`, `Sat. (l,s)`), and Supercritical fluid.
-//!
-//! Integrates IAPWS saturation boundaries, real-gas steam enthalpy/entropy/density
-//! consistent with Steam Tables and HSC6 reference (`25 °C, 1 bar`), plus Szargut
-//! physical and chemical exergy (`52.118 kJ/kg` at standard state).
+//! Uses an IAPWS saturation-pressure correlation, but approximate caloric,
+//! density and ice models. This is not a complete IF97 or IAPWS-95 implementation.
+//! Numerical input bounds are not a statement of scientific accuracy.
 
 use crate::balance::{h2o_saturation_pressure_bar, h2o_saturation_temp_k, H2O_PC_BAR, H2O_TC_K};
 use crate::SpeciesRepository;
@@ -51,8 +47,8 @@ impl WaterPhaseMode {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Solid => "Solid (s)",
-            Self::Liquid => "Liquid (l)",
+            Self::Solid => "Sólido (s)",
+            Self::Liquid => "Líquido (l)",
             Self::Gas => "Gas (g)",
             Self::SatGasLiquid => "Sat. (g,l)",
             Self::SatGasSolid => "Sat. (g,s)",
@@ -688,7 +684,7 @@ pub fn evaluate_water_point(
         WaterPhaseMode::SatGasLiquid => {
             if raw_t_k > H2O_TC_K {
                 let ph = classify_pure_phase(raw_t_k, raw_p_bar);
-                warning = Some("Temperature above Critical Point (373.946 °C): switched to pure supercritical phase.".into());
+                warning = Some("Temperatura superior al punto crítico (373,946 °C): se seleccionó una fase pura supercrítica.".into());
                 (raw_t_k, raw_p_bar, ph, false, false)
             } else if raw_t_k < H2O_TT_K {
                 let t = H2O_TT_K;
@@ -706,7 +702,7 @@ pub fn evaluate_water_point(
         WaterPhaseMode::SatGasSolid => {
             if raw_t_k > H2O_TT_K {
                 let ph = classify_pure_phase(raw_t_k, raw_p_bar);
-                warning = Some("Temperature above Triple Point (0.01 °C): switched to pure phase.".into());
+                warning = Some("Temperatura superior al punto triple (0,01 °C): se seleccionó una fase pura.".into());
                 (raw_t_k, raw_p_bar, ph, false, false)
             } else {
                 (
@@ -721,7 +717,7 @@ pub fn evaluate_water_point(
         WaterPhaseMode::SatLiquidSolid => {
             if raw_p_bar < H2O_PT_BAR {
                 let ph = classify_pure_phase(raw_t_k, raw_p_bar);
-                warning = Some("Pressure below Triple Point (0.0061 bar): switched to pure phase.".into());
+                warning = Some("Presión inferior al punto triple (0,0061 bar): se seleccionó una fase pura.".into());
                 (raw_t_k, raw_p_bar, ph, false, false)
             } else {
                 (
@@ -745,11 +741,11 @@ pub fn evaluate_water_point(
 
     if eff_t_k > 1073.15 && eff_p_bar > 100.0 {
         warning.get_or_insert_with(|| {
-            "High T & P extrapolated region (>800 °C, >100 bar).".to_string()
+            "Región extrapolada de alta temperatura y presión (>800 °C, >100 bar).".to_string()
         });
     } else if (eff_t_k - H2O_TC_K).abs() < 2.0 && (eff_p_bar - H2O_PC_BAR).abs() < 4.0 {
         warning.get_or_insert_with(|| {
-            "Near Critical Point (373.946 °C, 220.64 bar): Cp/density sensitivity is high.".to_string()
+            "Cerca del punto crítico (373,946 °C, 220,64 bar): Cp y densidad son muy sensibles a las condiciones.".to_string()
         });
     }
 
@@ -835,6 +831,29 @@ pub fn evaluate_water_point(
         exergy_tot,
         warning,
     }
+}
+
+/// Validate user input before the legacy numerical evaluator applies internal bounds.
+pub fn validate_water_request(req: &WaterCalcRequest) -> Result<(), soryntel_core::SoryntelError> {
+    use soryntel_core::SoryntelError;
+    if !req.amount.is_finite() || req.amount <= 0.0 {
+        return Err(SoryntelError::ParseError("La cantidad de agua debe ser finita y mayor que cero".into()));
+    }
+    for point in [&req.point1, &req.point2] {
+        let t = req.temp_unit.to_kelvin(point.temp);
+        let p = req.pressure_unit.to_bar(point.pressure);
+        if !t.is_finite() || !(3.0..=2273.15).contains(&t) {
+            return Err(SoryntelError::ParseError("El cálculo de agua admite temperaturas entre 3 y 2273,15 K".into()));
+        }
+        if !p.is_finite() || p <= 0.0 || p > 1000.0
+            || (p < 0.001 && !matches!(point.phase, WaterPhaseMode::SatGasLiquid | WaterPhaseMode::SatGasSolid)) {
+            return Err(SoryntelError::ParseError("El cálculo de agua admite presiones entre 0,001 y 1000 bar".into()));
+        }
+        if !point.mixture_pct.is_finite() || !(0.0..=100.0).contains(&point.mixture_pct) {
+            return Err(SoryntelError::ParseError("El porcentaje de mezcla debe estar entre 0 y 100".into()));
+        }
+    }
+    Ok(())
 }
 
 /// Evaluate complete two-point Water / Steam calculation and Delta column.

@@ -1,10 +1,10 @@
-//! Soryntel Chemistry — Reaction Equations CLI & Local Web UI Server.
+//! Soryntel Chemistry — Ecuaciones de reacción CLI & Local Web UI Server.
 
 use serde::{Deserialize, Serialize};
 use soryntel_core::{EnergyUnit, ResultFormat, TemperatureUnit};
 use soryntel_db::ThermoDatabase;
-use soryntel_solver::balance_reaction;
-use soryntel_thermo::{calculate, CalculationRequest};
+use soryntel_application::SoryntelApplication;
+use soryntel_thermo::CalculationRequest;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
@@ -53,9 +53,12 @@ fn main() {
     }
 
     match pos_args.first().map(|s| s.as_str()) {
+        Some("--help") | Some("-h") => {
+            println!("Soryntel Chemistry\n  balance \"<ecuación>\"\n  calc \"<fórmula o reacción>\" [desde] [hasta] [paso]\n  --port <puerto>\n  --hsc-db <archivo>\nTemperaturas de la CLI en °C; energías en kJ.");
+        }
         Some("balance") => {
-            let eq = pos_args.get(1).expect("Usage: soryntel-app balance \"<equation>\"");
-            match balance_reaction(eq, 1.0) {
+            let eq = pos_args.get(1).unwrap_or_else(|| { eprintln!("Uso: soryntel-app balance \"<ecuación>\""); std::process::exit(2) });
+            match SoryntelApplication::balance_reaction_equation(eq, 1.0) {
                 Ok((b, _)) => println!("{b}"),
                 Err(e) => {
                     eprintln!("Error: {e}");
@@ -64,10 +67,10 @@ fn main() {
             }
         }
         Some("calc") => {
-            let input = pos_args.get(1).expect("Usage: soryntel-app calc \"<formula_or_reaction>\" [from] [to] [step]");
-            let t_from: f64 = pos_args.get(2).and_then(|s| s.parse().ok()).unwrap_or(0.0);
-            let t_to: f64 = pos_args.get(3).and_then(|s| s.parse().ok()).unwrap_or(1000.0);
-            let t_step: f64 = pos_args.get(4).and_then(|s| s.parse().ok()).unwrap_or(100.0);
+            let input = pos_args.get(1).unwrap_or_else(|| { eprintln!("Uso: soryntel-app calc \"<fórmula o reacción>\" [desde] [hasta] [paso]"); std::process::exit(2) });
+            let t_from: f64 = numeric_argument(&pos_args, 2, 0.0);
+            let t_to: f64 = numeric_argument(&pos_args, 3, 1000.0);
+            let t_step: f64 = numeric_argument(&pos_args, 4, 100.0);
             let req = CalculationRequest {
                 input: input.clone(),
                 t_from,
@@ -79,7 +82,7 @@ fn main() {
                 show_transitions: true,
                 criss_cobble: false,
             };
-            match calculate(&req, &db) {
+            match SoryntelApplication::calculate_reaction(&db, &req) {
                 Ok(resp) => println!("{}", serde_json::to_string_pretty(&resp).unwrap()),
                 Err(e) => {
                     eprintln!("Error: {e}");
@@ -99,10 +102,20 @@ fn main() {
     }
 }
 
+fn numeric_argument(args: &[String], index: usize, default: f64) -> f64 {
+    match args.get(index) {
+        None => default,
+        Some(value) => match value.parse::<f64>() {
+            Ok(number) if number.is_finite() => number,
+            _ => { eprintln!("Valor numérico no válido: {value}"); std::process::exit(2); }
+        }
+    }
+}
+
 fn run_server(db: Arc<ThermoDatabase>, port: u16) {
     let addr = format!("127.0.0.1:{port}");
-    let listener = TcpListener::bind(&addr).expect("Failed to bind HTTP server");
-    println!("Soryntel Chemistry (Módulo 01: Reaction Equations) listo en: http://{addr}");
+    let listener = TcpListener::bind(&addr).expect("No se pudo abrir el servidor HTTP");
+    println!("Soryntel Chemistry (Módulo 01: Ecuaciones de reacción) listo en: http://{addr}");
     println!("Especies cargadas: {}. Presiona Ctrl+C para salir.", db.len());
 
     for stream in listener.incoming().flatten() {
@@ -138,7 +151,7 @@ fn handle_client(mut stream: TcpStream, db: &ThermoDatabase) {
             ("200 OK", "application/json", serde_json::to_string(&list).unwrap())
         }
         ("POST", "/api/balance") => match serde_json::from_str::<BalanceReq>(body) {
-            Ok(breq) => match balance_reaction(&breq.equation, breq.smallest_coeff) {
+            Ok(breq) => match SoryntelApplication::balance_reaction_equation(&breq.equation, breq.smallest_coeff) {
                 Ok((balanced, _)) => (
                     "200 OK",
                     "application/json",
@@ -157,7 +170,7 @@ fn handle_client(mut stream: TcpStream, db: &ThermoDatabase) {
             ),
         },
         ("POST", "/api/calculate") => match serde_json::from_str::<CalculationRequest>(body) {
-            Ok(creq) => match calculate(&creq, db) {
+            Ok(creq) => match SoryntelApplication::calculate_reaction(db, &creq) {
                 Ok(resp) => ("200 OK", "application/json", serde_json::to_string(&resp).unwrap()),
                 Err(e) => (
                     "400 Bad Request",
@@ -171,7 +184,7 @@ fn handle_client(mut stream: TcpStream, db: &ThermoDatabase) {
                 serde_json::to_string(&ErrorResp { error: e.to_string() }).unwrap(),
             ),
         },
-        _ => ("404 Not Found", "text/plain", "Not Found".to_string()),
+        _ => ("404 Not Found", "text/plain", "Ruta no encontrada".to_string()),
     };
 
     let response = format!(

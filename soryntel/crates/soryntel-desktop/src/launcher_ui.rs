@@ -84,7 +84,7 @@ pub fn render_hsc10_header(
                     ui.allocate_exact_size(egui::vec2(32.0, 32.0), egui::Sense::click());
                 paint_gear_button(ui.painter(), gear_rect, gear_resp.hovered());
                 if gear_resp
-                    .on_hover_text("Preferences, database info & launcher view mode")
+                    .on_hover_text(crate::i18n::text("nav.000"))
                     .clicked()
                 {
                     ui_state.show_settings = !ui_state.show_settings;
@@ -96,17 +96,17 @@ pub fn render_hsc10_header(
                         ui.spacing_mut().item_spacing.y = 0.0;
                         let meta_col = egui::Color32::from_rgb(100, 112, 128);
                         ui.label(
-                            egui::RichText::new("Soryntel ver: 10.0.4.3")
+                            egui::RichText::new(concat!("Soryntel ", env!("CARGO_PKG_VERSION")))
                                 .size(9.5)
                                 .color(meta_col),
                         );
                         ui.label(
-                            egui::RichText::new("Suite: Clean-Room Rust")
+                            egui::RichText::new(crate::i18n::text("nav.001"))
                                 .size(9.5)
                                 .color(meta_col),
                         );
                         ui.label(
-                            egui::RichText::new(format!("Maindb6: {species_count} species"))
+                            egui::RichText::new(format!("Catálogo: {species_count} especies"))
                                 .size(9.5)
                                 .color(meta_col),
                         );
@@ -123,7 +123,7 @@ pub fn render_hsc10_header(
                 egui::Color32::from_rgb(55, 65, 81),
             );
             let ver_gal = p.layout_no_wrap(
-                " 10".to_string(),
+                format!(" {}", env!("CARGO_PKG_VERSION")),
                 egui::FontId::proportional(24.0),
                 egui::Color32::from_rgb(0, 149, 217),
             );
@@ -137,7 +137,7 @@ pub fn render_hsc10_header(
             p.text(
                 egui::pos2(start_x + main_gal.size().x - 1.0, center.y - 8.0),
                 egui::Align2::LEFT_CENTER,
-                "®",
+                "",
                 egui::FontId::proportional(9.5),
                 egui::Color32::from_rgb(55, 65, 81),
             );
@@ -179,9 +179,9 @@ pub fn render_hsc10_footer(
 
                 ui.add_space(4.0);
                 let status = if open_count == 0 {
-                    "Soryntel Chemistry 10.0 · 20 active modules (22 grid tiles)".to_string()
+                    "Soryntel Chemistry · 20 módulos disponibles".to_string()
                 } else {
-                    format!("Active module windows: {open_count}")
+                    format!("Ventanas de módulos abiertas: {open_count}")
                 };
                 ui.label(
                     egui::RichText::new(status)
@@ -193,9 +193,9 @@ pub fn render_hsc10_footer(
 
                 ui.add_space(10.0);
                 let view_lbl = if ui_state.detailed_view {
-                    "⊞ HSC 10 Grid"
+                    crate::i18n::text("nav.002")
                 } else {
-                    "☰ Classic Cards View (20)"
+                    crate::i18n::text("nav.003")
                 };
                 if ui.small_button(view_lbl).clicked() {
                     ui_state.detailed_view = !ui_state.detailed_view;
@@ -270,10 +270,10 @@ pub fn render_hsc10_grid_canvas(
                     ui.vertical(|ui| {
                         ui.spacing_mut().item_spacing.y = card_gap_y;
                         for (cat, title) in [
-                            (ShowcaseCategory::Products, "Products"),
-                            (ShowcaseCategory::Services, "Services"),
-                            (ShowcaseCategory::Sustainability, "Sustainability"),
-                            (ShowcaseCategory::ResearchDev, "Research & Development"),
+                            (ShowcaseCategory::Products, crate::i18n::text("nav.004")),
+                            (ShowcaseCategory::Services, crate::i18n::text("nav.005")),
+                            (ShowcaseCategory::Sustainability, crate::i18n::text("nav.006")),
+                            (ShowcaseCategory::ResearchDev, crate::i18n::text("nav.007")),
                         ] {
                             let active = ui_state.selected_category == cat;
                             let (rect, resp) = ui.allocate_exact_size(
@@ -340,47 +340,47 @@ pub fn render_hsc10_grid_canvas(
 
     if ui_state.show_submenu {
         let mut open = ui_state.show_submenu;
-        egui::Window::new("Sub Menu — Tools & View")
+        egui::Window::new(crate::i18n::text("nav.008"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
             .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-26.0, -48.0))
             .show(ctx, |ui| {
-                if ui.button("☰ Switch to Classic 20-Module Cards View").clicked() {
+                if ui.button(crate::i18n::text("nav.009")).clicked() {
                     ui_state.detailed_view = true;
                     ui_state.show_submenu = false;
                 }
                 ui.separator();
-                if ui.button("Aqu · Open Aqua (Aqueous Solutions)").clicked() {
+                if ui.button(crate::i18n::text("nav.010")).clicked() {
                     cmd = LauncherCommand::OpenModule("aqua");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("Sim · Open Sim (Flowsheet Simulation)").clicked() {
+                if ui.button(crate::i18n::text("nav.011")).clicked() {
                     cmd = LauncherCommand::OpenModule("sim");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("Lca · Open Sim LCA (Life Cycle Assessment)").clicked() {
+                if ui.button(crate::i18n::text("nav.012")).clicked() {
                     cmd = LauncherCommand::OpenModule("lca");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("Mas · Open Mass Balance (Data Reconciliation)").clicked() {
+                if ui.button(crate::i18n::text("nav.013")).clicked() {
                     cmd = LauncherCommand::OpenModule("mass_balance");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("Add-Ins · Excel Add-In Functions & StreamEQ").clicked() {
+                if ui.button(crate::i18n::text("nav.014")).clicked() {
                     cmd = LauncherCommand::OpenModule("excel_addins");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("Geo · Mineral Database (HSC Geo / Minerals)").clicked() {
+                if ui.button(crate::i18n::text("nav.015")).clicked() {
                     cmd = LauncherCommand::OpenModule("excel_addins");
                     ui_state.show_submenu = false;
                 }
-                if ui.button("DB · Species & OwnDB Editor").clicked() {
+                if ui.button(crate::i18n::text("nav.016")).clicked() {
                     cmd = LauncherCommand::OpenModule("species");
                     ui_state.show_submenu = false;
                 }
                 ui.separator();
-                if ui.button("Clear category filter").clicked() {
+                if ui.button(crate::i18n::text("nav.017")).clicked() {
                     ui_state.selected_category = ShowcaseCategory::None;
                     ui_state.show_submenu = false;
                 }
@@ -390,33 +390,33 @@ pub fn render_hsc10_grid_canvas(
 
     if ui_state.show_settings {
         let mut open = ui_state.show_settings;
-        egui::Window::new("Soryntel Chemistry® 10 — Settings")
+        egui::Window::new(crate::i18n::text("nav.018"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
             .show(ctx, |ui| {
-                ui.label(egui::RichText::new("Launcher Display & Database").strong().size(13.0));
-                ui.checkbox(&mut ui_state.detailed_view, "Use Classic Detailed Cards layout");
+                ui.label(egui::RichText::new(crate::i18n::text("nav.019")).strong().size(13.0));
+                ui.checkbox(&mut ui_state.detailed_view, crate::i18n::text("nav.020"));
                 ui.separator();
-                ui.label(format!("Loaded Maindb6 species: {species_count}"));
-                ui.label("Modules 01–20 active: Thermo, Aqua Pitzer (59 salts), Sim Flowsheet, LCA & Mass Balance.");
-                ui.label("Mineralogy catalog: 3,812 HSC Geo mineral records + 83 Excel Add-In functions.");
+                ui.label(format!("Especies cargadas: {species_count}"));
+                ui.label(crate::i18n::text("nav.021"));
+                ui.label(crate::i18n::text("nav.022"));
             });
         ui_state.show_settings = open;
     }
 
     if ui_state.show_help {
         let mut open = ui_state.show_help;
-        egui::Window::new("Help Module — Soryntel Chemistry® 10")
+        egui::Window::new(crate::i18n::text("nav.023"))
             .open(&mut open)
             .default_size([460.0, 290.0])
             .show(ctx, |ui| {
-                ui.label(egui::RichText::new("Quick Module Guide").strong().size(14.0));
+                ui.label(egui::RichText::new(crate::i18n::text("nav.024")).strong().size(14.0));
                 ui.separator();
-                ui.label("• Click any tile (e.g. Aqu, Sim, Lca, Mas, Gem, Rea, Bal, DB, Wat) to launch it in an independent window.");
-                ui.label("• Green indicator dot (●) shows currently running module windows.");
-                ui.label("• Click a left showcase card (Products, Services, Sustainability, R&D) to highlight matching modules.");
-                ui.label("• Click SUB MENU or 'Classic Cards View (20)' in the bottom bar to browse & filter all 20 modules.");
+                ui.label(crate::i18n::text("nav.025"));
+                ui.label(crate::i18n::text("nav.026"));
+                ui.label(crate::i18n::text("nav.027"));
+                ui.label(crate::i18n::text("nav.028"));
             });
         ui_state.show_help = open;
     }

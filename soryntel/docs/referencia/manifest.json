@@ -1,0 +1,782 @@
+[
+  {
+    "origen": "01-reaction-equations/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "01-reaction-equations/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "d7502bd6cded5fa9f41f6e0483de7262c8b3088c6e0facbe2fb5d27ab42925ce"
+  },
+  {
+    "origen": "01-reaction-equations/GHIDRA_ANALYSIS.md",
+    "copia": "01-reaction-equations/GHIDRA_ANALYSIS.md",
+    "sha256": "dac4c47eebb4dc2f9605744cb7e302dddb8ddb5de32e69a7e9aa843585fbc285"
+  },
+  {
+    "origen": "01-reaction-equations/IMAGE_ANALYSIS.md",
+    "copia": "01-reaction-equations/IMAGE_ANALYSIS.md",
+    "sha256": "205ac3a54dae50542a82e4251a8f43b5ed5e385cc488021b5911b3cfb93d634c"
+  },
+  {
+    "origen": "01-reaction-equations/IMPLEMENTATION_PLAN.md",
+    "copia": "01-reaction-equations/IMPLEMENTATION_PLAN.md",
+    "sha256": "7652115f0b106f94bf17d8871b2a5cc0b0303144ab5f569e69301a5d3f4c6007"
+  },
+  {
+    "origen": "01-reaction-equations/MANUAL_ANALYSIS.md",
+    "copia": "01-reaction-equations/MANUAL_ANALYSIS.md",
+    "sha256": "38d62bbd1fec8b45371129390fd9972474eb611a0943af3f1e155e302e90d4d2"
+  },
+  {
+    "origen": "01-reaction-equations/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "01-reaction-equations/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "f74233dbc143b0518af4ae49f7c8a5b78c28681df9608978da0ae4ee0db2db17"
+  },
+  {
+    "origen": "01-reaction-equations/README.md",
+    "copia": "01-reaction-equations/README.md",
+    "sha256": "2e7730e9e0ee6fe2b5ed57e0e55030c2a17c087c5390962cdb0ac5fcaab6c405"
+  },
+  {
+    "origen": "01-reaction-equations/REA_ANALYSIS.md",
+    "copia": "01-reaction-equations/REA_ANALYSIS.md",
+    "sha256": "507a292d5df3c0e829d985d9aab282f5fd019fb565e94b66d2fe7d30eb9c4151"
+  },
+  {
+    "origen": "01-reaction-equations/SCIENTIFIC_REFERENCES.md",
+    "copia": "01-reaction-equations/SCIENTIFIC_REFERENCES.md",
+    "sha256": "d55b415ecac478ab21e9de6f586b6b14c7db4b0c6eb03654ba93426ec95040fc"
+  },
+  {
+    "origen": "01-reaction-equations/UI_SPECIFICATION.md",
+    "copia": "01-reaction-equations/UI_SPECIFICATION.md",
+    "sha256": "1be3bc27fd65ba42f2a139e4ad2358935c4e1f1c66e5c225d1f3dc81fdddcc5e"
+  },
+  {
+    "origen": "01-reaction-equations/VALIDATION_PLAN.md",
+    "copia": "01-reaction-equations/VALIDATION_PLAN.md",
+    "sha256": "7d4559c06c9de6bb771a668454afcadc6b8590e07118304d895b118827de7cb8"
+  },
+  {
+    "origen": "02-heat-and-material-balance/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "02-heat-and-material-balance/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "22311cf15cbec3d5bdf2b02f23de07505b7f2356d279c92bd1455b5c602fd371"
+  },
+  {
+    "origen": "02-heat-and-material-balance/GHIDRA_ANALYSIS.md",
+    "copia": "02-heat-and-material-balance/GHIDRA_ANALYSIS.md",
+    "sha256": "2ff0a6606aab6f5fbefef4e658338d0de1caff352112a6ea29372777efbde331"
+  },
+  {
+    "origen": "02-heat-and-material-balance/IMAGE_ANALYSIS.md",
+    "copia": "02-heat-and-material-balance/IMAGE_ANALYSIS.md",
+    "sha256": "f7cfbb64e8424a565c61c0e590274fd07c6ab0425a7cc9cf87958d7add8673a6"
+  },
+  {
+    "origen": "02-heat-and-material-balance/IMPLEMENTATION_PLAN.md",
+    "copia": "02-heat-and-material-balance/IMPLEMENTATION_PLAN.md",
+    "sha256": "cdf45b535fa8a4a56f7f23006893ab0a727f2d333903e7866418e37f544fb96a"
+  },
+  {
+    "origen": "02-heat-and-material-balance/MANUAL_ANALYSIS.md",
+    "copia": "02-heat-and-material-balance/MANUAL_ANALYSIS.md",
+    "sha256": "b6ebb382fd976de994de8cbe5ebc95e8cd2a3191c1987e4afe45d00c8d5c59bb"
+  },
+  {
+    "origen": "02-heat-and-material-balance/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "02-heat-and-material-balance/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "b62d99a02df78f35f648a238f44e205ff6d208903972610c15074c66d30fad66"
+  },
+  {
+    "origen": "02-heat-and-material-balance/README.md",
+    "copia": "02-heat-and-material-balance/README.md",
+    "sha256": "f41dffda3c60dd2cc9a421fea81b26a1798b17b0c40a165f825c925524e314d1"
+  },
+  {
+    "origen": "02-heat-and-material-balance/REA_ANALYSIS.md",
+    "copia": "02-heat-and-material-balance/REA_ANALYSIS.md",
+    "sha256": "704481515cbe52666c2e788c1da36ed555884e88a0bc3145212b647c261d280a"
+  },
+  {
+    "origen": "02-heat-and-material-balance/SCIENTIFIC_REFERENCES.md",
+    "copia": "02-heat-and-material-balance/SCIENTIFIC_REFERENCES.md",
+    "sha256": "d70b974b7a06b6cdf64c642be11368017ea12b242fd91ac3bdf8922bc757376c"
+  },
+  {
+    "origen": "02-heat-and-material-balance/UI_SPECIFICATION.md",
+    "copia": "02-heat-and-material-balance/UI_SPECIFICATION.md",
+    "sha256": "4126ac111d51c99f853ede5136be5659414242b9d4ac73da0134523ea52533d4"
+  },
+  {
+    "origen": "02-heat-and-material-balance/VALIDATION_PLAN.md",
+    "copia": "02-heat-and-material-balance/VALIDATION_PLAN.md",
+    "sha256": "2040e6c7b906fac0e1fd413130a2c5540eef5968a4d54b66a503273df7e01874"
+  },
+  {
+    "origen": "03-heat-loss/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "03-heat-loss/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "f6ceb2144d9874431795050f848b1586a9a924d6ff41db7654afc2beff68234f"
+  },
+  {
+    "origen": "03-heat-loss/GHIDRA_ANALYSIS.md",
+    "copia": "03-heat-loss/GHIDRA_ANALYSIS.md",
+    "sha256": "986e9513f30c2c147883e0f92ff3db403246e59eda03ac164c4c821692c3a586"
+  },
+  {
+    "origen": "03-heat-loss/IMAGE_ANALYSIS.md",
+    "copia": "03-heat-loss/IMAGE_ANALYSIS.md",
+    "sha256": "f4484bea3ef9c9514b7fc58d319d36464b55b91d4641bdb596cffc0ebc92f873"
+  },
+  {
+    "origen": "03-heat-loss/IMPLEMENTATION_PLAN.md",
+    "copia": "03-heat-loss/IMPLEMENTATION_PLAN.md",
+    "sha256": "72aecbdb716f04a003d06b043bdd1f1299aeadcaea7a1ef0733886d0ea941198"
+  },
+  {
+    "origen": "03-heat-loss/MANUAL_ANALYSIS.md",
+    "copia": "03-heat-loss/MANUAL_ANALYSIS.md",
+    "sha256": "2639047950a4b8e541099b6b925ea8a336172a8ac8ddc99c1b7bc11838c08951"
+  },
+  {
+    "origen": "03-heat-loss/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "03-heat-loss/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "42565cc5913e28159dfba198ced8c652fb51fa403c1fbf83debb3e64c3d65071"
+  },
+  {
+    "origen": "03-heat-loss/README.md",
+    "copia": "03-heat-loss/README.md",
+    "sha256": "83c42c670f92c99e45ebe57c31f401b53092c35df23764f7cd6c6229a6e2e90c"
+  },
+  {
+    "origen": "03-heat-loss/REA_ANALYSIS.md",
+    "copia": "03-heat-loss/REA_ANALYSIS.md",
+    "sha256": "11aa7856f7d09ca94ff961aeaf4f8072473b14b508f32c153b5eec44b392fe08"
+  },
+  {
+    "origen": "03-heat-loss/SCIENTIFIC_REFERENCES.md",
+    "copia": "03-heat-loss/SCIENTIFIC_REFERENCES.md",
+    "sha256": "77b5fa83ed51fdfc3b96216144346d2273ef74b9a74cecf48c260a1727080f37"
+  },
+  {
+    "origen": "03-heat-loss/UI_SPECIFICATION.md",
+    "copia": "03-heat-loss/UI_SPECIFICATION.md",
+    "sha256": "a5a246a47e36869769a389827f3a4ec7b8ac62fcfe35e297bd1d8d73428841bb"
+  },
+  {
+    "origen": "03-heat-loss/VALIDATION_PLAN.md",
+    "copia": "03-heat-loss/VALIDATION_PLAN.md",
+    "sha256": "6cbf44dec6df084ca4c2da295b14fb160c1f449b8220f492c53c49d2710ed099"
+  },
+  {
+    "origen": "04-equilibrium-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "04-equilibrium-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "34e30c9cb6e8398420a004bee4d01355a413b7572c279a0211cd674c97453004"
+  },
+  {
+    "origen": "04-equilibrium-module/GHIDRA_ANALYSIS.md",
+    "copia": "04-equilibrium-module/GHIDRA_ANALYSIS.md",
+    "sha256": "878a4595ebb8e22093be09faf3b0971e3d2fa43cbbbf5d6efdb329724a8f12f9"
+  },
+  {
+    "origen": "04-equilibrium-module/IMAGE_ANALYSIS.md",
+    "copia": "04-equilibrium-module/IMAGE_ANALYSIS.md",
+    "sha256": "8db8768865e5a249988c45e99aa932e90154405cdbe3e157e994ac194fd6b3ed"
+  },
+  {
+    "origen": "04-equilibrium-module/IMPLEMENTATION_PLAN.md",
+    "copia": "04-equilibrium-module/IMPLEMENTATION_PLAN.md",
+    "sha256": "69ad54284cbe1333c3c1f0e28fa1bd6d1c6661b07695cd9de3a3e6cd1787a164"
+  },
+  {
+    "origen": "04-equilibrium-module/MANUAL_ANALYSIS.md",
+    "copia": "04-equilibrium-module/MANUAL_ANALYSIS.md",
+    "sha256": "f07fc0999b7776dea65192d9faa9c7b57f642a26d5f398462b2f2f3a21173bb6"
+  },
+  {
+    "origen": "04-equilibrium-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "04-equilibrium-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "cedf3e42046908d5be4e515df89a0021089cab2edab411e7787ce15c5df00757"
+  },
+  {
+    "origen": "04-equilibrium-module/README.md",
+    "copia": "04-equilibrium-module/README.md",
+    "sha256": "f1bf68313cc79820587dd18942bc2fe05ed3e5026a162d17548ff7c3072df310"
+  },
+  {
+    "origen": "04-equilibrium-module/REA_ANALYSIS.md",
+    "copia": "04-equilibrium-module/REA_ANALYSIS.md",
+    "sha256": "75a3045eada7f17ffe64f19472603326dddd2671937297df011acc69e8f21255"
+  },
+  {
+    "origen": "04-equilibrium-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "04-equilibrium-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "53fdcfeda45d26a0b0e42779ca6b0ff72ad154d787ba9d91c742f09cad1dc4ac"
+  },
+  {
+    "origen": "04-equilibrium-module/UI_SPECIFICATION.md",
+    "copia": "04-equilibrium-module/UI_SPECIFICATION.md",
+    "sha256": "758e0c94f26f2796eb847039b1438f0bd5007a2c1a22fab38256f09cbed6bed5"
+  },
+  {
+    "origen": "04-equilibrium-module/VALIDATION_PLAN.md",
+    "copia": "04-equilibrium-module/VALIDATION_PLAN.md",
+    "sha256": "eeea8feb49640c2a989f04cb17e7b3f30a52bcde983b6eea85519a6eeba852f6"
+  },
+  {
+    "origen": "05-exergy-balance/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "05-exergy-balance/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "c1ff710f3fec8309e926bcc096a67cb8f19043c59e8b1b87970c1071fe9036f8"
+  },
+  {
+    "origen": "05-exergy-balance/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "05-exergy-balance/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "c968db152f9b226042130fa39c7a35bf5fc7a60a6955e10357f0f2eb5df0b1e4"
+  },
+  {
+    "origen": "05-exergy-balance/README.md",
+    "copia": "05-exergy-balance/README.md",
+    "sha256": "a05d57682e1738e44686fbb025a7c409d6d45adcc50a79afc7e35434a40fc6df"
+  },
+  {
+    "origen": "05-exergy-balance/REA_ANALYSIS.md",
+    "copia": "05-exergy-balance/REA_ANALYSIS.md",
+    "sha256": "f84af301968eca5d94c1ab8bc4f5765aeb6208b2d788e1d9d9069c898afb46cd"
+  },
+  {
+    "origen": "05-exergy-balance/SCIENTIFIC_REFERENCES.md",
+    "copia": "05-exergy-balance/SCIENTIFIC_REFERENCES.md",
+    "sha256": "9f4174d5a6085b74b95347f3d1280ba4b08c8df33fbbf47c26af90c8736d1551"
+  },
+  {
+    "origen": "05-exergy-balance/UI_SPECIFICATION.md",
+    "copia": "05-exergy-balance/UI_SPECIFICATION.md",
+    "sha256": "0f8fb91ad549b6be0324d1b7f3fd2447e4d29fe22e07d177edde094c73595574"
+  },
+  {
+    "origen": "05-exergy-balance/VALIDATION_PLAN.md",
+    "copia": "05-exergy-balance/VALIDATION_PLAN.md",
+    "sha256": "9459073dd90022d4de7ebca0f58d061fefba39920cbe13ced0b3ba7820858c5e"
+  },
+  {
+    "origen": "06-estimate/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "06-estimate/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "9ffc96e80593bda9e063e86f21ab7617988a7757ad1fa828ae5536f800b3ea8a"
+  },
+  {
+    "origen": "06-estimate/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "06-estimate/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "916e4411bfb51f30a7705923fb2ff5b08e9b8d6d26d762eb7b71304d5f5d77fa"
+  },
+  {
+    "origen": "06-estimate/README.md",
+    "copia": "06-estimate/README.md",
+    "sha256": "c86337cb0e55cb8aa7cb3acf77dbe40b1c34a1beda0e3091fcb5baeecff0fef1"
+  },
+  {
+    "origen": "06-estimate/REA_ANALYSIS.md",
+    "copia": "06-estimate/REA_ANALYSIS.md",
+    "sha256": "e4fcd71ddc68f94575ded353683a4705f48eb9af28b179c1568651e78a126242"
+  },
+  {
+    "origen": "06-estimate/SCIENTIFIC_REFERENCES.md",
+    "copia": "06-estimate/SCIENTIFIC_REFERENCES.md",
+    "sha256": "2bcc53b4124f5588ade2d062eda91e32f7b10cd0bfadeba3a7b02734c7b84336"
+  },
+  {
+    "origen": "06-estimate/UI_SPECIFICATION.md",
+    "copia": "06-estimate/UI_SPECIFICATION.md",
+    "sha256": "ef4c464919698ca4e6cb17ec23de24ba2aa5752af2d82b51421c379e8c75925f"
+  },
+  {
+    "origen": "06-estimate/VALIDATION_PLAN.md",
+    "copia": "06-estimate/VALIDATION_PLAN.md",
+    "sha256": "09e325a9b88fbcbae7a8a4d5038b31e8edb40c7b197f72f9a1d2182f6168b9ec"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "07-eh-ph-diagrams/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "18c407427c57bdb44ee1a0f0504d0e43790068bc20eedf0ab002e794cc0a8147"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "07-eh-ph-diagrams/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "c1838da811569166993e369a6ccdb3cacaddb8b8b5bdfa46c8ed67a5b560fbf5"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/README.md",
+    "copia": "07-eh-ph-diagrams/README.md",
+    "sha256": "5987544e7db6b82f52dd798acd66373a67d3f084ef6858ab08411c2a1dbdb2ba"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/REA_ANALYSIS.md",
+    "copia": "07-eh-ph-diagrams/REA_ANALYSIS.md",
+    "sha256": "e2885f1e821f732239e29e93d2f778f066284669ea00237612dfe9add123980f"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/SCIENTIFIC_REFERENCES.md",
+    "copia": "07-eh-ph-diagrams/SCIENTIFIC_REFERENCES.md",
+    "sha256": "546dc2987bf153b04e77673e4427d313fb42b8f7bebd91cd46e0cbb7d23c2692"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/UI_SPECIFICATION.md",
+    "copia": "07-eh-ph-diagrams/UI_SPECIFICATION.md",
+    "sha256": "db49d58042d41977cc401f09013dd7c5a17f60f72ad390c72b8241058bf4b9c5"
+  },
+  {
+    "origen": "07-eh-ph-diagrams/VALIDATION_PLAN.md",
+    "copia": "07-eh-ph-diagrams/VALIDATION_PLAN.md",
+    "sha256": "7694a6e256d05106149f02c7b4d0d732183790ed2993cfaf9f8b6cd68ffd3d53"
+  },
+  {
+    "origen": "08-hsc-diagrams/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "08-hsc-diagrams/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "3a88ac81c465f9007250156f6b09e55ff9b7b1f0a64b87bc305893f073dd009a"
+  },
+  {
+    "origen": "08-hsc-diagrams/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "08-hsc-diagrams/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "a46610e78c0c4dc0b41bbea70b740c62c002f845e029a22174c9fae1618cc694"
+  },
+  {
+    "origen": "08-hsc-diagrams/README.md",
+    "copia": "08-hsc-diagrams/README.md",
+    "sha256": "cccf0200032c2c50c6a3a986f11fe7eface0854ba3983b1472efe07a010e7b0f"
+  },
+  {
+    "origen": "08-hsc-diagrams/REA_ANALYSIS.md",
+    "copia": "08-hsc-diagrams/REA_ANALYSIS.md",
+    "sha256": "3c562c1824056c1ef90038ccbc7d9be64253afc04f61bb42d64ac2060a6a54af"
+  },
+  {
+    "origen": "08-hsc-diagrams/SCIENTIFIC_REFERENCES.md",
+    "copia": "08-hsc-diagrams/SCIENTIFIC_REFERENCES.md",
+    "sha256": "9c05be9cb15aad0df3555130d985ba9f9519ddf94f85221dd3526242363f0721"
+  },
+  {
+    "origen": "08-hsc-diagrams/UI_SPECIFICATION.md",
+    "copia": "08-hsc-diagrams/UI_SPECIFICATION.md",
+    "sha256": "f56c283fb7f05eed886e4e456a21945c2c918aac07ab49ce180b8df3ffd683f0"
+  },
+  {
+    "origen": "08-hsc-diagrams/VALIDATION_PLAN.md",
+    "copia": "08-hsc-diagrams/VALIDATION_PLAN.md",
+    "sha256": "9084e22ab583002ea914ac26e5ba2dbe2b456cc4b7802dcaf08995e7638caab6"
+  },
+  {
+    "origen": "09-phase-stability/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "09-phase-stability/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "870c89ee623c80a92d31aa6c835a6a2e645755d175a7df2c154bf65d41558b48"
+  },
+  {
+    "origen": "09-phase-stability/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "09-phase-stability/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "88ee6da14d0226ef550963592cb70db7fbf501e2fd36c6ac6e6ce7f724d87a09"
+  },
+  {
+    "origen": "09-phase-stability/README.md",
+    "copia": "09-phase-stability/README.md",
+    "sha256": "fe965a6aed38b05e3d4fea98e2ec7f56d9987bf32b572eece88cebd6c160b7b3"
+  },
+  {
+    "origen": "09-phase-stability/REA_ANALYSIS.md",
+    "copia": "09-phase-stability/REA_ANALYSIS.md",
+    "sha256": "b3171771278e54f32ac290562edc8ca13e219286d15f55ef4f8f9b4f80168fd1"
+  },
+  {
+    "origen": "09-phase-stability/SCIENTIFIC_REFERENCES.md",
+    "copia": "09-phase-stability/SCIENTIFIC_REFERENCES.md",
+    "sha256": "adfa0fb5daecef63a09cc33032b8151c870aadc2ca6e6c5a39ff046df3ed3cdb"
+  },
+  {
+    "origen": "09-phase-stability/UI_SPECIFICATION.md",
+    "copia": "09-phase-stability/UI_SPECIFICATION.md",
+    "sha256": "265372095a97507b42588b48805cdb5a9ed99d3a82923eca22fdb3d10a0958cd"
+  },
+  {
+    "origen": "09-phase-stability/VALIDATION_PLAN.md",
+    "copia": "09-phase-stability/VALIDATION_PLAN.md",
+    "sha256": "5859d17a7c6b36d4f5cae04a02de7786db1fd34965ccf28496ea049636749e9a"
+  },
+  {
+    "origen": "10-species-converter/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "10-species-converter/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "9b61bef1368a4b9b8e262d96ad2f844455161747bb32ee7dd64a25028965af7c"
+  },
+  {
+    "origen": "10-species-converter/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "10-species-converter/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "8b935f93ccb8c2d1b97fcb3589912b1f595118d9d25b1ec20ca24c2b2527b3b0"
+  },
+  {
+    "origen": "10-species-converter/README.md",
+    "copia": "10-species-converter/README.md",
+    "sha256": "ddb09e2a909833901474c30a73eca563b8d7daf2eecca9f349497d45f367e25d"
+  },
+  {
+    "origen": "10-species-converter/REA_ANALYSIS.md",
+    "copia": "10-species-converter/REA_ANALYSIS.md",
+    "sha256": "7a30b32c6b1307cbf03c59d0a613ff74dbd08ceb828a6bca025f07e38d71a893"
+  },
+  {
+    "origen": "10-species-converter/SCIENTIFIC_REFERENCES.md",
+    "copia": "10-species-converter/SCIENTIFIC_REFERENCES.md",
+    "sha256": "3d9e39df0de626962813d614d4a252753222cb7e1cf920f3d7c34b2aa348fefd"
+  },
+  {
+    "origen": "10-species-converter/UI_SPECIFICATION.md",
+    "copia": "10-species-converter/UI_SPECIFICATION.md",
+    "sha256": "1ace5251dedcac802cf263a9cc2adb7ca929b6b76b42a885edb2c0c6998cdd5e"
+  },
+  {
+    "origen": "10-species-converter/VALIDATION_PLAN.md",
+    "copia": "10-species-converter/VALIDATION_PLAN.md",
+    "sha256": "80988fad138306afe0eeac04ab77964698cb0d5ed519de25312d9ee2e69e3538"
+  },
+  {
+    "origen": "11-benson-estimation/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "11-benson-estimation/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "555391e828dc638fd0b921e79e739ff95023c2fd6f7dbe9827c9bc4d93961f3a"
+  },
+  {
+    "origen": "11-benson-estimation/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "11-benson-estimation/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "976ad4527df3f434b7230c7fe48913b6b72a90245ea3ebda9691fb87fc5b68f0"
+  },
+  {
+    "origen": "11-benson-estimation/README.md",
+    "copia": "11-benson-estimation/README.md",
+    "sha256": "e9e3fe6bd2a89167ab8c52e4cd672c4b463fdbd74096acae490dc2c1a8653c8e"
+  },
+  {
+    "origen": "11-benson-estimation/REA_ANALYSIS.md",
+    "copia": "11-benson-estimation/REA_ANALYSIS.md",
+    "sha256": "df8d11a52d898fb9f64f5dc27d8720d3c18d85558fa548fad4452104d5aa3472"
+  },
+  {
+    "origen": "11-benson-estimation/SCIENTIFIC_REFERENCES.md",
+    "copia": "11-benson-estimation/SCIENTIFIC_REFERENCES.md",
+    "sha256": "fd91141c7cae47c2cf0cb6cce79e1143ce7625f3332bc2e63ad2b960d86662f0"
+  },
+  {
+    "origen": "11-benson-estimation/UI_SPECIFICATION.md",
+    "copia": "11-benson-estimation/UI_SPECIFICATION.md",
+    "sha256": "37e1dbb65d46a2f3948bcc5745e68e90c9cc76f8cdeaa3354f3c370a458db4b8"
+  },
+  {
+    "origen": "11-benson-estimation/VALIDATION_PLAN.md",
+    "copia": "11-benson-estimation/VALIDATION_PLAN.md",
+    "sha256": "916e45ae6af197695c96a15167c785a70a4eb131a2c33beb3d27997813f613e5"
+  },
+  {
+    "origen": "12-elements-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "12-elements-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "57d60a5732c0a19cffc7e21dae8ece04698a239fbc0d94f778a2c6e8d8be58b3"
+  },
+  {
+    "origen": "12-elements-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "12-elements-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "cd1319b0749d3e8317c58ae57d8d7755d45d3ab07d4e84dea48c44dfd85f6604"
+  },
+  {
+    "origen": "12-elements-module/README.md",
+    "copia": "12-elements-module/README.md",
+    "sha256": "084f303995926c2ec83f67a48cafb1e301d9e0cb3ebbfdf648432c9090dd1134"
+  },
+  {
+    "origen": "12-elements-module/REA_ANALYSIS.md",
+    "copia": "12-elements-module/REA_ANALYSIS.md",
+    "sha256": "f411ec55108e1320182afef71f8650ac25fba9f31c05ab638fbbc33d1214ef61"
+  },
+  {
+    "origen": "12-elements-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "12-elements-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "bc21645f3c278431748be8265d26348226dc42f536a6f1cbaf8f9f4dcefac656"
+  },
+  {
+    "origen": "12-elements-module/UI_SPECIFICATION.md",
+    "copia": "12-elements-module/UI_SPECIFICATION.md",
+    "sha256": "b7a2da89942449a9720021104e0a0f5b75a059305f38df96163f2920a88a4558"
+  },
+  {
+    "origen": "12-elements-module/VALIDATION_PLAN.md",
+    "copia": "12-elements-module/VALIDATION_PLAN.md",
+    "sha256": "ec7035e20c2a8524df49aff8a52201589014e2ec55cc51af1cd745a577085ff2"
+  },
+  {
+    "origen": "13-water-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "13-water-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "bf1ee3184d5b22ca9ff24969d8e0636da22a6e1fc996b75ab60569aa77f1538f"
+  },
+  {
+    "origen": "13-water-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "13-water-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "6c50881a7600bb5c2e4bba0fe47e48cee76d8f06d6b9961c7930c280640a1f41"
+  },
+  {
+    "origen": "13-water-module/README.md",
+    "copia": "13-water-module/README.md",
+    "sha256": "224db4fc1f3c78091a6093e3b29eda260a3d3fda29b230f4fb9dc4b2480c4a14"
+  },
+  {
+    "origen": "13-water-module/REA_ANALYSIS.md",
+    "copia": "13-water-module/REA_ANALYSIS.md",
+    "sha256": "9b4ba085efc072084df4ce995f7087968d1a8d041ddf0fc37e7d5c99bc0561d8"
+  },
+  {
+    "origen": "13-water-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "13-water-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "bfccd84caa110ca807ef4cb55f1d96905ccb8f41c71c6edeefbc8b20f0ad26bf"
+  },
+  {
+    "origen": "13-water-module/UI_SPECIFICATION.md",
+    "copia": "13-water-module/UI_SPECIFICATION.md",
+    "sha256": "a59eb8e4d3105a7d74480ea25c2fdff07edb194e4dd08669158a980f3ca0ff06"
+  },
+  {
+    "origen": "13-water-module/VALIDATION_PLAN.md",
+    "copia": "13-water-module/VALIDATION_PLAN.md",
+    "sha256": "7c23bee9eeab34f0a7fc24f1f4b93db3388cb86ed2f5571ad8375cc5bbd0f5eb"
+  },
+  {
+    "origen": "14-units-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "14-units-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "040150e79dc799c9ffe809fe6d5cde8e40d1f2e9f9ad1f56b1702260f61dcc06"
+  },
+  {
+    "origen": "14-units-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "14-units-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "b636be9c5bacad95be080761045070c29be35342e8c15bfda234ec8d3ca474f7"
+  },
+  {
+    "origen": "14-units-module/README.md",
+    "copia": "14-units-module/README.md",
+    "sha256": "8a5e6d6454676afd1382e2bd7a7dd311955f576dc215391f5281bc5f529f51f3"
+  },
+  {
+    "origen": "14-units-module/REA_ANALYSIS.md",
+    "copia": "14-units-module/REA_ANALYSIS.md",
+    "sha256": "352c95915ba65104559fbee97f21143af7dd829bc6fb6db99f677a7ad4f15bfb"
+  },
+  {
+    "origen": "14-units-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "14-units-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "a69142d50f063cf9a4efc12624f6eb2da813ba5f551e458cdc2556ea85415886"
+  },
+  {
+    "origen": "14-units-module/UI_SPECIFICATION.md",
+    "copia": "14-units-module/UI_SPECIFICATION.md",
+    "sha256": "942bf79f096eee59b0b15eaff24b02b995f52df0beb762f472f73ea992c560b8"
+  },
+  {
+    "origen": "14-units-module/VALIDATION_PLAN.md",
+    "copia": "14-units-module/VALIDATION_PLAN.md",
+    "sha256": "7568b6255f2438ddea0b30836a6c5dabf0cb8e9c129300ed4e36218d056282ff"
+  },
+  {
+    "origen": "15-excel-addins/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "15-excel-addins/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "97329e1212dbdf581b388ab49add45ecdf6b74e04fed9ee4487a4949a4f9169e"
+  },
+  {
+    "origen": "15-excel-addins/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "15-excel-addins/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "590ae7c05f410b82992c696306382d9e0c344a15481656e4195a2115dc05345e"
+  },
+  {
+    "origen": "15-excel-addins/README.md",
+    "copia": "15-excel-addins/README.md",
+    "sha256": "b03b87783e9101eb143c882909b078a4d65909bd28adf0e3e718982b3c5c198b"
+  },
+  {
+    "origen": "15-excel-addins/REA_ANALYSIS.md",
+    "copia": "15-excel-addins/REA_ANALYSIS.md",
+    "sha256": "ceb0debc20434206a064f9d0e85ed88b3f72796ef26404d9e65bd0275b90bdb1"
+  },
+  {
+    "origen": "15-excel-addins/SCIENTIFIC_REFERENCES.md",
+    "copia": "15-excel-addins/SCIENTIFIC_REFERENCES.md",
+    "sha256": "d70dfaaadafed08cd6b6f9806821cd4836d963e6e5f5f88b73d81cbdfee5480e"
+  },
+  {
+    "origen": "15-excel-addins/UI_SPECIFICATION.md",
+    "copia": "15-excel-addins/UI_SPECIFICATION.md",
+    "sha256": "1423e40e4a823eb24a7ec1434fe902cb8da807a405cf30e0bbc991a72d4203b6"
+  },
+  {
+    "origen": "15-excel-addins/VALIDATION_PLAN.md",
+    "copia": "15-excel-addins/VALIDATION_PLAN.md",
+    "sha256": "54a7a339b23bdf4b49d50e81a3cddc5a06806a7430891aaa40aaad2d3791d4ad"
+  },
+  {
+    "origen": "16-species-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "16-species-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "c8dae4216e634f7a5791483c660aab09cf0c78aa6cc7731f406b478a39103ee7"
+  },
+  {
+    "origen": "16-species-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "16-species-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "d3355860d9a22a76531107d3d603257d4d2537a4673c9a7463725903023adde2"
+  },
+  {
+    "origen": "16-species-module/README.md",
+    "copia": "16-species-module/README.md",
+    "sha256": "99b8055abeb8e0b82061f4d8fd4346510bfd4e357da8da813fec0ba4b611b9db"
+  },
+  {
+    "origen": "16-species-module/REA_ANALYSIS.md",
+    "copia": "16-species-module/REA_ANALYSIS.md",
+    "sha256": "b05e60ef826637f7e647e23c820e9f89d603756609535d07ad2abc260e25e071"
+  },
+  {
+    "origen": "16-species-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "16-species-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "873d7f6b06c8c7653c025cb01f66863a196c0332197cccda7fa3d55e7104af08"
+  },
+  {
+    "origen": "16-species-module/UI_SPECIFICATION.md",
+    "copia": "16-species-module/UI_SPECIFICATION.md",
+    "sha256": "a2bdb09a2c5af76d775c4ecd70921bca6fdb262c25eba1f8f091161172e3d638"
+  },
+  {
+    "origen": "16-species-module/VALIDATION_PLAN.md",
+    "copia": "16-species-module/VALIDATION_PLAN.md",
+    "sha256": "7324e3b0404fb0a28cb58d96b4c9da8822feb6d039165c9f5e6d50a414a5bb01"
+  },
+  {
+    "origen": "17-aqua-module/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "17-aqua-module/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "794b14de171abb1bfbb259fdfdae62e6dfae162c20c0da6edb9661fe3ee6066a"
+  },
+  {
+    "origen": "17-aqua-module/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "17-aqua-module/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "8bcc8fde20d53e9cc543612899b31c718bbee2330c0143024e7d53611667d0c8"
+  },
+  {
+    "origen": "17-aqua-module/README.md",
+    "copia": "17-aqua-module/README.md",
+    "sha256": "c91038540a7b571926dfde884aa9d411cb7f7e9974f0374d8ff4a36328d65cc2"
+  },
+  {
+    "origen": "17-aqua-module/REA_ANALYSIS.md",
+    "copia": "17-aqua-module/REA_ANALYSIS.md",
+    "sha256": "7bf11c605801de09e75b3510cd8c07b1f3bdfe2c9067d0478e4f2fa66f3e475f"
+  },
+  {
+    "origen": "17-aqua-module/SCIENTIFIC_REFERENCES.md",
+    "copia": "17-aqua-module/SCIENTIFIC_REFERENCES.md",
+    "sha256": "93b7806af2bbc407579dce132f8da2be112349a456325d7d1c1871f8ceb371fa"
+  },
+  {
+    "origen": "17-aqua-module/UI_SPECIFICATION.md",
+    "copia": "17-aqua-module/UI_SPECIFICATION.md",
+    "sha256": "197500641fa3687b118e587a2cc89e27e48523f0fd7f3e448265ddc5ec2bc952"
+  },
+  {
+    "origen": "17-aqua-module/VALIDATION_PLAN.md",
+    "copia": "17-aqua-module/VALIDATION_PLAN.md",
+    "sha256": "89b0d6ce0c27064b9184133f954ae5f1501890dab661ec337adfe2d5d04c18e2"
+  },
+  {
+    "origen": "18-sim-common-tools/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "18-sim-common-tools/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "78dba7fb4960d045ef71dcf5435d4a0a5f184d1bfc3b517e3236d9675c6e121b"
+  },
+  {
+    "origen": "18-sim-common-tools/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "18-sim-common-tools/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "c5fa6bfa9de28d2426e8cc95b5ca6297e9da59da65e880f5b3f2962295192045"
+  },
+  {
+    "origen": "18-sim-common-tools/README.md",
+    "copia": "18-sim-common-tools/README.md",
+    "sha256": "133a864cdd638af12629af833f34b6260f784bab4455c55d756a21ba5477188f"
+  },
+  {
+    "origen": "18-sim-common-tools/REA_ANALYSIS.md",
+    "copia": "18-sim-common-tools/REA_ANALYSIS.md",
+    "sha256": "181027d61e76fc4c3769267c1190bd82e7c1878fae411d9342cc898a2742b43c"
+  },
+  {
+    "origen": "18-sim-common-tools/SCIENTIFIC_REFERENCES.md",
+    "copia": "18-sim-common-tools/SCIENTIFIC_REFERENCES.md",
+    "sha256": "02a9d12ffe25cb202273891c752c37cce4db67f89afca84593911cf98e12f7b5"
+  },
+  {
+    "origen": "18-sim-common-tools/UI_SPECIFICATION.md",
+    "copia": "18-sim-common-tools/UI_SPECIFICATION.md",
+    "sha256": "493a1dff13fc336656c1be2ec19b42c1af63a4d8298eb9941b5443ba003ea38b"
+  },
+  {
+    "origen": "18-sim-common-tools/VALIDATION_PLAN.md",
+    "copia": "18-sim-common-tools/VALIDATION_PLAN.md",
+    "sha256": "b17584589c512137d9e2f315031ad3716a16c62266444dba20b6b3f5d8237c31"
+  },
+  {
+    "origen": "19-sim-lca/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "19-sim-lca/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "efd1d23c3283cae94ddfd4756f0cb0aad48527cd0651e4098bd70cf1d5fc6d9e"
+  },
+  {
+    "origen": "19-sim-lca/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "19-sim-lca/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "38ffb945899ed8e74b76b336eefd6cc5ff99d6f4626d6d03d6af12cbb3729365"
+  },
+  {
+    "origen": "19-sim-lca/README.md",
+    "copia": "19-sim-lca/README.md",
+    "sha256": "a530b990aad0c443a2da7396d9d9d3fed80aa3590c5d08f382b1d74cc63dc5b7"
+  },
+  {
+    "origen": "19-sim-lca/REA_ANALYSIS.md",
+    "copia": "19-sim-lca/REA_ANALYSIS.md",
+    "sha256": "d6eecd4808f0f27739eb4b390682db3fa7824a44d83651ae635e1e8e7235439d"
+  },
+  {
+    "origen": "19-sim-lca/SCIENTIFIC_REFERENCES.md",
+    "copia": "19-sim-lca/SCIENTIFIC_REFERENCES.md",
+    "sha256": "5709d3fcf13d44397e1a9e330a77100f320bbe2c99819580950fa7083886e50b"
+  },
+  {
+    "origen": "19-sim-lca/UI_SPECIFICATION.md",
+    "copia": "19-sim-lca/UI_SPECIFICATION.md",
+    "sha256": "9b87ac066a67067cb887236a85db2ace938e0bf4d5aa57bd4324c4aafa1cc674"
+  },
+  {
+    "origen": "19-sim-lca/VALIDATION_PLAN.md",
+    "copia": "19-sim-lca/VALIDATION_PLAN.md",
+    "sha256": "7c45ddadc7dc5e05206c066948d4c983681eba2e62da77c9b6ab594ff016c523"
+  },
+  {
+    "origen": "20-mass-balance/FUNCTIONAL_SPECIFICATION.md",
+    "copia": "20-mass-balance/FUNCTIONAL_SPECIFICATION.md",
+    "sha256": "790e5b9ebf55809c368429049096f6544ae91f4202ed6abb6c3cd72411f81f62"
+  },
+  {
+    "origen": "20-mass-balance/MATHEMATICAL_SPECIFICATION.md",
+    "copia": "20-mass-balance/MATHEMATICAL_SPECIFICATION.md",
+    "sha256": "0c201676d22744b11d69ddd2ecfce47e38a2386f3df2cd4dc81da900655b47d4"
+  },
+  {
+    "origen": "20-mass-balance/README.md",
+    "copia": "20-mass-balance/README.md",
+    "sha256": "669f54f2a0a1a0e45b5a4e74a20a6b58dc9253fd5a4f4afe573611af6d4197f9"
+  },
+  {
+    "origen": "20-mass-balance/REA_ANALYSIS.md",
+    "copia": "20-mass-balance/REA_ANALYSIS.md",
+    "sha256": "0af919015cf1a1cc7df8ddfbf56c79621bcd90667163dd08874b675caa0d0910"
+  },
+  {
+    "origen": "20-mass-balance/SCIENTIFIC_REFERENCES.md",
+    "copia": "20-mass-balance/SCIENTIFIC_REFERENCES.md",
+    "sha256": "94978a11a0b987637d8ee6a9c1290e9551116f4a0f4db3ec3724c007a8d33d99"
+  },
+  {
+    "origen": "20-mass-balance/UI_SPECIFICATION.md",
+    "copia": "20-mass-balance/UI_SPECIFICATION.md",
+    "sha256": "249b61fe6e4897c02ca782d53fc24004b8c907079fb9b80597bcfebed281d8d8"
+  },
+  {
+    "origen": "20-mass-balance/VALIDATION_PLAN.md",
+    "copia": "20-mass-balance/VALIDATION_PLAN.md",
+    "sha256": "7fee3acc218b06d543cdf3e9b9ac434ce1f938cec9cf643d49672f87047c835e"
+  }
+]

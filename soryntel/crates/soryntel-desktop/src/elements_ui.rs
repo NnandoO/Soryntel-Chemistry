@@ -197,7 +197,7 @@ impl ElementsModuleState {
     fn export_csv(&mut self) {
         let csv = self.workbook.to_csv();
         let path = "/tmp/soryntel_elements_export.csv";
-        match std::fs::write(path, csv) {
+        match crate::storage::write_atomic(path, csv) {
             Ok(_) => {
                 self.status_msg = format!("Exported Elements workbook to {path}");
             }
@@ -269,7 +269,7 @@ impl ElementsModuleState {
             }
         }
         svg.push_str("</svg>");
-        match std::fs::write(path, svg) {
+        match crate::storage::write_atomic(path, svg) {
             Ok(_) => {
                 self.status_msg = format!("Printable Periodic Chart SVG saved to {path}");
             }
@@ -855,7 +855,7 @@ impl ElementsModuleState {
             )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
+                    ui.menu_button(crate::i18n::text("common.001"), |ui| {
                         if ui.button("Periodic Chart (Return)").clicked() {
                             self.view_mode = ElementsViewMode::PeriodicChart;
                             ui.close_menu();
@@ -885,7 +885,7 @@ impl ElementsModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Edit", |ui| {
+                    ui.menu_button(crate::i18n::text("common.006"), |ui| {
                         if ui.button("Copy Active Cell").clicked() {
                             let val = self.cell_value(self.active_cell.row, self.active_cell.col);
                             ui.ctx().copy_text(val);
@@ -901,7 +901,7 @@ impl ElementsModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Insert", |ui| {
+                    ui.menu_button(crate::i18n::text("common.010"), |ui| {
                         if ui.button("Insert Custom Property Row...").clicked() {
                             self.new_row_name = "Custom Property".into();
                             self.new_row_units.clear();
@@ -910,7 +910,7 @@ impl ElementsModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Delete", |ui| {
+                    ui.menu_button(crate::i18n::text("common.013"), |ui| {
                         if ui.button("Delete Active Row").clicked() {
                             if self.active_cell.row > 0 && self.workbook.rows.len() > 1 {
                                 let del_idx = self.active_cell.row - 1;
@@ -928,7 +928,7 @@ impl ElementsModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Format", |ui| {
+                    ui.menu_button(crate::i18n::text("common.019"), |ui| {
                         if ui
                             .checkbox(&mut self.fix_left_3_cols, "Fix Left 3 Columns (Property | Units | Diagram)")
                             .clicked()
@@ -936,7 +936,7 @@ impl ElementsModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Help", |ui| {
+                    ui.menu_button(crate::i18n::text("common.003"), |ui| {
                         if ui.button("About Elements Module").clicked() {
                             self.show_about_modal = true;
                             ui.close_menu();
@@ -1499,7 +1499,7 @@ impl ElementsModuleState {
                             });
 
                         ui.add_space(6.0);
-                        if ui.button("Close").clicked() {
+                        if ui.button(crate::i18n::text("common.004")).clicked() {
                             self.double_click_modal_idx = None;
                         }
                     });
@@ -1523,7 +1523,7 @@ impl ElementsModuleState {
                             ui.label("Property Name:");
                             ui.text_edit_singleline(&mut self.new_row_name);
                             ui.end_row();
-                            ui.label("Units:");
+                            ui.label(crate::i18n::text("common.024"));
                             ui.text_edit_singleline(&mut self.new_row_units);
                             ui.end_row();
                             ui.label("Diagram Plottable:");
@@ -1532,7 +1532,7 @@ impl ElementsModuleState {
                         });
                     ui.add_space(6.0);
                     ui.horizontal(|ui| {
-                        if ui.button("Insert Row").clicked() {
+                        if ui.button(crate::i18n::text("common.077")).clicked() {
                             let name = if self.new_row_name.trim().is_empty() {
                                 "Custom Property".to_string()
                             } else {
@@ -1548,7 +1548,7 @@ impl ElementsModuleState {
                             self.status_msg = format!("Inserted custom row '{name}'.");
                             self.show_insert_row_modal = false;
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(crate::i18n::text("common.000")).clicked() {
                             self.show_insert_row_modal = false;
                         }
                     });
@@ -1572,7 +1572,7 @@ impl ElementsModuleState {
                     if let Some(idx) = find_element_index_by_symbol("Os") {
                         let _ = idx;
                     }
-                    if ui.button("OK").clicked() {
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         self.show_about_modal = false;
                     }
                 });

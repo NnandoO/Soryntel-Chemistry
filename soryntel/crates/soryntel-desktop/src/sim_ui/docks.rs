@@ -163,7 +163,7 @@ fn render_properties_pane(ui: &mut egui::Ui, state: &mut SimModuleState) {
                             ui.checkbox(&mut u.show_title_inside, "Show Title Inside Unit");
                         });
                         ui.add_space(4.0);
-                        if ui.button("Open Unit Editor...").clicked() {
+                        if ui.button(crate::i18n::text("review.182")).clicked() {
                             open_editor = true;
                         }
                     } else {
@@ -188,7 +188,7 @@ fn render_properties_pane(ui: &mut egui::Ui, state: &mut SimModuleState) {
                         egui::CollapsingHeader::new("Drawing - Line & Fill").default_open(true).show(ui, |ui| {
                             prop_row_rgb(ui, "Line Color", &mut u.line_color);
                             ui.horizontal(|ui| {
-                                ui.label("Line Width:");
+                                ui.label(crate::i18n::text("review.185"));
                                 ui.add(egui::DragValue::new(&mut u.line_width).range(0.1..=3.0).speed(0.05));
                             });
                             prop_row_rgb(ui, "Fill Color 1", &mut u.fill_color_1);
@@ -247,7 +247,7 @@ fn render_properties_pane(ui: &mut egui::Ui, state: &mut SimModuleState) {
                             ui.checkbox(&mut s.visible_stream_table, "Stream Table");
                             ui.checkbox(&mut s.has_duplicates, "Has Duplicates Warning");
                         });
-                        if ui.button("Streams Source and Destination...").clicked() {
+                        if ui.button(crate::i18n::text("review.183")).clicked() {
                             open_src_dst = true;
                         }
                     } else {
@@ -255,7 +255,7 @@ fn render_properties_pane(ui: &mut egui::Ui, state: &mut SimModuleState) {
                         egui::CollapsingHeader::new("Drawing - Line").default_open(true).show(ui, |ui| {
                             prop_row_rgb(ui, "Line Color", &mut s.line_color);
                             ui.horizontal(|ui| {
-                                ui.label("Line Width:");
+                                ui.label(crate::i18n::text("review.185"));
                                 ui.add(egui::DragValue::new(&mut s.line_width).range(0.1..=3.0).speed(0.05));
                             });
                         });
@@ -638,7 +638,7 @@ fn render_names_tab(ui: &mut egui::Ui, state: &mut SimModuleState) {
                 if !q.is_empty() && !s.name_id.to_lowercase().contains(&q) {
                     continue;
                 }
-                ui.label("Stream");
+                ui.label(crate::i18n::text("review.186"));
                 ui.add(egui::TextEdit::singleline(&mut s.name_id).desired_width(110.0));
                 ui.add(egui::TextEdit::singleline(&mut s.alias).desired_width(90.0));
                 ui.end_row();
@@ -661,7 +661,7 @@ fn render_visibility_tab(ui: &mut egui::Ui, state: &mut SimModuleState) {
         0 => {
             ui.horizontal(|ui| {
                 ui.add(egui::TextEdit::singleline(&mut state.new_layer_name).desired_width(115.0));
-                if ui.button("Add").clicked() && !state.new_layer_name.trim().is_empty() {
+                if ui.button(crate::i18n::text("common.015")).clicked() && !state.new_layer_name.trim().is_empty() {
                     state.project.layers.push(SimLayer {
                         name: state.new_layer_name.trim().to_string(),
                         visible: true,
@@ -678,7 +678,7 @@ fn render_visibility_tab(ui: &mut egui::Ui, state: &mut SimModuleState) {
         1 => {
             ui.horizontal(|ui| {
                 ui.add(egui::TextEdit::singleline(&mut state.new_group_name).desired_width(115.0));
-                if ui.button("Add").clicked() && !state.new_group_name.trim().is_empty() {
+                if ui.button(crate::i18n::text("common.015")).clicked() && !state.new_group_name.trim().is_empty() {
                     let unit_ids = state.multi_selected_units.clone();
                     state.project.groups.push(SimGroup {
                         name: state.new_group_name.trim().to_string(),
@@ -789,9 +789,9 @@ fn render_cell_ref_tab(ui: &mut egui::Ui, state: &mut SimModuleState) {
     let mut nav_unit: Option<String> = None;
     egui::ScrollArea::vertical().id_salt("cellref_scroll").show(ui, |ui| {
         egui::Grid::new("cellref_grid").striped(true).spacing([10.0, 3.0]).show(ui, |ui| {
-            ui.label(RichText::new("Unit Name").strong());
+            ui.label(RichText::new(crate::i18n::text("common.096")).strong());
             ui.label(RichText::new("Cell Reference Name").strong());
-            ui.label(RichText::new("Value").strong());
+            ui.label(RichText::new(crate::i18n::text("common.136")).strong());
             ui.end_row();
             for cr in &state.project.cell_references {
                 if !q.is_empty()
@@ -841,7 +841,7 @@ fn render_log_tab(ui: &mut egui::Ui, state: &mut SimModuleState) {
         {
             state.log_filter_level = LogFilterLevel::Errors;
         }
-        if ui.button("Clear").clicked() {
+        if ui.button(crate::i18n::text("common.037")).clicked() {
             state.project.logs.clear();
         }
     });

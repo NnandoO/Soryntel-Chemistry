@@ -370,7 +370,7 @@ impl MassBalanceWindowState {
         match SoryntelApplication::mb_export_xlsx(&self.workbook) {
             Ok(bytes) => {
                 let path = "/tmp/soryntel_mass_balance_results.xlsx";
-                match std::fs::write(path, &bytes) {
+                match crate::storage::write_atomic(path, &bytes) {
                     Ok(_) => {
                         self.status_banner = format!(
                             "Exported {} bytes multi-sheet .xlsx to {path}",
@@ -518,7 +518,7 @@ fn render_mb_body(
         .inner_margin(egui::Margin::symmetric(8.0, 3.0))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Status:").strong().size(11.0));
+                ui.label(RichText::new(crate::i18n::text("common.101")).strong().size(11.0));
                 ui.label(RichText::new(&state.status_banner).size(11.0).color(DARK_INK));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if let Some(ds) = state.workbook.active_dataset() {
@@ -861,7 +861,7 @@ fn render_upper_ribbon(
                             }
                             MbNavPage::MeasurementData => {
                                 ribbon_group(ui, "Table", |ui| {
-                                    ui.menu_button(RichText::new("Copy ▾").size(10.5), |ui| {
+                                    ui.menu_button(RichText::new(crate::i18n::text("common.102")).size(10.5), |ui| {
                                         if ui.button("Copy Whole Table (TSV)").clicked() {
                                             let txt = build_measurement_tsv(
                                                 &state.workbook,
@@ -1281,7 +1281,7 @@ fn render_upper_ribbon(
                             }
                             MbNavPage::ReportingResults => {
                                 ribbon_group(ui, "Results", |ui| {
-                                    ui.menu_button(RichText::new("Copy ▾").size(10.5), |ui| {
+                                    ui.menu_button(RichText::new(crate::i18n::text("common.102")).size(10.5), |ui| {
                                         if ui.button("Copy Stream Summary (TSV)").clicked() {
                                             let tsv = state.workbook.export_summary_tsv();
                                             ui.ctx().copy_text(tsv.clone());
@@ -3530,7 +3530,7 @@ fn render_properties_panel(ui: &mut egui::Ui, state: &mut MassBalanceWindowState
                                         false,
                                     );
                                     prop_row(ui, "Fraction:", &f_name, false);
-                                    ui.label(RichText::new("Status:").size(10.5));
+                                    ui.label(RichText::new(crate::i18n::text("common.101")).size(10.5));
                                     let mut next_st = pre_st;
                                     egui::ComboBox::from_id_salt("prop_cell_st")
                                         .width(120.0)
@@ -3966,7 +3966,7 @@ fn render_mb_modals(ctx: &egui::Context, state: &mut MassBalanceWindowState) {
                             .unwrap_or("?");
                         ui.horizontal(|ui| {
                             ui.label(format!("{tname} = {} * {sname}", eq.factor));
-                            if ui.button("Delete").clicked() {
+                            if ui.button(crate::i18n::text("common.013")).clicked() {
                                 remove_idx = Some(i);
                             }
                         });
@@ -4169,7 +4169,7 @@ fn render_mb_modals(ctx: &egui::Context, state: &mut MassBalanceWindowState) {
                             }
                         }
                         TextModalKind::ExportPreview => {
-                            if ui.button("Copy to Clipboard").clicked() {
+                            if ui.button(crate::i18n::text("common.100")).clicked() {
                                 ctx.copy_text(state.text_modal_buf.clone());
                             }
                         }

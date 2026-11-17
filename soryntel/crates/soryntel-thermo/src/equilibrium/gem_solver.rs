@@ -49,8 +49,14 @@ pub fn solve_single_point<R: SpeciesRepository>(
     override_inputs_mol: Option<&[f64]>,
     discharge_kmol_e: f64,
 ) -> Result<EquilibriumPointResult, SoryntelError> {
-    let t_k = temp_k.max(1.0);
-    let p_bar = pressure_bar.max(1e-12);
+    if !temp_k.is_finite() || temp_k <= 0.0 {
+        return Err(SoryntelError::InvalidTemperature(temp_k));
+    }
+    if !pressure_bar.is_finite() || pressure_bar <= 0.0 {
+        return Err(SoryntelError::InvalidPressure(pressure_bar));
+    }
+    let t_k = temp_k;
+    let p_bar = pressure_bar;
     let rt = R_JOULE * t_k;
 
     let mut resolved = Vec::new();
@@ -308,7 +314,7 @@ pub fn solve_single_point<R: SpeciesRepository>(
     let mut total_iters = 0usize;
     let mut converged = false;
 
-    for _ac in 0..ac_iters {
+    for ac in 0..ac_iters {
         let (sol, pi_vec, iters, conv) = run_wjd_active_set(
             &resolved,
             &a_mat,
@@ -340,6 +346,8 @@ pub fn solve_single_point<R: SpeciesRepository>(
                 row_map.insert(resolved[i].row_number, xi);
             }
         }
+        let mut max_activity_change = 0.0_f64;
+        let mut next_ln_gamma = ln_gamma.clone();
         for (mp_idx, members) in mix_phase_members.iter().enumerate() {
             let p_idx = mix_phase_indices[mp_idx];
             let model = system.phases[p_idx].model;
@@ -368,9 +376,17 @@ pub fn solve_single_point<R: SpeciesRepository>(
                 params.column_c_lnf_mode,
             );
             for (k, &i) in members.iter().enumerate() {
-                ln_gamma[i] = 0.5 * ln_gamma[i] + 0.5 * phase_ln_g[k];
+                let change = (phase_ln_g[k] - ln_gamma[i]).abs();
+                max_activity_change = if change.is_finite() {
+                    max_activity_change.max(change)
+                } else { f64::INFINITY };
+                next_ln_gamma[i] = 0.5 * ln_gamma[i] + 0.5 * phase_ln_g[k];
             }
         }
+        converged &= max_activity_change <= 1e-8;
+        if converged { break; }
+        // Keep reported activities consistent with the last solved composition.
+        if ac + 1 < ac_iters { ln_gamma = next_ln_gamma; }
     }
 
     // Mass balance error check on the raw WJD solution (accounting for open FixedActivity reservoirs).
@@ -385,8 +401,12 @@ pub fn solve_single_point<R: SpeciesRepository>(
             };
             sum_e += a_mat[e][i] * ni;
         }
-        max_err = max_err.max((sum_e - b_vec[e]).abs());
+        let residual = (sum_e - b_vec[e]).abs();
+        max_err = if residual.is_finite() { max_err.max(residual) } else { f64::INFINITY };
     }
+
+    converged &= n_sol.iter().all(|n| n.is_finite())
+        && max_err <= 1e-10 + 1e-8 * total_b_scale;
 
     // Rescale Infinite Phase species back to finite reference amounts (`sp.input_mol + delta`),
     // and compute physical mixture amounts for Fixed Activity species in mixture phases.

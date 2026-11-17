@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Soryntel Chemistry — Reaction Equations</title>
+  <title>Soryntel Chemistry — Ecuaciones de reacción</title>
   <style>
     :root {
       --bg: #0f172a; --panel: #1e293b; --border: #334155;
@@ -19,7 +19,7 @@
     .spec-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
     .field { display: flex; flex-direction: column; gap: 4px; }
-    .field.grow { flex: 1 1 360px; }
+    .field.grow { flex: 1 1 360px; min-width: 0; }
     label { font-size: 0.78rem; color: var(--muted); }
     input, select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 0.92rem; }
     input.formula { font-family: "JetBrains Mono", monospace; font-size: 1rem; border-color: #475569; }
@@ -31,7 +31,7 @@
     .checks label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text); cursor: pointer; }
     .split { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; min-height: 480px; }
     @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .card { min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
     .table-wrap { overflow: auto; max-height: 360px; border: 1px solid var(--border); border-radius: 6px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.84rem; font-family: "JetBrains Mono", monospace; }
     th, td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
@@ -46,11 +46,21 @@
     .examples button { padding: 4px 8px; font-size: 0.76rem; font-weight: 500; }
     dialog { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px; width: min(720px, 92vw); padding: 16px; }
     dialog::backdrop { background: rgba(0,0,0,0.65); }
+    @media (max-width: 600px) {
+      header { flex-wrap: wrap; gap: 8px; padding: 10px; }
+      h1 { overflow-wrap: anywhere; }
+      .container { padding: 8px; }
+      .field.grow { flex-basis: 100%; }
+      input.formula { width: 100%; box-sizing: border-box; }
+      .row { gap: 8px; }
+      svg { height: 280px; }
+      dialog { box-sizing: border-box; max-width: 96vw; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Soryntel Chemistry — Reaction Equations (Módulo 01)</h1>
+    <h1>Soryntel Chemistry — Ecuaciones de reacción (Módulo 01)</h1>
     <span class="badge" id="dbInfo">Cargando base de datos...</span>
   </header>
 
@@ -62,29 +72,29 @@
           <input id="formulaInput" class="formula" value="Al2O3" placeholder="Ej: Al2O3 | Mg = Mg(g) | FeS2 + H2O = Fe2O3 + SO4(-2a) + H(+a) + e-" />
         </div>
         <div class="field" style="width:110px">
-          <label>Smallest Coeff.</label>
+          <label>Coeficiente mínimo</label>
           <input id="smallCoeff" type="number" step="any" value="1" />
         </div>
-        <button onclick="doBalance()">Balance</button>
-        <button onclick="openBrowser()">Browse DB...</button>
-        <button class="primary" onclick="doCalculate()">Calculate</button>
+        <button onclick="doBalance()">Balancear</button>
+        <button onclick="openBrowser()">Explorar base de datos...</button>
+        <button class="primary" onclick="doCalculate()">Calcular</button>
       </div>
 
       <div class="row">
-        <div class="field"><label>From</label><input id="tFrom" type="number" step="any" value="0" style="width:95px" /></div>
-        <div class="field"><label>To</label><input id="tTo" type="number" step="any" value="2000" style="width:95px" /></div>
-        <div class="field"><label>Step</label><input id="tStep" type="number" step="any" value="100" style="width:95px" /></div>
-        <div class="field"><label>Temp. Unit</label>
+        <div class="field"><label>Desde</label><input id="tFrom" type="number" step="any" value="0" style="width:95px" /></div>
+        <div class="field"><label>Hasta</label><input id="tTo" type="number" step="any" value="2000" style="width:95px" /></div>
+        <div class="field"><label>Paso</label><input id="tStep" type="number" step="any" value="100" style="width:95px" /></div>
+        <div class="field"><label>Unidad de temperatura</label>
           <select id="tUnit"><option value="Celsius" selected>°C</option><option value="Kelvin">K</option><option value="Fahrenheit">°F</option></select>
         </div>
-        <div class="field"><label>Energy Unit</label>
+        <div class="field"><label>Unidad de energía</label>
           <select id="eUnit"><option value="Kilojoules" selected>kJ</option><option value="Joules">J</option><option value="Kilocalories">kcal</option><option value="Calories">cal</option></select>
         </div>
-        <div class="field"><label>Format (Pure)</label>
+        <div class="field"><label>Formato (sustancia pura)</label>
           <select id="resFmt"><option value="Normal" selected>Normal</option><option value="Delta">Delta</option></select>
         </div>
         <div class="checks">
-          <label><input id="showTr" type="checkbox" checked /> Show Transitions</label>
+          <label><input id="showTr" type="checkbox" checked /> Mostrar transiciones</label>
           <label><input id="crissCobble" type="checkbox" /> Criss-Cobble</label>
         </div>
       </div>
@@ -94,18 +104,18 @@
         <button onclick="loadEx('Al2O3',0,2000,100)">Al2O3</button>
         <button onclick="loadEx('Mg = Mg(g)',500,1500,50)">Mg = Mg(g)</button>
         <button onclick="loadEx('Ni + 4CO(g) = Ni(CO)4(g)',70,160,10)">Mond (Ni(CO)4)</button>
-        <button onclick="loadEx('FeS2 + H2O = Fe2O3 + SO4(-2a) + H(+a) + e-',0,175,25)">FeS2 Redox (unbalanced)</button>
+        <button onclick="loadEx('FeS2 + H2O = Fe2O3 + SO4(-2a) + H(+a) + e-',0,175,25)">FeS2 redox (sin balancear)</button>
         <button onclick="exportCsv()">Exportar CSV</button>
       </div>
     </div>
 
-    <div id="statusBox" class="status">Listo. Presiona Calculate.</div>
+    <div id="statusBox" class="status">Listo. Pulsa Calcular.</div>
 
     <div class="split">
       <div class="card">
-        <strong id="tableTitle">Reaction / Substance Data</strong>
+        <strong id="tableTitle">Datos de reacción o sustancia</strong>
         <div class="table-wrap"><table id="mainTable"></table></div>
-        <strong>Species Data (Balances de Masa y Volumen)</strong>
+        <strong>Datos de especies (balances de masa y volumen)</strong>
         <div class="table-wrap" style="max-height: 180px;"><table id="speciesTable"></table></div>
       </div>
 
@@ -121,7 +131,7 @@
 
   <dialog id="dbDialog">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <strong>Database Browser</strong>
+      <strong>Explorador de la base de datos</strong>
       <button onclick="document.getElementById('dbDialog').close()">Cerrar</button>
     </div>
     <div class="row" style="margin-bottom:10px;">
@@ -194,28 +204,39 @@
       renderChart();
     }
 
+    function formatEquilibriumConstant(value, logValue) {
+      if (Number.isFinite(value) && value > 0) return value.toExponential(3);
+      if (!Number.isFinite(logValue)) return 'No disponible';
+      const exponent = Math.floor(logValue);
+      return `${(10 ** (logValue - exponent)).toFixed(3)} × 10^${exponent}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+    }
+
     function renderTables(d) {
       const tbl = document.getElementById('mainTable');
       if (d.is_single_substance) {
-        document.getElementById('tableTitle').textContent = `Formula: ${d.normalized_input}`;
-        let html = `<thead><tr><th>T (${d.temp_unit_label})</th><th>Cp (${d.entropy_unit_label})</th><th>H (${d.energy_unit_label}/mol)</th><th>S (${d.entropy_unit_label})</th><th>G (${d.energy_unit_label}/mol)</th><th>Reference</th></tr></thead><tbody>`;
+        document.getElementById('tableTitle').textContent = `Fórmula: ${d.normalized_input}`;
+        let html = `<thead><tr><th>T (${d.temp_unit_label})</th><th>Cp (${d.entropy_unit_label})</th><th>H (${d.energy_unit_label}/mol)</th><th>S (${d.entropy_unit_label})</th><th>G (${d.energy_unit_label}/mol)</th><th>Referencia</th></tr></thead><tbody>`;
         for (const r of d.substance_rows) {
-          html += `<tr class="${r.is_transition ? 'tr-row' : ''}"><td>${r.temperature.toFixed(3)}</td><td>${r.cp.toFixed(3)}</td><td>${r.h.toFixed(3)}</td><td>${r.s.toFixed(3)}</td><td>${r.g.toFixed(3)}</td><td style="text-align:left">${r.reference}</td></tr>`;
+          html += `<tr class="${r.is_transition ? 'tr-row' : ''}"><td>${r.temperature.toFixed(3)}</td><td>${r.cp.toFixed(3)}</td><td>${r.h.toFixed(3)}</td><td>${r.s.toFixed(3)}</td><td>${r.g.toFixed(3)}</td><td style="text-align:left">${escapeHtml(r.reference)}</td></tr>`;
         }
         tbl.innerHTML = html + '</tbody>';
       } else {
-        document.getElementById('tableTitle').textContent = `Reaction: ${d.normalized_input}`;
+        document.getElementById('tableTitle').textContent = `Reacción: ${d.normalized_input}`;
         let html = `<thead><tr><th>T (${d.temp_unit_label})</th><th>ΔH (${d.energy_unit_label})</th><th>ΔS (${d.entropy_unit_label})</th><th>ΔG (${d.energy_unit_label})</th><th>K</th><th>Log K</th>${d.has_electrochemical_potential ? '<th>E vs SHE (V)</th>' : ''}</tr></thead><tbody>`;
         for (const r of d.reaction_rows) {
-          html += `<tr><td>${r.temperature.toFixed(3)}</td><td>${r.delta_h.toFixed(3)}</td><td>${r.delta_s.toFixed(3)}</td><td>${r.delta_g.toFixed(3)}</td><td>${r.k_eq.toExponential(3)}</td><td>${r.log10_k.toFixed(3)}</td>${d.has_electrochemical_potential ? `<td>${r.e_vs_she_v.toFixed(3)}</td>` : ''}</tr>`;
+          html += `<tr><td>${r.temperature.toFixed(3)}</td><td>${r.delta_h.toFixed(3)}</td><td>${r.delta_s.toFixed(3)}</td><td>${r.delta_g.toFixed(3)}</td><td>${formatEquilibriumConstant(r.k_eq, r.log10_k)}</td><td>${r.log10_k.toFixed(3)}</td>${d.has_electrochemical_potential ? `<td>${r.e_vs_she_v.toFixed(3)}</td>` : ''}</tr>`;
         }
         tbl.innerHTML = html + '</tbody>';
       }
 
       const st = document.getElementById('speciesTable');
-      let sh = `<thead><tr><th>Formula</th><th>Side</th><th>M (g/mol)</th><th>wt-%</th><th>mol</th><th>g</th><th>Volume</th><th>Extrap. K</th></tr></thead><tbody>`;
+      let sh = `<thead><tr><th>Fórmula</th><th>Lado</th><th>M (g/mol)</th><th>wt-%</th><th>mol</th><th>g</th><th>Volumen</th><th>Extrap. K</th></tr></thead><tbody>`;
       for (const s of d.species_data) {
-        sh += `<tr><td>${s.formula}</td><td style="text-align:left">${s.side}</td><td>${s.molar_mass.toFixed(3)}</td><td>${s.conc_wt_pct.toFixed(3)}</td><td>${s.mol.toFixed(3)}</td><td>${s.mass_g.toFixed(3)}</td><td>${s.volume.toFixed(3)} ${s.volume_unit}</td><td>${s.extrapolated_from_k ? s.extrapolated_from_k.toFixed(2) : '-'}</td></tr>`;
+        sh += `<tr><td>${escapeHtml(s.formula)}</td><td style="text-align:left">${escapeHtml(s.side)}</td><td>${s.molar_mass.toFixed(3)}</td><td>${s.conc_wt_pct.toFixed(3)}</td><td>${s.mol.toFixed(3)}</td><td>${s.mass_g.toFixed(3)}</td><td>${s.volume.toFixed(3)} ${escapeHtml(s.volume_unit)}</td><td>${s.extrapolated_from_k ? s.extrapolated_from_k.toFixed(2) : '-'}</td></tr>`;
       }
       st.innerHTML = sh + '</tbody>';
     }
@@ -276,9 +297,9 @@
       const q = document.getElementById('dbSearch').value;
       const r = await fetch(`/api/species?q=${encodeURIComponent(q)}`);
       const list = await r.json();
-      let html = `<thead><tr><th>Formula</th><th>Name</th><th>M (g/mol)</th><th>Intervals</th><th></th></tr></thead><tbody>`;
+      let html = `<thead><tr><th>Fórmula</th><th>Name</th><th>M (g/mol)</th><th>Intervals</th><th></th></tr></thead><tbody>`;
       for (const s of list) {
-        html += `<tr><td>${s.formula}</td><td style="text-align:left">${s.name}</td><td>${s.molecular_weight.toFixed(3)}</td><td>${s.intervals.length}</td><td><button onclick="importSp('${s.formula.replace(/'/g, "\\'")}')">Import</button></td></tr>`;
+        html += `<tr><td>${escapeHtml(s.formula)}</td><td style="text-align:left">${s.name}</td><td>${s.molecular_weight.toFixed(3)}</td><td>${s.intervals.length}</td><td><button onclick="importSp('${s.formula.replace(/'/g, "\\'")}')">Import</button></td></tr>`;
       }
       document.getElementById('dbTable').innerHTML = html + '</tbody>';
     }

@@ -146,8 +146,8 @@ impl SimModuleState {
 
     fn render_menu_bar(&mut self, ui: &mut egui::Ui) {
         egui::menu::bar(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("New Empty Flowsheet").clicked() {
+            ui.menu_button(crate::i18n::text("common.001"), |ui| {
+                if ui.button(crate::i18n::text("review.190")).clicked() {
                     self.load_preset("Empty Flowsheet", soryntel_thermo::sim::presets::empty_project());
                     ui.close_menu();
                 }
@@ -187,7 +187,7 @@ impl SimModuleState {
                 }
             });
 
-            ui.menu_button("View", |ui| {
+            ui.menu_button(crate::i18n::text("common.028"), |ui| {
                 ui.menu_button("Toolbars", |ui| {
                     ui.checkbox(&mut self.show_top_toolbars, "Show Top Toolbars Ribbon");
                     ui.checkbox(&mut self.show_left_toolbars, "Show Left Toolbars");
@@ -241,7 +241,7 @@ impl SimModuleState {
             });
 
             ui.menu_button("Flowsheet", |ui| {
-                if ui.button("Flowsheet Settings...").clicked() {
+                if ui.button(crate::i18n::text("review.184")).clicked() {
                     self.show_default_settings = true;
                     ui.close_menu();
                 }
@@ -267,7 +267,7 @@ impl SimModuleState {
                 }
             });
 
-            ui.menu_button("Tools", |ui| {
+            ui.menu_button(crate::i18n::text("common.018"), |ui| {
                 if ui.button("Select Unit Models...").clicked() {
                     self.show_select_unit_models = true;
                     ui.close_menu();
@@ -329,7 +329,7 @@ impl SimModuleState {
                 }
             });
 
-            ui.menu_button("Calculate", |ui| {
+            ui.menu_button(crate::i18n::text("common.011"), |ui| {
                 if ui.button("Calculate Active Flowsheet (F5)").clicked() {
                     self.run_static(false);
                     ui.close_menu();
@@ -386,7 +386,7 @@ impl SimModuleState {
                 }
             });
 
-            ui.menu_button("Help", |ui| {
+            ui.menu_button(crate::i18n::text("common.003"), |ui| {
                 if ui.button("Check for Updates...").clicked() {
                     self.show_updates_modal = true;
                     ui.close_menu();
@@ -420,15 +420,15 @@ impl SimModuleState {
             .show(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     if self.top_tb.project {
-                        if ui.button("New").on_hover_text("New Empty Flowsheet").clicked() {
+                        if ui.button(crate::i18n::text("common.033")).on_hover_text(crate::i18n::text("review.190")).clicked() {
                             self.load_preset("Empty Flowsheet", soryntel_thermo::sim::presets::empty_project());
                         }
-                        if ui.button("Open").on_hover_text("Open / Import .simjson").clicked() {
+                        if ui.button(crate::i18n::text("common.087")).on_hover_text("Open / Import .simjson").clicked() {
                             self.export_kind = ExportModalKind::LoadProjectJson;
                             self.export_buffer.clear();
                             self.show_export_modal = true;
                         }
-                        if ui.button("Save").on_hover_text("Save Project (.simjson)").clicked() {
+                        if ui.button(crate::i18n::text("common.034")).on_hover_text("Save Project (.simjson)").clicked() {
                             self.export_kind = ExportModalKind::ProjectJson;
                             self.export_buffer = serde_json::to_string_pretty(&self.project).unwrap_or_default();
                             self.show_export_modal = true;
@@ -437,7 +437,7 @@ impl SimModuleState {
                     }
 
                     if self.top_tb.clipboard_undo {
-                        if ui.button("Copy").on_hover_text("Copy Selected Unit").clicked() {
+                        if ui.button(crate::i18n::text("common.029")).on_hover_text("Copy Selected Unit").clicked() {
                             if let SelectedObject::Unit(uid) = self.selected {
                                 self.clipboard_unit = self.project.units.iter().find(|u| u.id == uid).cloned();
                                 self.status_banner = "Copied unit to clipboard".to_string();
@@ -460,10 +460,10 @@ impl SimModuleState {
                                 self.selected = SelectedObject::Unit(nid);
                             }
                         }
-                        if ui.button("Undo").clicked() {
+                        if ui.button(crate::i18n::text("common.121")).clicked() {
                             self.undo();
                         }
-                        if ui.button("Redo").clicked() {
+                        if ui.button(crate::i18n::text("common.122")).clicked() {
                             self.redo();
                         }
                         ui.separator();
@@ -497,7 +497,7 @@ impl SimModuleState {
                                     }
                                 }
                             });
-                        if ui.button("Colors").on_hover_text("Visualization Color Picker").clicked() {
+                        if ui.button("Colors").on_hover_text(crate::i18n::text("review.189")).clicked() {
                             self.show_visualization_picker = true;
                         }
                         ui.separator();
@@ -577,7 +577,7 @@ impl SimModuleState {
                     }
 
                     if self.top_tb.report {
-                        if ui.button("Reports").clicked() {
+                        if ui.button(crate::i18n::text("review.187")).clicked() {
                             self.reports_cache = Some(SoryntelApplication::sim_generate_reports(&self.project));
                             self.show_reports_window = true;
                         }
@@ -615,7 +615,7 @@ impl SimModuleState {
                         if ui.button("Info").clicked() {
                             self.show_process_info = true;
                         }
-                        if ui.button("Notes").clicked() {
+                        if ui.button(crate::i18n::text("review.188")).clicked() {
                             self.show_notes_window = true;
                         }
                     }

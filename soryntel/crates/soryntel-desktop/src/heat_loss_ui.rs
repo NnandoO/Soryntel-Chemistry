@@ -308,7 +308,7 @@ impl HeatLossModuleState {
 
     pub fn save_htr8(&mut self, path: &str) {
         match SoryntelApplication::serialize_htr8_workbook(&self.wb) {
-            Ok(json) => match std::fs::write(path, json) {
+            Ok(json) => match crate::storage::write_atomic(path, json) {
                 Ok(_) => {
                     self.status_msg = format!("✔ Guardado en {path}");
                     self.status_ok = true;
@@ -350,7 +350,7 @@ impl HeatLossModuleState {
     pub fn export_xlsx(&mut self, path: &str) {
         let bytes =
             SoryntelApplication::export_heat_loss_workbook_xlsx(&self.wb, self.result.as_ref());
-        match std::fs::write(path, bytes) {
+        match crate::storage::write_atomic(path, bytes) {
             Ok(_) => {
                 self.status_msg = format!("📊 Exportado Excel a {path}");
                 self.status_ok = true;
@@ -376,18 +376,18 @@ impl HeatLossModuleState {
         // Top HSC Menu Bar + Quick Icon Toolbar (Figs. 1, 2, 4)
         egui::TopBottomPanel::top("hl_menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("📁 File", |ui| {
-                    if ui.button("📂 Open (.htr8)...").clicked() {
+                ui.menu_button(crate::i18n::text("common.020"), |ui| {
+                    if ui.button(crate::i18n::text("review.140")).clicked() {
                         let p = self.file_path_input.clone();
                         self.load_htr8(&p);
                         ui.close_menu();
                     }
-                    if ui.button("💾 Save (.htr8)...").clicked() {
+                    if ui.button(crate::i18n::text("review.141")).clicked() {
                         let p = self.file_path_input.clone();
                         self.save_htr8(&p);
                         ui.close_menu();
                     }
-                    if ui.button("📊 Export Workbook (.xlsx)...").clicked() {
+                    if ui.button(crate::i18n::text("review.142")).clicked() {
                         let p = format!("{}.xlsx", self.file_path_input.trim_end_matches(".htr8"));
                         self.export_xlsx(&p);
                         ui.close_menu();
@@ -415,8 +415,8 @@ impl HeatLossModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("✏ Edit", |ui| {
-                    if ui.button("🔄 Recalculate (F9)").clicked() {
+                ui.menu_button(crate::i18n::text("common.021"), |ui| {
+                    if ui.button(crate::i18n::text("review.143")).clicked() {
                         self.recalculate();
                         ui.close_menu();
                     }
@@ -438,7 +438,7 @@ impl HeatLossModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("👁 View", |ui| {
+                ui.menu_button(crate::i18n::text("common.039"), |ui| {
                     if ui
                         .checkbox(
                             &mut self.show_advanced_rows,
@@ -474,9 +474,9 @@ impl HeatLossModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("➕ Insert", |ui| {
+                ui.menu_button(crate::i18n::text("common.040"), |ui| {
                     let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
-                    if ui.button("💨 Surface Column").clicked() {
+                    if ui.button(crate::i18n::text("review.144")).clicked() {
                         self.wb.sheets[s_idx].columns.push(HeatLossColumn {
                             column_type: ColumnType::Surface,
                             layer_material: "Air (gas)".into(),
@@ -485,12 +485,12 @@ impl HeatLossModuleState {
                         self.recalculate();
                         ui.close_menu();
                     }
-                    if ui.button("📦 Layer (Solid) Column").clicked() {
+                    if ui.button(crate::i18n::text("review.145")).clicked() {
                         self.wb.sheets[s_idx].columns.push(HeatLossColumn::default());
                         self.recalculate();
                         ui.close_menu();
                     }
-                    if ui.button("🔲 Enclosure Column").clicked() {
+                    if ui.button(crate::i18n::text("review.146")).clicked() {
                         self.wb.sheets[s_idx].columns.push(HeatLossColumn {
                             column_type: ColumnType::Enclosure,
                             layer_material: "Air (gas)".into(),
@@ -504,7 +504,7 @@ impl HeatLossModuleState {
                         self.recalculate();
                         ui.close_menu();
                     }
-                    if ui.button("🔗 Layer Contact Column").clicked() {
+                    if ui.button(crate::i18n::text("review.147")).clicked() {
                         self.wb.sheets[s_idx].columns.push(HeatLossColumn {
                             column_type: ColumnType::LayerContact,
                             layer_material: "Contact resistance".into(),
@@ -525,9 +525,9 @@ impl HeatLossModuleState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("🗑 Delete", |ui| {
+                ui.menu_button(crate::i18n::text("common.041"), |ui| {
                     let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
-                    if ui.button("🗑 Delete Selected Column").clicked()
+                    if ui.button(crate::i18n::text("review.148")).clicked()
                         && self.wb.sheets[s_idx].columns.len() > 1
                         && self.selected_col < self.wb.sheets[s_idx].columns.len()
                     {
@@ -537,19 +537,19 @@ impl HeatLossModuleState {
                         self.recalculate();
                         ui.close_menu();
                     }
-                    if ui.button("🗑 Delete Active Sheet").clicked() && self.wb.sheets.len() > 1 {
+                    if ui.button(crate::i18n::text("common.051")).clicked() && self.wb.sheets.len() > 1 {
                         self.wb.sheets.remove(s_idx);
                         self.wb.active_sheet = s_idx.min(self.wb.sheets.len() - 1);
                         self.recalculate();
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("📐 Format", |ui| {
-                    ui.label("Temperature Unit:");
+                ui.menu_button(crate::i18n::text("review.149"), |ui| {
+                    ui.label(crate::i18n::text("common.052"));
                     ui.radio_value(&mut self.wb.temp_unit, TemperatureUnit::Celsius, "°C");
                     ui.radio_value(&mut self.wb.temp_unit, TemperatureUnit::Kelvin, "K");
                     ui.separator();
-                    ui.label("Length Unit:");
+                    ui.label(crate::i18n::text("review.150"));
                     for lu in [
                         LengthUnit::Meter,
                         LengthUnit::Centimeter,
@@ -558,7 +558,7 @@ impl HeatLossModuleState {
                         ui.radio_value(&mut self.wb.length_unit, lu, lu.label());
                     }
                     ui.separator();
-                    ui.label("Heat Flow Unit:");
+                    ui.label(crate::i18n::text("review.151"));
                     for u in [
                         HeatFlowUnit::Watt,
                         HeatFlowUnit::Kilowatt,
@@ -569,31 +569,31 @@ impl HeatLossModuleState {
                         ui.radio_value(&mut self.wb.heat_flow_unit, u, u.label());
                     }
                 });
-                ui.menu_button("⚡ Calculate", |ui| {
+                ui.menu_button(crate::i18n::text("common.008"), |ui| {
                     let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
-                    if ui.button("🔥 Heat flow").clicked() {
+                    if ui.button(crate::i18n::text("review.152")).clicked() {
                         self.wb.sheets[s_idx].mode = CalculationMode::HeatFlow;
                         self.recalculate();
                         ui.close_menu();
                     }
-                    if ui.button("🔥 Temperature profile").clicked() {
+                    if ui.button(crate::i18n::text("review.153")).clicked() {
                         self.wb.sheets[s_idx].mode = CalculationMode::TemperatureProfile;
                         self.recalculate();
                         ui.close_menu();
                     }
                 });
-                if ui.button("🎯 Target").clicked() {
+                if ui.button(crate::i18n::text("common.044")).clicked() {
                     self.show_target = true;
                 }
-                if ui.button("📈 Diagram").clicked() {
+                if ui.button(crate::i18n::text("common.012")).clicked() {
                     self.refresh_diagram();
                     self.diagram_show_table = false;
                     self.show_diagram = true;
                 }
-                if ui.button("🗄 Material DB").clicked() {
+                if ui.button(crate::i18n::text("review.154")).clicked() {
                     self.show_material_db = true;
                 }
-                ui.menu_button("❓ Help", |ui| {
+                ui.menu_button(crate::i18n::text("common.022"), |ui| {
                     ui.label("HSC Heat Loss & Material Database (Ch. 12 & Ch. 90)");
                 });
 
@@ -644,11 +644,11 @@ impl HeatLossModuleState {
                         .desired_width(145.0)
                         .hint_text("File.htr8"),
                 );
-                if ui.button("📂 Open").on_hover_text("Abrir archivo .htr8").clicked() {
+                if ui.button(crate::i18n::text("common.009")).on_hover_text("Abrir archivo .htr8").clicked() {
                     let p = self.file_path_input.clone();
                     self.load_htr8(&p);
                 }
-                if ui.button("💾 Save").on_hover_text("Guardar archivo .htr8").clicked() {
+                if ui.button(crate::i18n::text("common.014")).on_hover_text("Guardar archivo .htr8").clicked() {
                     let p = self.file_path_input.clone();
                     self.save_htr8(&p);
                 }
@@ -687,7 +687,7 @@ impl HeatLossModuleState {
                             .map(|c| c.column_type == ColumnType::Enclosure)
                             .unwrap_or(false));
 
-                ui.label(egui::RichText::new("Get Data for Column:").strong().small());
+                ui.label(egui::RichText::new(crate::i18n::text("review.155")).strong().small());
                 if ui
                     .add_enabled(
                         active_ct == ColumnType::SolidLayer,
@@ -801,7 +801,7 @@ impl HeatLossModuleState {
                                     });
                             });
                             ui.separator();
-                            ui.label(egui::RichText::new("Shape and Dimensions").strong().small());
+                            ui.label(egui::RichText::new(crate::i18n::text("review.156")).strong().small());
                             let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                             let mut changed = false;
                             let mut pending_geom: Option<Geometry> = None;
@@ -836,7 +836,7 @@ impl HeatLossModuleState {
                                     }
                                 });
                                 ui.add_space(6.0);
-                                if ui.button("📐 Draw").clicked() {
+                                if ui.button(crate::i18n::text("review.157")).clicked() {
                                     self.show_shape_draw = true;
                                 }
                                 ui.add_space(6.0);
@@ -845,7 +845,7 @@ impl HeatLossModuleState {
                                     match geom {
                                         Geometry::Wall { width_m, length_m } => {
                                             ui.horizontal(|ui| {
-                                                ui.label("Width");
+                                                ui.label(crate::i18n::text("common.053"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(width_m)
@@ -857,7 +857,7 @@ impl HeatLossModuleState {
                                                 ui.label("m");
                                             });
                                             ui.horizontal(|ui| {
-                                                ui.label("Length");
+                                                ui.label(crate::i18n::text("common.054"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(length_m)
@@ -875,7 +875,7 @@ impl HeatLossModuleState {
                                             height_m,
                                         } => {
                                             ui.horizontal(|ui| {
-                                                ui.label("Width");
+                                                ui.label(crate::i18n::text("common.053"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(width_m)
@@ -887,7 +887,7 @@ impl HeatLossModuleState {
                                                 ui.label("m");
                                             });
                                             ui.horizontal(|ui| {
-                                                ui.label("Length");
+                                                ui.label(crate::i18n::text("common.054"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(length_m)
@@ -899,7 +899,7 @@ impl HeatLossModuleState {
                                                 ui.label("m");
                                             });
                                             ui.horizontal(|ui| {
-                                                ui.label("Height");
+                                                ui.label(crate::i18n::text("common.055"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(height_m)
@@ -916,7 +916,7 @@ impl HeatLossModuleState {
                                             diameter_m,
                                         } => {
                                             ui.horizontal(|ui| {
-                                                ui.label("Height");
+                                                ui.label(crate::i18n::text("common.055"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(height_m)
@@ -928,7 +928,7 @@ impl HeatLossModuleState {
                                                 ui.label("m");
                                             });
                                             ui.horizontal(|ui| {
-                                                ui.label("Diameter");
+                                                ui.label(crate::i18n::text("common.056"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(diameter_m)
@@ -942,7 +942,7 @@ impl HeatLossModuleState {
                                         }
                                         Geometry::Sphere { diameter_m } => {
                                             ui.horizontal(|ui| {
-                                                ui.label("Diameter");
+                                                ui.label(crate::i18n::text("common.056"));
                                                 changed |= ui
                                                     .add(
                                                         egui::DragValue::new(diameter_m)
@@ -972,7 +972,7 @@ impl HeatLossModuleState {
 
                         // Block 2: Calculate (Figs. 1, 2, 4)
                         cols[1].group(|ui| {
-                            ui.label(egui::RichText::new("Calculate").strong().small());
+                            ui.label(egui::RichText::new(crate::i18n::text("common.011")).strong().small());
                             let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                             let is_tp =
                                 self.wb.sheets[s_idx].mode == CalculationMode::TemperatureProfile;
@@ -1002,7 +1002,7 @@ impl HeatLossModuleState {
                             });
                             if is_tp {
                                 ui.horizontal(|ui| {
-                                    ui.label("Fixed Q (W):");
+                                    ui.label(crate::i18n::text("review.158"));
                                     if ui
                                         .add(
                                             egui::DragValue::new(
@@ -1034,7 +1034,7 @@ impl HeatLossModuleState {
                                         .inner_margin(egui::Margin::symmetric(10.0, 2.0))
                                         .show(ui, |ui| {
                                             ui.label(
-                                                egui::RichText::new("HOT => COLD").strong().small(),
+                                                egui::RichText::new(crate::i18n::text("review.159")).strong().small(),
                                             );
                                         });
                                     egui::Frame::none()
@@ -1060,7 +1060,7 @@ impl HeatLossModuleState {
 
                         // Block 3: Options & Calculators (Figs. 1, 2, 4)
                         cols[2].group(|ui| {
-                            ui.label(egui::RichText::new("Options").strong().small());
+                            ui.label(egui::RichText::new(crate::i18n::text("common.109")).strong().small());
                             let bw = ui.available_width().min(170.0);
                             let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                             let is_cur_fixed = self
@@ -2757,7 +2757,7 @@ impl HeatLossModuleState {
                                 self.recalculate();
                             }
                         }
-                        if ui.small_button("➕ Sheet").clicked() {
+                        if ui.small_button(crate::i18n::text("review.160")).clicked() {
                             let n = self.wb.sheets.len() + 1;
                             let mut new_sheet = self.wb.sheets[0].clone();
                             new_sheet.name = format!("Sheet {n}");
@@ -2826,9 +2826,9 @@ impl HeatLossModuleState {
                     ui.horizontal(|ui| {
                         ui.label(format!("Active Column: {}", self.selected_col + 1));
                         ui.separator();
-                        ui.label("🔍 Find:");
+                        ui.label(crate::i18n::text("common.025"));
                         ui.text_edit_singleline(&mut self.cond_search);
-                        if ui.button("➕ Add Material").clicked() {
+                        if ui.button(crate::i18n::text("review.161")).clicked() {
                             self.solids.push(SolidConductivityData {
                                 name: format!("Custom Refractory {}", self.solids.len() + 1),
                                 category: "Custom".into(),
@@ -2869,7 +2869,7 @@ impl HeatLossModuleState {
                                     if ui.selectable_label(is_sel, &solid.name).clicked() {
                                         self.cond_selected_idx = idx;
                                     }
-                                    ui.label("Temperature");
+                                    ui.label(crate::i18n::text("common.005"));
                                     ui.label("K");
                                     for k_i in 0..6 {
                                         let txt = solid
@@ -2879,7 +2879,7 @@ impl HeatLossModuleState {
                                             .unwrap_or_default();
                                         ui.monospace(txt);
                                     }
-                                    if ui.small_button("✔ Select").clicked() {
+                                    if ui.small_button(crate::i18n::text("common.057")).clicked() {
                                         self.cond_selected_idx = idx;
                                         if let Some(col) =
                                             self.wb.sheets[s_idx].columns.get_mut(self.selected_col)
@@ -2897,7 +2897,7 @@ impl HeatLossModuleState {
                                             .small()
                                             .weak(),
                                     );
-                                    ui.label("Thermal conductivity");
+                                    ui.label(crate::i18n::text("review.162"));
                                     ui.label("W/m K");
                                     for k_i in 0..6 {
                                         let txt = solid
@@ -2915,7 +2915,7 @@ impl HeatLossModuleState {
 
                     ui.separator();
                     ui.horizontal(|ui| {
-                        if ui.button("✔ Select Highlighted").clicked() {
+                        if ui.button(crate::i18n::text("review.163")).clicked() {
                             if let Some(solid) = self.solids.get(self.cond_selected_idx).cloned() {
                                 let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                                 if let Some(col) =
@@ -2956,7 +2956,7 @@ impl HeatLossModuleState {
                             "ƒ(v) Function (Fig. 7)",
                         );
                         ui.separator();
-                        ui.label("🔍 Find:");
+                        ui.label(crate::i18n::text("common.025"));
                         ui.text_edit_singleline(&mut self.conv_find_query);
                     });
                     ui.separator();
@@ -2989,7 +2989,7 @@ impl HeatLossModuleState {
                                             if ui.selectable_label(is_sel, &fl.name).clicked() {
                                                 self.conv_selected_fluid = f_idx;
                                             }
-                                            ui.label("Temperature");
+                                            ui.label(crate::i18n::text("common.005"));
                                             ui.label("K");
                                             for p_i in 0..6 {
                                                 ui.monospace(
@@ -3002,7 +3002,7 @@ impl HeatLossModuleState {
                                             ui.end_row();
 
                                             ui.label(egui::RichText::new(&fl.reference).small().weak());
-                                            ui.label("Density");
+                                            ui.label(crate::i18n::text("common.128"));
                                             ui.label("kg/m³");
                                             for p_i in 0..6 {
                                                 ui.monospace(
@@ -3015,7 +3015,7 @@ impl HeatLossModuleState {
                                             ui.end_row();
 
                                             ui.label("");
-                                            ui.label("Thermal conductivity*10^3");
+                                            ui.label(crate::i18n::text("review.164"));
                                             ui.label("W/mK");
                                             for p_i in 0..6 {
                                                 ui.monospace(
@@ -3028,8 +3028,8 @@ impl HeatLossModuleState {
                                             ui.end_row();
 
                                             ui.label("");
-                                            ui.label("Prandtl number");
-                                            ui.label("none");
+                                            ui.label(crate::i18n::text("review.165"));
+                                            ui.label(crate::i18n::text("review.166"));
                                             for p_i in 0..6 {
                                                 ui.monospace(
                                                     fl.points
@@ -3046,7 +3046,7 @@ impl HeatLossModuleState {
                         ConvectionDbTab::Function => {
                             // Fig. 7: Function hc(v) = A v^a + B v^b + C v^c + ...
                             ui.horizontal(|ui| {
-                                ui.label("Test speed v [m/s]:");
+                                ui.label(crate::i18n::text("review.167"));
                                 ui.add(
                                     egui::DragValue::new(&mut self.conv_test_speed)
                                         .speed(0.05)
@@ -3098,7 +3098,7 @@ impl HeatLossModuleState {
                                                     .unwrap_or_else(|| "0".into());
                                                 ui.monospace(txt);
                                             }
-                                            if ui.small_button("✔ Select Function").clicked() {
+                                            if ui.small_button(crate::i18n::text("review.168")).clicked() {
                                                 self.conv_selected_func = fn_i;
                                                 if let Some(col) = self.wb.sheets[s_idx]
                                                     .columns
@@ -3123,7 +3123,7 @@ impl HeatLossModuleState {
                         ui.columns(2, |cols| {
                             cols[0].group(|ui| {
                                 ui.horizontal(|ui| {
-                                    ui.label("Fluid:");
+                                    ui.label(crate::i18n::text("review.169"));
                                     egui::ComboBox::from_id_salt("conv_fluid_sel")
                                         .selected_text(&self.fluids[self.conv_selected_fluid].name)
                                         .show_ui(ui, |ui| {
@@ -3149,7 +3149,7 @@ impl HeatLossModuleState {
                                     );
                                 });
                                 ui.horizontal(|ui| {
-                                    ui.label("Geometry / Angle:");
+                                    ui.label(crate::i18n::text("review.170"));
                                     egui::ComboBox::from_id_salt("conv_geom_sel")
                                         .selected_text(col.convection_geometry.label())
                                         .show_ui(ui, |ui| {
@@ -3174,7 +3174,7 @@ impl HeatLossModuleState {
                                         });
                                 });
                                 ui.horizontal(|ui| {
-                                    ui.label("Speed (m/s):");
+                                    ui.label(crate::i18n::text("review.171"));
                                     ui.add(
                                         egui::DragValue::new(&mut col.fluid_speed_m_s)
                                             .speed(0.1)
@@ -3182,7 +3182,7 @@ impl HeatLossModuleState {
                                     );
                                 });
                                 ui.horizontal(|ui| {
-                                    if ui.button("⚡ Calculate").clicked() {
+                                    if ui.button(crate::i18n::text("common.008")).clicked() {
                                         let fluid = self.fluids[self.conv_selected_fluid].clone();
                                         if let Ok(diag) =
                                             SoryntelApplication::evaluate_heat_loss_convection(
@@ -3200,14 +3200,14 @@ impl HeatLossModuleState {
                                             self.conv_diag = Some(diag);
                                         }
                                     }
-                                    if ui.button("✔ Select (Iterative)").clicked() {
+                                    if ui.button(crate::i18n::text("review.172")).clicked() {
                                         let fluid = self.fluids[self.conv_selected_fluid].clone();
                                         col.layer_material = fluid.name.clone();
                                         col.fluid_data = Some(fluid);
                                         col.custom_hc_terms.clear();
                                         col.hc_fixed = false;
                                     }
-                                    if ui.button("📌 Select at fixed T").clicked() {
+                                    if ui.button(crate::i18n::text("common.026")).clicked() {
                                         let fluid = self.fluids[self.conv_selected_fluid].clone();
                                         if let Ok(diag) =
                                             SoryntelApplication::evaluate_heat_loss_convection(
@@ -3237,31 +3237,31 @@ impl HeatLossModuleState {
                                     egui::Grid::new("conv_results_8row_grid")
                                         .striped(true)
                                         .show(ui, |ui| {
-                                            ui.label("1 Characteristic Length (L)");
+                                            ui.label(crate::i18n::text("review.173"));
                                             ui.label("m");
                                             ui.monospace(format!("{:.3}", d.char_length_m));
                                             ui.end_row();
-                                            ui.label("2 Height / Length Ratio");
+                                            ui.label(crate::i18n::text("review.174"));
                                             ui.label("");
                                             ui.monospace(format!("{:.3}", d.aspect_ratio_h_l));
                                             ui.end_row();
-                                            ui.label("3 Film Temperature (TF)");
+                                            ui.label(crate::i18n::text("review.175"));
                                             ui.label("°C");
                                             ui.monospace(format!("{:.2}", d.t_film_k - 273.15));
                                             ui.end_row();
-                                            ui.label("4 Nu - Nusselt number");
+                                            ui.label(crate::i18n::text("review.176"));
                                             ui.label("");
                                             ui.monospace(format!("{:.3}", d.nusselt));
                                             ui.end_row();
-                                            ui.label("5 Ra - Rayleigh number");
+                                            ui.label(crate::i18n::text("review.177"));
                                             ui.label("");
                                             ui.monospace(format!("{:.3e}", d.rayleigh));
                                             ui.end_row();
-                                            ui.label("6 Gr - Grashof number");
+                                            ui.label(crate::i18n::text("review.178"));
                                             ui.label("");
                                             ui.monospace(format!("{:.3e}", d.grashof));
                                             ui.end_row();
-                                            ui.label("7 Re - Reynolds number");
+                                            ui.label(crate::i18n::text("review.179"));
                                             ui.label("");
                                             ui.monospace(format!("{:.3e}", d.reynolds));
                                             ui.end_row();
@@ -3298,7 +3298,7 @@ impl HeatLossModuleState {
                     ui.horizontal(|ui| {
                         ui.label("(h)=hemispherical emissivity, (n)=normal emissivity");
                         ui.separator();
-                        ui.label("🔍 Find:");
+                        ui.label(crate::i18n::text("common.025"));
                         ui.text_edit_singleline(&mut self.rad_search);
                     });
                     ui.separator();
@@ -3329,7 +3329,7 @@ impl HeatLossModuleState {
                                     ui.label(&em.measurement_type);
                                     ui.label(&em.temp_range_desc);
                                     ui.monospace(format!("{:.3}", em.emissivity));
-                                    if ui.small_button("✔ Select").clicked() {
+                                    if ui.small_button(crate::i18n::text("common.057")).clicked() {
                                         self.rad_selected_idx = idx;
                                         if let Some(col) =
                                             self.wb.sheets[s_idx].columns.get_mut(self.selected_col)
@@ -3364,7 +3364,7 @@ impl HeatLossModuleState {
                             ui.vertical_centered(|ui| {
                                 ui.colored_label(
                                     egui::Color32::from_rgb(37, 99, 235),
-                                    egui::RichText::new("User Input").strong(),
+                                    egui::RichText::new(crate::i18n::text("common.058")).strong(),
                                 );
                             });
                             let comp = &mut self.gas_input.composition;
@@ -3413,7 +3413,7 @@ impl HeatLossModuleState {
                             ui.vertical_centered(|ui| {
                                 ui.colored_label(
                                     egui::Color32::from_rgb(37, 99, 235),
-                                    egui::RichText::new("RESULTS").strong(),
+                                    egui::RichText::new(crate::i18n::text("review.180")).strong(),
                                 );
                             });
                             egui::ScrollArea::vertical().max_height(155.0).show(ui, |ui| {
@@ -3466,7 +3466,7 @@ impl HeatLossModuleState {
                             ui.strong("Gas Properties");
                             let mut tg_c = self.gas_input.t_gas_k - 273.15;
                             ui.horizontal(|ui| {
-                                ui.label("Temperature [°C]:");
+                                ui.label(crate::i18n::text("common.059"));
                                 if ui
                                     .add(
                                         egui::DragValue::new(&mut tg_c)
@@ -3479,7 +3479,7 @@ impl HeatLossModuleState {
                                 }
                             });
                             ui.horizontal(|ui| {
-                                ui.label("Pressure [bar]:");
+                                ui.label(crate::i18n::text("review.181"));
                                 ui.add(
                                     egui::DragValue::new(&mut self.gas_input.pressure_bar)
                                         .speed(0.1)
@@ -3536,7 +3536,7 @@ impl HeatLossModuleState {
                             ui.strong("Surface Properties");
                             let mut ts_c = self.gas_input.t_surface_k - 273.15;
                             ui.horizontal(|ui| {
-                                ui.label("Temperature [°C]:");
+                                ui.label(crate::i18n::text("common.059"));
                                 if ui
                                     .add(
                                         egui::DragValue::new(&mut ts_c)
@@ -3592,7 +3592,7 @@ impl HeatLossModuleState {
                             }
                             ui.add_space(10.0);
                             ui.horizontal(|ui| {
-                                if ui.button("⚡ Calculate").clicked() {
+                                if ui.button(crate::i18n::text("common.008")).clicked() {
                                     if let Ok(res) =
                                         SoryntelApplication::calculate_heat_loss_gas_radiation(
                                             &self.gas_input,
@@ -3606,7 +3606,7 @@ impl HeatLossModuleState {
                                     }
                                 }
                                 if ui
-                                    .button("📌 Select at fixed T")
+                                    .button(crate::i18n::text("common.026"))
                                     .on_hover_text("Transferir T_gas, T_surf, ε_g y α_g fijos a la columna activa")
                                     .clicked()
                                 {
@@ -3629,7 +3629,7 @@ impl HeatLossModuleState {
                                     }
                                 }
                                 if ui
-                                    .button("🔄 Select iterative")
+                                    .button(crate::i18n::text("common.060"))
                                     .on_hover_text("Iterar emisividad entre 0 °C y 3000 °C cada 50 °C (Ch. 12.3.7)")
                                     .clicked()
                                 {
@@ -3672,7 +3672,7 @@ impl HeatLossModuleState {
                             ui.vertical_centered(|ui| {
                                 ui.colored_label(
                                     egui::Color32::from_rgb(37, 99, 235),
-                                    egui::RichText::new("User Input").strong(),
+                                    egui::RichText::new(crate::i18n::text("common.058")).strong(),
                                 );
                             });
                             let ps = &mut self.particle_spec;
@@ -3762,7 +3762,7 @@ impl HeatLossModuleState {
                             ui.vertical_centered(|ui| {
                                 ui.colored_label(
                                     egui::Color32::from_rgb(37, 99, 235),
-                                    egui::RichText::new("Results").strong(),
+                                    egui::RichText::new(crate::i18n::text("common.108")).strong(),
                                 );
                             });
                             if p_changed || self.particle_detailed_res.is_none() {
@@ -3829,14 +3829,14 @@ impl HeatLossModuleState {
                         if ui.button("🖼 Image (Cloud Schematic)").clicked() {
                             self.show_particle_image = !self.show_particle_image;
                         }
-                        if ui.button("⚡ Calculate").clicked() {
+                        if ui.button(crate::i18n::text("common.008")).clicked() {
                             self.particle_detailed_res =
                                 SoryntelApplication::evaluate_heat_loss_particle_suspension_detailed(
                                     &self.particle_spec,
                                 )
                                 .ok();
                         }
-                        if ui.button("📌 Select at fixed T").clicked() {
+                        if ui.button(crate::i18n::text("common.026")).clicked() {
                             if let Some(pr) = &self.particle_detailed_res {
                                 let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                                 if let Some(col) =
@@ -3853,7 +3853,7 @@ impl HeatLossModuleState {
                                 self.recalculate();
                             }
                         }
-                        if ui.button("🔄 Select iterative").clicked() {
+                        if ui.button(crate::i18n::text("common.060")).clicked() {
                             if let Some(pr) = &self.particle_detailed_res {
                                 let s_idx = self.wb.active_sheet.min(self.wb.sheets.len() - 1);
                                 if let Some(col) =
@@ -3976,7 +3976,7 @@ impl HeatLossModuleState {
                             });
                             ui.separator();
                             ui.horizontal(|ui| {
-                                if ui.button("➕ Ins Row").clicked() {
+                                if ui.button(crate::i18n::text("common.046")).clicked() {
                                     self.target_rows.push(TargetDialogRow {
                                         var: TargetVariable::LayerThickness(self.selected_col),
                                         test_val: 0.10,
@@ -3987,7 +3987,7 @@ impl HeatLossModuleState {
                                         max_iters: 20,
                                     });
                                 }
-                                if ui.button("🗑 Del Row").clicked() && self.target_rows.len() > 1 {
+                                if ui.button(crate::i18n::text("common.047")).clicked() && self.target_rows.len() > 1 {
                                     let idx =
                                         self.selected_target_row.min(self.target_rows.len() - 1);
                                     self.target_rows.remove(idx);
@@ -4036,7 +4036,7 @@ impl HeatLossModuleState {
                                     }
                                 }
                             }
-                            if ui.button("⏩ Iterate All").clicked() {
+                            if ui.button(crate::i18n::text("common.048")).clicked() {
                                 for r_idx in 0..self.target_rows.len() {
                                     let row = self.target_rows[r_idx].clone();
                                     let spec = TargetSpec {
@@ -4144,7 +4144,7 @@ impl HeatLossModuleState {
                         edited |= ui
                             .add(egui::DragValue::new(&mut self.diagram_y_max).speed(1.0))
                             .changed();
-                        if edited || ui.small_button("📐 Apply X/Y").clicked() {
+                        if edited || ui.small_button(crate::i18n::text("common.050")).clicked() {
                             self.diagram_auto_scale = false;
                             self.diagram_apply_bounds = true;
                         }
@@ -4804,7 +4804,7 @@ impl HeatLossModuleState {
                                         }
                                         ui.end_row();
 
-                                        ui.label("Phase");
+                                        ui.label(crate::i18n::text("common.132"));
                                         for r in &mut mat.cp_ranges {
                                             ui.text_edit_singleline(&mut r.phase);
                                         }
@@ -4830,7 +4830,7 @@ impl HeatLossModuleState {
                                         }
                                         ui.end_row();
 
-                                        ui.label("Cp coefficient B");
+                                        ui.label(crate::i18n::text("common.061"));
                                         for r in &mut mat.cp_ranges {
                                             ui.add(
                                                 egui::DragValue::new(&mut r.b)
@@ -4840,7 +4840,7 @@ impl HeatLossModuleState {
                                         }
                                         ui.end_row();
 
-                                        ui.label("Cp coefficient C");
+                                        ui.label(crate::i18n::text("common.062"));
                                         for r in &mut mat.cp_ranges {
                                             ui.add(
                                                 egui::DragValue::new(&mut r.c)
@@ -4850,7 +4850,7 @@ impl HeatLossModuleState {
                                         }
                                         ui.end_row();
 
-                                        ui.label("Cp coefficient D");
+                                        ui.label(crate::i18n::text("common.063"));
                                         for r in &mut mat.cp_ranges {
                                             ui.add(
                                                 egui::DragValue::new(&mut r.d)

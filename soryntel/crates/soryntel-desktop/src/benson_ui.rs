@@ -1066,7 +1066,7 @@ impl BensonModuleState {
                             );
                         });
 
-                    if ui.button("Close").clicked() {
+                    if ui.button(crate::i18n::text("common.004")).clicked() {
                         self.show_results_window = false;
                     }
                 });
@@ -1097,7 +1097,7 @@ impl BensonModuleState {
                             }
                         }
                     }
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         self.show_smiles_modal = false;
                     }
                 });
@@ -1166,7 +1166,7 @@ impl BensonModuleState {
     fn export_csv_report(&mut self) {
         let path = "/tmp/soryntel_benson_report.csv";
         let content = self.format_clipboard_text();
-        match std::fs::write(path, content) {
+        match crate::storage::write_atomic(path, content) {
             Ok(_) => {
                 self.status_text = format!("Exported Benson report to {path}");
                 self.last_error = None;
@@ -1198,7 +1198,7 @@ impl BensonModuleState {
             ));
         }
         svg.push_str("</svg>\n");
-        match std::fs::write(path, svg) {
+        match crate::storage::write_atomic(path, svg) {
             Ok(_) => self.status_text = format!("Saved 3D snapshot SVG to {path}"),
             Err(e) => self.last_error = Some(format!("Save image failed: {e}")),
         }

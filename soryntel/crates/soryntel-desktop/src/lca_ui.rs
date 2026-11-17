@@ -297,6 +297,7 @@ pub fn render_lca_body(
     project: &SimProject,
     state: &mut LcaWindowState,
 ) {
+    ui.colored_label(Color32::from_rgb(180, 90, 0), soryntel_thermo::sim::lca::BUILTIN_LCA_NOTICE);
     match state.ui_mode {
         LcaUiMode::Classic => render_classic_lca(ui, ctx, project, state),
         LcaUiMode::Beta => render_beta_lca(ui, ctx, project, state),
@@ -462,7 +463,7 @@ fn render_classic_lca(
                 match SoryntelApplication::sim_lca_classic_ecospold_xml(&mut state.classic) {
                     Ok(xml) => {
                         let out_path = "/tmp/soryntel_ecospold_v1.xml";
-                        let saved = std::fs::write(out_path, xml.as_bytes()).is_ok();
+                        let saved = crate::storage::write_atomic(out_path, xml.as_bytes()).is_ok();
                         state.export_last_saved_path = saved.then(|| out_path.to_string());
                         state.export_modal_title = "EcoSpold v1.0 export succeeded!".to_string();
                         state.export_modal_body = xml;
@@ -480,7 +481,7 @@ fn render_classic_lca(
                             match SoryntelApplication::sim_lca_classic_jsonld_zip(&mut state.classic) {
                                 Ok(bytes) => {
                                     let out_path = "/tmp/soryntel_openlca_jsonld.zip";
-                                    let saved = std::fs::write(out_path, &bytes).is_ok();
+                                    let saved = crate::storage::write_atomic(out_path, &bytes).is_ok();
                                     state.export_last_saved_path = saved.then(|| out_path.to_string());
                                     state.export_modal_title = "JSON-LD export succeeded!".to_string();
                                     state.export_modal_body = format!(
@@ -502,7 +503,7 @@ fn render_classic_lca(
                 match SoryntelApplication::sim_lca_classic_xlsx(&mut state.classic) {
                     Ok(bytes) => {
                         let out_path = "/tmp/soryntel_lca_classic.xlsx";
-                        let saved = std::fs::write(out_path, &bytes).is_ok();
+                        let saved = crate::storage::write_atomic(out_path, &bytes).is_ok();
                         state.export_last_saved_path = saved.then(|| out_path.to_string());
                         state.export_modal_title = "Excel Export Succeeded".to_string();
                         state.export_modal_body = format!(
@@ -642,18 +643,18 @@ fn render_classic_streams_table(
             ui.label("");
             ui.label(RichText::new("Stream Name").strong());
             if !is_manual {
-                ui.label(RichText::new("Unit Name").strong());
+                ui.label(RichText::new(crate::i18n::text("common.096")).strong());
             }
-            ui.label(RichText::new("Amount").strong());
-            ui.label(RichText::new("Unit").strong());
+            ui.label(RichText::new(crate::i18n::text("common.017")).strong());
+            ui.label(RichText::new(crate::i18n::text("common.036")).strong());
             ui.label(RichText::new("Use Exergy").strong());
-            ui.label(RichText::new("LCA Equivalent").strong());
-            ui.label(RichText::new("LCA Group").strong());
+            ui.label(RichText::new(crate::i18n::text("common.097")).strong());
+            ui.label(RichText::new(crate::i18n::text("common.098")).strong());
             ui.label(RichText::new("Main Product").strong());
             if state.classic_show_mapping {
-                ui.label(RichText::new("Clear").strong());
+                ui.label(RichText::new(crate::i18n::text("common.037")).strong());
             } else if is_manual {
-                ui.label(RichText::new("Delete").strong());
+                ui.label(RichText::new(crate::i18n::text("common.013")).strong());
             }
             ui.end_row();
 
@@ -840,10 +841,10 @@ fn render_classic_indicators_table(ui: &mut egui::Ui, state: &mut LcaWindowState
         .show(ui, |ui| {
             ui.label("");
             ui.label(RichText::new("Stream Name / Pattern").strong());
-            ui.label(RichText::new("Amount").strong());
-            ui.label(RichText::new("Unit").strong());
-            ui.label(RichText::new("LCA Equivalent").strong());
-            ui.label(RichText::new("LCA Group").strong());
+            ui.label(RichText::new(crate::i18n::text("common.017")).strong());
+            ui.label(RichText::new(crate::i18n::text("common.036")).strong());
+            ui.label(RichText::new(crate::i18n::text("common.097")).strong());
+            ui.label(RichText::new(crate::i18n::text("common.098")).strong());
             ui.label(RichText::new("Action").strong());
             ui.end_row();
 
@@ -1325,7 +1326,7 @@ fn render_beta_lca(
             if ribbon_tile_button(ui, "XLS", "Export to\nExcel", false, true).clicked() {
                 let bytes = SoryntelApplication::sim_lca_beta_xlsx(&state.beta);
                 let out_path = "/tmp/LCA_exports.xlsx";
-                let _ = std::fs::write(out_path, &bytes);
+                let _ = crate::storage::write_atomic(out_path, &bytes);
                 state.export_last_saved_path = Some(out_path.to_string());
                 state.export_modal_title = "Export to Excel Succeeded".to_string();
                 state.export_modal_body = format!(
@@ -2162,7 +2163,7 @@ fn render_beta_right_dock(ui: &mut egui::Ui, state: &mut LcaWindowState) {
         if ui.button("Find").clicked() {
             state.beta_active_find = state.beta_find_query.trim().to_ascii_lowercase();
         }
-        if ui.button("Clear").clicked() {
+        if ui.button(crate::i18n::text("common.037")).clicked() {
             state.beta_find_query.clear();
             state.beta_active_find.clear();
         }
@@ -2343,7 +2344,7 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
 
     // 2. Process Information (`49.3 Fig. 18`)
     if state.show_process_info_modal {
-        egui::Window::new("Process Information")
+        egui::Window::new(crate::i18n::text("common.099"))
             .collapsible(false)
             .default_width(430.0)
             .show(ctx, |ui| {
@@ -2404,11 +2405,11 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
                 });
                 ui.add_space(6.0);
                 ui.horizontal(|ui| {
-                    if ui.button("OK").clicked() {
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         state.classic.process_info = state.process_info_draft.clone();
                         state.show_process_info_modal = false;
                     }
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         state.show_process_info_modal = false;
                     }
                 });
@@ -2439,7 +2440,7 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
                             Err(e) => state.beta_error_modal = Some(format!("Failed to read file: {e}")),
                         }
                     }
-                    if ui.button("Close").clicked() {
+                    if ui.button(crate::i18n::text("common.004")).clicked() {
                         state.show_openlca_db_modal = false;
                     }
                 });
@@ -2461,7 +2462,7 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
                 ui.label("Custom Sheet Name (cannot start with 'Saved', 'Norm', 'Ext'):");
                 ui.text_edit_singleline(&mut state.rename_sheet_input);
                 ui.horizontal(|ui| {
-                    if ui.button("OK").clicked() {
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         let name = state.rename_sheet_input.clone();
                         let res = if state.rename_sheet_creating_new {
                             let r = state.beta.add_custom_sheet(name);
@@ -2479,7 +2480,7 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
                             Err(e) => state.beta_error_modal = Some(e),
                         }
                     }
-                    if ui.button("Cancel").clicked() {
+                    if ui.button(crate::i18n::text("common.000")).clicked() {
                         state.show_rename_sheet_modal = false;
                     }
                 });
@@ -2577,10 +2578,10 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
                     ui.label(RichText::new(format!("Written to disk: {p}")).strong().color(Color32::from_rgb(22, 101, 52)));
                 }
                 ui.horizontal(|ui| {
-                    if ui.button("Copy to Clipboard").clicked() {
+                    if ui.button(crate::i18n::text("common.100")).clicked() {
                         ctx.copy_text(state.export_modal_body.clone());
                     }
-                    if ui.button("OK").clicked() {
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         state.show_export_modal = false;
                     }
                 });
@@ -2632,7 +2633,7 @@ fn render_shared_lca_modals(ctx: &egui::Context, project: &SimProject, state: &m
             .show(ctx, |ui| {
                 ui.label(RichText::new(msg).color(Color32::from_rgb(185, 28, 28)));
                 ui.add_space(6.0);
-                if ui.button("OK").clicked() {
+                if ui.button(crate::i18n::text("common.002")).clicked() {
                     state.beta_error_modal = None;
                 }
             });

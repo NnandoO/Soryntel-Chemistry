@@ -169,10 +169,10 @@ pub enum ColumnType {
 impl ColumnType {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Surface => "Surface",
-            Self::SolidLayer => "Solid Layer",
-            Self::Enclosure => "Enclosure",
-            Self::LayerContact => "Layer contact",
+            Self::Surface => "Superficie",
+            Self::SolidLayer => "Capa sólida",
+            Self::Enclosure => "Cavidad",
+            Self::LayerContact => "Contacto entre capas",
         }
     }
 }
@@ -215,17 +215,17 @@ pub enum ConvectionGeometry {
 impl ConvectionGeometry {
     pub fn label(self) -> &'static str {
         match self {
-            Self::VerticalWall => "Vertical Wall / Plate",
-            Self::HorizontalPlateHotUp => "Horizontal Plate (Hot Up / Cold Down)",
-            Self::HorizontalPlateHotDown => "Horizontal Plate (Hot Down / Cold Up)",
-            Self::Cube => "Cube",
-            Self::VerticalCylinder => "Vertical Cylinder",
-            Self::HorizontalCylinder => "Horizontal Cylinder",
-            Self::Sphere => "Sphere",
-            Self::VerticalEnclosure => "Vertical Enclosure",
-            Self::HorizontalEnclosure => "Horizontal Enclosure",
-            Self::ConcentricCylinders => "Concentric Cylinders",
-            Self::ConcentricSpheres => "Concentric Spheres",
+            Self::VerticalWall => "Pared o placa vertical",
+            Self::HorizontalPlateHotUp => "Placa horizontal (caliente arriba / fría abajo)",
+            Self::HorizontalPlateHotDown => "Placa horizontal (caliente abajo / fría arriba)",
+            Self::Cube => "Cubo",
+            Self::VerticalCylinder => "Cilindro vertical",
+            Self::HorizontalCylinder => "Cilindro horizontal",
+            Self::Sphere => "Esfera",
+            Self::VerticalEnclosure => "Cavidad vertical",
+            Self::HorizontalEnclosure => "Cavidad horizontal",
+            Self::ConcentricCylinders => "Cilindros concéntricos",
+            Self::ConcentricSpheres => "Esferas concéntricas",
         }
     }
 }
@@ -528,9 +528,12 @@ pub fn interpolate_sorted_table(
     x: f64,
     label: &str,
 ) -> Result<f64, SoryntelError> {
-    if table.is_empty() {
+    if table.is_empty() || !x.is_finite()
+        || table.iter().any(|(t, value)| !t.is_finite() || !value.is_finite())
+        || table.windows(2).any(|w| w[0].0 >= w[1].0)
+    {
         return Err(SoryntelError::HeatLossError(format!(
-            "Empty property table for {label}"
+            "Tabla no válida para {label}: se requieren valores finitos y abscisas estrictamente crecientes"
         )));
     }
     if x <= table[0].0 {

@@ -15,6 +15,18 @@
 //!    normalization (`per t/h`), synthetic unit processes (`1.00000 kg`, `kW -> 3.6 MJ/h`),
 //!    custom/saved (`Saved*`) / external (`Ext*`) sheets, live recalculation, and `LCA_exports.xlsx`.
 
+/// Provenance of the bundled demonstration catalog; external factors require separate verification.
+pub const BUILTIN_LCA_NOTICE: &str = "Catálogo de demostración: incluye factores sintéticos y calibrados para ejemplos. Verifique factores y fuentes antes de utilizar resultados ambientales.";
+
+fn provenance_sheet() -> ExportSheet {
+    ExportSheet {
+        name: "Procedencia".into(), col_widths: vec![100.0],
+        cells: vec![ExportCell { row: 0, col: 0,
+            value: ExportCellValue::Text(BUILTIN_LCA_NOTICE.into()),
+            style: ExportCellStyle::YellowNote }],
+    }
+}
+
 use crate::sim::model::{SimProject, SimStream, StreamConnectivity, StreamPhaseKind};
 use crate::spreadsheet_export::{
     build_xlsx, xml_escape, ExportCell, ExportCellStyle, ExportCellValue, ExportSheet, ZipBuilder,
@@ -1613,6 +1625,7 @@ impl ClassicLcaState {
             let _ = self.normalize();
         }
         let mut sheets = vec![
+            provenance_sheet(),
             build_classic_stream_sheet("Input Streams", &self.inputs, true),
             build_classic_stream_sheet("Output Streams", &self.outputs, true),
             build_classic_stream_sheet("Manual Input Streams", &self.manual_inputs, false),
@@ -2789,6 +2802,7 @@ impl BetaLcaState {
 
     pub fn export_to_xlsx(&self) -> Vec<u8> {
         let mut sheets = vec![
+            provenance_sheet(),
             build_beta_io_sheet("Inputs", &self.inputs),
             build_beta_io_sheet("Outputs", &self.outputs),
             build_beta_results_sheet(&self.results),

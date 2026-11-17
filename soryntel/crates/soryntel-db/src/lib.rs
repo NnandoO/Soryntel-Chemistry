@@ -1218,7 +1218,7 @@ fn open_reference_species() -> Vec<ChemicalSpecies> {
             density_g_cm3: 0.0,
             charge: 0,
             intervals: vec![
-                cal_interval(298.15, 2500.0, Phase::Gas, -26.417, 47.214, 6.790, 0.980, -0.110, 0.0, "JANAF 98"),
+                cal_interval(298.15, 2500.0, Phase::Gas, -26.417, 197.660 / CAL_TO_JOULE, 6.790, 0.980, -0.110, 0.0, "NIST WebBook CO: S°(298.15 K, 1 bar), Chase 1998; Cp Kelley approximated"),
             ],
         },
         ChemicalSpecies {

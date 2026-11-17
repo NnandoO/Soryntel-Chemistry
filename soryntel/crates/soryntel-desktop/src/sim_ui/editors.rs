@@ -121,7 +121,7 @@ fn render_streams_src_dest(ctx: &egui::Context, state: &mut SimModuleState) {
                 egui::Grid::new("src_dst_grid").spacing([12.0, 6.0]).show(ui, |ui| {
                     ui.label("");
                     ui.label(RichText::new("Old").strong());
-                    ui.label(RichText::new("New").strong());
+                    ui.label(RichText::new(crate::i18n::text("common.033")).strong());
                     ui.end_row();
 
                     ui.label("Source:");
@@ -152,7 +152,7 @@ fn render_streams_src_dest(ctx: &egui::Context, state: &mut SimModuleState) {
 
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("Apply").clicked() {
+                if ui.button(crate::i18n::text("common.032")).clicked() {
                     let src = state.src_dest_draft_src;
                     let dst = state.src_dest_draft_dst;
                     state.push_undo();
@@ -240,7 +240,7 @@ fn render_default_settings(ctx: &egui::Context, state: &mut SimModuleState) {
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("Exit").clicked() || ui.button("Apply and Exit").clicked() {
+                    if ui.button(crate::i18n::text("common.016")).clicked() || ui.button("Apply and Exit").clicked() {
                         state.show_default_settings = false;
                     }
                     if ui.button("Restore Default").clicked() {
@@ -281,7 +281,7 @@ fn render_table_editor(ctx: &egui::Context, state: &mut SimModuleState) {
                         ui.label("HSC Version:");
                         ui.text_edit_singleline(&mut tbl.hsc_version);
                         ui.end_row();
-                        ui.label("Date:");
+                        ui.label(crate::i18n::text("common.089"));
                         ui.text_edit_singleline(&mut tbl.date);
                         ui.end_row();
                         ui.label("Logo Text:");
@@ -289,7 +289,7 @@ fn render_table_editor(ctx: &egui::Context, state: &mut SimModuleState) {
                         ui.end_row();
                     });
                 } else {
-                    if ui.button("+ Add Row").clicked() {
+                    if ui.button(crate::i18n::text("common.095")).clicked() {
                         let cols = tbl.cells.first().map(|r| r.len()).unwrap_or(3);
                         tbl.cells.push(vec![String::new(); cols]);
                     }
@@ -320,7 +320,7 @@ fn render_stream_table_editor(ctx: &egui::Context, state: &mut SimModuleState) {
                 // Left column: StreamTableSet list + Properties (Fig. 19)
                 cols[0].label(RichText::new("StreamTableSets").strong());
                 cols[0].horizontal(|ui| {
-                    if ui.button("Add").clicked() {
+                    if ui.button(crate::i18n::text("common.015")).clicked() {
                         let n = state.project.stream_table_sets.len() + 1;
                         state.project.stream_table_sets.push(StreamTableSet {
                             name: format!("StreamTableSet{n}"),
@@ -399,7 +399,7 @@ fn render_stream_table_editor(ctx: &egui::Context, state: &mut SimModuleState) {
                 if let Some(set) = state.project.stream_table_sets.get_mut(active_idx) {
                     cols[0].label(RichText::new("Properties").strong());
                     cols[0].horizontal(|ui| {
-                        ui.label("Name:");
+                        ui.label(crate::i18n::text("common.030"));
                         ui.text_edit_singleline(&mut set.name);
                     });
                     egui::ComboBox::from_label("ViewMode")
@@ -638,7 +638,7 @@ fn render_unit_editor(ctx: &egui::Context, state: &mut SimModuleState) {
                     let is_in = state.unit_editor_tab == 0;
                     ui.label(RichText::new(if is_in { "Connected Input Streams" } else { "Connected Output Streams" }).strong());
                     egui::Grid::new("ue_streams_grid").striped(true).spacing([12.0, 4.0]).show(ui, |ui| {
-                        ui.label(RichText::new("Stream").strong());
+                        ui.label(RichText::new(crate::i18n::text("review.186")).strong());
                         ui.label(RichText::new("Mass Flow (t/h)").strong());
                         ui.label(RichText::new("Temp (°C)").strong());
                         ui.label(RichText::new("Cu (wt-%)").strong());
@@ -1087,7 +1087,7 @@ fn render_scenario_editor(ctx: &egui::Context, state: &mut SimModuleState) {
 
 fn render_reports_window(ctx: &egui::Context, state: &mut SimModuleState) {
     let mut open = state.show_reports_window;
-    egui::Window::new("Reports")
+    egui::Window::new(crate::i18n::text("review.187"))
         .open(&mut open)
         .default_size([860.0, 480.0])
         .show(ctx, |ui| {
@@ -1143,7 +1143,7 @@ fn render_reports_window(ctx: &egui::Context, state: &mut SimModuleState) {
 
 fn render_process_info(ctx: &egui::Context, state: &mut SimModuleState) {
     let mut open = state.show_process_info;
-    egui::Window::new("Process Information")
+    egui::Window::new(crate::i18n::text("common.099"))
         .open(&mut open)
         .default_size([560.0, 440.0])
         .show(ctx, |ui| {
@@ -1183,8 +1183,8 @@ fn render_process_info(ctx: &egui::Context, state: &mut SimModuleState) {
             } else {
                 egui::Grid::new("pi_kpi_grid").striped(true).spacing([12.0, 5.0]).show(ui, |ui| {
                     ui.label(RichText::new("KPI").strong());
-                    ui.label(RichText::new("Unit").strong());
-                    ui.label(RichText::new("Value").strong());
+                    ui.label(RichText::new(crate::i18n::text("common.036")).strong());
+                    ui.label(RichText::new(crate::i18n::text("common.136")).strong());
                     ui.end_row();
                     for (k, u, v) in &mut pi.kpi_rows {
                         ui.text_edit_singleline(k);
@@ -1200,7 +1200,7 @@ fn render_process_info(ctx: &egui::Context, state: &mut SimModuleState) {
 
 fn render_notes_window(ctx: &egui::Context, state: &mut SimModuleState) {
     let mut open = state.show_notes_window;
-    egui::Window::new("Notes")
+    egui::Window::new(crate::i18n::text("review.188"))
         .open(&mut open)
         .default_size([480.0, 340.0])
         .show(ctx, |ui| {
@@ -1306,7 +1306,7 @@ fn render_calc_order_window(ctx: &egui::Context, state: &mut SimModuleState) {
 
 fn render_visualization_picker(ctx: &egui::Context, state: &mut SimModuleState) {
     let mut open = state.show_visualization_picker;
-    egui::Window::new("Visualization Color Picker")
+    egui::Window::new(crate::i18n::text("review.189"))
         .open(&mut open)
         .default_size([420.0, 360.0])
         .show(ctx, |ui| {

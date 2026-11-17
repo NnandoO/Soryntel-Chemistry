@@ -1031,17 +1031,17 @@ impl EquilibriumUiState {
         // Consistent Top Menu Bar (matching Modules 1, 2, and 3)
         egui::TopBottomPanel::top("equil_menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("New Empty File (Normal)").clicked() {
+                ui.menu_button(crate::i18n::text("common.001"), |ui| {
+                    if ui.button(crate::i18n::text("review.046")).clicked() {
                         self.load_empty_workbook(false);
                         ui.close_menu();
                     }
-                    if ui.button("New Empty File (Cell Mode)").clicked() {
+                    if ui.button(crate::i18n::text("review.047")).clicked() {
                         self.load_empty_workbook(true);
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("Open (.gem9)...").clicked() {
+                    if ui.button(crate::i18n::text("review.048")).clicked() {
                         match std::fs::read_to_string(&self.file_path_input)
                             .map_err(|e| e.to_string())
                             .and_then(|s| EquilibriumWorkbookFile::from_gem9_str(&s))
@@ -1060,14 +1060,14 @@ impl EquilibriumUiState {
                         }
                         ui.close_menu();
                     }
-                    if ui.button("Save (.gem9)...").clicked() {
+                    if ui.button(crate::i18n::text("review.049")).clicked() {
                         let wb = EquilibriumWorkbookFile {
                             system: self.system.clone(),
                             params: self.params.clone(),
                         };
                         match wb
                             .to_gem9_json()
-                            .and_then(|json| std::fs::write(&self.file_path_input, json).map_err(|e| e.to_string()))
+                            .and_then(|json| crate::storage::write_atomic(&self.file_path_input, json).map_err(|e| e.to_string()))
                         {
                             Ok(()) => {
                                 self.file_status_msg =
@@ -1080,7 +1080,7 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                     ui.separator();
-                    ui.label(egui::RichText::new("Chapter 13 Presets").small().strong());
+                    ui.label(egui::RichText::new(crate::i18n::text("review.050")).small().strong());
                     if ui.button("Preset: Ni-CO(g) (NICO.gem9)").clicked() {
                         self.load_preset_nico();
                         ui.close_menu();
@@ -1130,8 +1130,8 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Edit", |ui| {
-                    if ui.button("Update Species Data from Database").clicked() {
+                ui.menu_button(crate::i18n::text("common.006"), |ui| {
+                    if ui.button(crate::i18n::text("review.051")).clicked() {
                         self.update_species_from_db(db);
                         ui.close_menu();
                     }
@@ -1150,12 +1150,12 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Insert", |ui| {
-                    if ui.button("From Elements...").clicked() {
+                ui.menu_button(crate::i18n::text("common.010"), |ui| {
+                    if ui.button(crate::i18n::text("review.052")).clicked() {
                         self.show_from_elements = true;
                         ui.close_menu();
                     }
-                    if ui.button("Insert Phase").clicked() {
+                    if ui.button(crate::i18n::text("review.053")).clicked() {
                         let idx = self.system.phases.len() + 1;
                         self.system.phases.push(EquilibriumPhase {
                             name: format!("Phase #{}", idx),
@@ -1167,11 +1167,11 @@ impl EquilibriumUiState {
                         });
                         ui.close_menu();
                     }
-                    if ui.button("Sort Phases (Gas, Aqua, Liquid, Solid)").clicked() {
+                    if ui.button(crate::i18n::text("review.054")).clicked() {
                         self.sort_phases(db);
                         ui.close_menu();
                     }
-                    if ui.button("Add N2(g) Stability").clicked() {
+                    if ui.button(crate::i18n::text("review.055")).clicked() {
                         if let Some(first) = self.system.phases.first_mut() {
                             if !first.species.iter().any(|s| s.formula == "N2(g)") {
                                 first.species.insert(0, Self::make_sp("N2(g)", 1e-10));
@@ -1180,8 +1180,8 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Units", |ui| {
-                    ui.label(egui::RichText::new("Temperature").small().strong());
+                ui.menu_button(crate::i18n::text("common.027"), |ui| {
+                    ui.label(egui::RichText::new(crate::i18n::text("common.005")).small().strong());
                     if ui
                         .radio(!self.params.temp_unit_kelvin, "Celsius (°C)")
                         .clicked()
@@ -1197,7 +1197,7 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                     ui.separator();
-                    ui.label(egui::RichText::new("Column C Mode").small().strong());
+                    ui.label(egui::RichText::new(crate::i18n::text("review.056")).small().strong());
                     if ui
                         .radio(!self.params.column_c_lnf_mode, "Activity Coefficient (f)")
                         .clicked()
@@ -1213,7 +1213,7 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                     ui.separator();
-                    ui.label(egui::RichText::new("Set All Species Amount Units").small().strong());
+                    ui.label(egui::RichText::new(crate::i18n::text("review.057")).small().strong());
                     for u in [
                         EquilibriumAmountUnit::Kmol,
                         EquilibriumAmountUnit::Mol,
@@ -1230,19 +1230,19 @@ impl EquilibriumUiState {
                         }
                     }
                 });
-                ui.menu_button("Calculate", |ui| {
-                    if ui.button("▶ Calculate Equilibrium").clicked() {
+                ui.menu_button(crate::i18n::text("common.011"), |ui| {
+                    if ui.button(crate::i18n::text("review.058")).clicked() {
                         self.request_calculate(db);
                         ui.close_menu();
                     }
-                    if ui.button("Check Cp Extrapolation Warnings...").clicked() {
+                    if ui.button(crate::i18n::text("review.059")).clicked() {
                         self.warnings = collect_cp_warnings(&self.system, &self.params, db);
                         self.warnings_pending_calc = false;
                         self.show_warnings_modal = true;
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("View", |ui| {
+                ui.menu_button(crate::i18n::text("common.028"), |ui| {
                     if ui
                         .add_enabled(
                             self.result.is_some(),
@@ -1264,8 +1264,8 @@ impl EquilibriumUiState {
                         ui.close_menu();
                     }
                 });
-                ui.menu_button("Window", |ui| {
-                    if ui.button("Add-Ins (Solution Models)...").clicked() {
+                ui.menu_button(crate::i18n::text("review.060"), |ui| {
+                    if ui.button(crate::i18n::text("review.061")).clicked() {
                         self.show_addins_modal = true;
                         ui.close_menu();
                     }
@@ -1292,12 +1292,18 @@ impl EquilibriumUiState {
                     ui.label(egui::RichText::new(msg).small().color(egui::Color32::DARK_BLUE));
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if let Some(result) = &self.result {
+                        let failed = result.points.iter().filter(|p| !p.converged).count();
+                        if failed > 0 {
+                            ui.colored_label(egui::Color32::from_rgb(180, 90, 0), format!("{failed} puntos sin convergencia confirmada. Revise los balances y las iteraciones de actividad."));
+                        }
+                    }
                     if let Some(ref err) = self.last_error {
                         ui.colored_label(egui::Color32::RED, format!("Error: {}", err));
                     } else if let Some(ref res) = self.result {
                         ui.colored_label(
                             egui::Color32::from_rgb(22, 101, 52),
-                            format!("Convergido ({} puntos)", res.points.len()),
+                            format!("Calculados: {} puntos; convergencia confirmada: {}", res.points.len(), res.points.iter().filter(|p| p.converged).count()),
                         );
                     }
                 });
@@ -1348,7 +1354,13 @@ impl EquilibriumUiState {
                         "Target Results",
                     );
                 }
-                if let Some(ref err) = self.last_error {
+                if let Some(result) = &self.result {
+                        let failed = result.points.iter().filter(|p| !p.converged).count();
+                        if failed > 0 {
+                            ui.colored_label(egui::Color32::from_rgb(180, 90, 0), format!("{failed} puntos sin convergencia confirmada. Revise los balances y las iteraciones de actividad."));
+                        }
+                    }
+                    if let Some(ref err) = self.last_error {
                     ui.colored_label(egui::Color32::RED, format!("Error: {}", err));
                 }
             });
@@ -1395,13 +1407,13 @@ impl EquilibriumUiState {
 
     fn render_toolbar_and_formula_bar(&mut self, ui: &mut egui::Ui, db: &ThermoDatabase) {
         ui.horizontal_wrapped(|ui| {
-            if ui.button("From Elements").clicked() {
+            if ui.button(crate::i18n::text("review.062")).clicked() {
                 self.show_from_elements = true;
             }
-            if ui.button("Sort Phases").clicked() {
+            if ui.button(crate::i18n::text("review.063")).clicked() {
                 self.sort_phases(db);
             }
-            if ui.button("+ Phase").clicked() {
+            if ui.button(crate::i18n::text("review.064")).clicked() {
                 let idx = self.system.phases.len() + 1;
                 self.system.phases.push(EquilibriumPhase {
                     name: format!("Phase #{}", idx),
@@ -1413,13 +1425,13 @@ impl EquilibriumUiState {
                 });
             }
             ui.separator();
-            ui.label("Add Species:");
+            ui.label(crate::i18n::text("review.065"));
             ui.add(
                 egui::TextEdit::singleline(&mut self.add_species_query)
                     .desired_width(110.0)
-                    .hint_text("e.g. CH4(g)"),
+                    .hint_text(crate::i18n::text("review.066")),
             );
-            if ui.button("Add").clicked() && !self.add_species_query.trim().is_empty() {
+            if ui.button(crate::i18n::text("common.015")).clicked() && !self.add_species_query.trim().is_empty() {
                 let f = self.add_species_query.trim().to_string();
                 let target_p = self.selected_phase_idx.min(self.system.phases.len().saturating_sub(1));
                 if let Some(p) = self.system.phases.get_mut(target_p) {
@@ -1427,20 +1439,20 @@ impl EquilibriumUiState {
                 }
                 self.add_species_query.clear();
             }
-            if ui.button("+ N2(g) Stability").clicked() {
+            if ui.button(crate::i18n::text("review.067")).clicked() {
                 if let Some(first) = self.system.phases.first_mut() {
                     if !first.species.iter().any(|s| s.formula == "N2(g)") {
                         first.species.insert(0, Self::make_sp("N2(g)", 1e-10));
                     }
                 }
             }
-            if ui.button("Warnings").clicked() {
+            if ui.button(crate::i18n::text("common.125")).clicked() {
                 self.warnings = collect_cp_warnings(&self.system, &self.params, db);
                 self.warnings_pending_calc = false;
                 self.show_warnings_modal = true;
             }
             ui.separator();
-            ui.label("File:");
+            ui.label(crate::i18n::text("common.064"));
             ui.add(
                 egui::TextEdit::singleline(&mut self.file_path_input)
                     .desired_width(120.0),
@@ -1490,7 +1502,7 @@ impl EquilibriumUiState {
 
         // Excel Formula Bar
         ui.horizontal(|ui| {
-            ui.label(egui::RichText::new("Active species:").small());
+            ui.label(egui::RichText::new(crate::i18n::text("common.065")).small());
             ui.add_enabled(
                 false,
                 egui::TextEdit::singleline(&mut self.active_cell_ref).desired_width(50.0),
@@ -1912,7 +1924,7 @@ impl EquilibriumUiState {
 
     fn render_user_function_sheet(&mut self, ui: &mut egui::Ui) {
         let Some(ref res) = self.result else {
-            ui.label("Run Calculate first to populate UserFunction sheet.");
+            ui.label(crate::i18n::text("review.068"));
             return;
         };
         let Some(pt) = res.points.first() else {
@@ -1974,7 +1986,7 @@ impl EquilibriumUiState {
                     section_cell(ui, "Difference");
                     section_cell(ui, "Cumulative");
                     widget_cell(ui, true, |ui| {
-                        if ui.small_button("+ Formula").clicked() {
+                        if ui.small_button(crate::i18n::text("review.069")).clicked() {
                             self.user_formulas.push(UserFormulaRow {
                                 label: format!("Formula {}", self.user_formulas.len() + 1),
                                 expr: "=D5".to_string(),
@@ -2024,7 +2036,7 @@ impl EquilibriumUiState {
 
     fn render_results_sheet(&mut self, ui: &mut egui::Ui) {
         let Some(ref res) = self.result else {
-            ui.label("Click Calculate in the Parameters panel to compute equilibrium results.");
+            ui.label(crate::i18n::text("review.070"));
             return;
         };
         let Some(first) = res.points.first() else {
@@ -2123,7 +2135,7 @@ impl EquilibriumUiState {
             .as_ref()
             .and_then(|r| r.target_summary.as_ref())
         else {
-            ui.label("Enable Target Calculations and click Calculate to view Target Results.");
+            ui.label(crate::i18n::text("review.071"));
             return;
         };
         let scale = self.params.input_scale_to_mol.max(1e-12);
@@ -2188,7 +2200,7 @@ impl EquilibriumUiState {
 
     fn render_parameters_panel(&mut self, ui: &mut egui::Ui, db: &ThermoDatabase) {
         egui::ScrollArea::vertical().show(ui, |ui| {
-            ui.heading("Parameters");
+            ui.heading(crate::i18n::text("common.066"));
             ui.separator();
 
             // Operations
@@ -2200,7 +2212,7 @@ impl EquilibriumUiState {
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
                         let calc_btn = egui::Button::new(
-                            egui::RichText::new("Calculate")
+                            egui::RichText::new(crate::i18n::text("common.011"))
                                 .strong()
                                 .color(egui::Color32::WHITE),
                         )
@@ -2250,7 +2262,7 @@ impl EquilibriumUiState {
                 .default_open(true)
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Chart header:");
+                        ui.label(crate::i18n::text("review.072"));
                         ui.text_edit_singleline(&mut self.params.chart_header);
                         if self.params.chart_header.chars().count() > 80 {
                             self.params.chart_header =
@@ -2258,7 +2270,7 @@ impl EquilibriumUiState {
                         }
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Calculation Mode:");
+                        ui.label(crate::i18n::text("review.073"));
                         egui::ComboBox::from_id_salt("calc_mode_cb")
                             .selected_text(self.params.calc_mode.label())
                             .show_ui(ui, |ui| {
@@ -2294,7 +2306,7 @@ impl EquilibriumUiState {
                             .min(self.system.phases.len() - 1);
                         self.params.infinite_phase_idx = Some(cur_inf);
                         ui.horizontal(|ui| {
-                            ui.label("Infinite Phase:");
+                            ui.label(crate::i18n::text("review.074"));
                             egui::ComboBox::from_id_salt("infinite_phase_cb")
                                 .selected_text(&self.system.phases[cur_inf].name)
                                 .show_ui(ui, |ui| {
@@ -2313,7 +2325,7 @@ impl EquilibriumUiState {
                         });
                     }
                     ui.horizontal(|ui| {
-                        ui.label("Step Mode:");
+                        ui.label(crate::i18n::text("review.075"));
                         egui::ComboBox::from_id_salt("step_mode_cb")
                             .selected_text(self.params.step_mode.label())
                             .show_ui(ui, |ui| {
@@ -2330,7 +2342,7 @@ impl EquilibriumUiState {
                             });
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Parameters:");
+                        ui.label(crate::i18n::text("review.076"));
                         egui::ComboBox::from_id_salt("thermo_mode_cb")
                             .selected_text(self.params.thermo_mode.label())
                             .show_ui(ui, |ui| {
@@ -2362,7 +2374,7 @@ impl EquilibriumUiState {
                     });
                     if self.params.allow_titrations {
                         ui.horizontal(|ui| {
-                            ui.label("Soln density (kg/l):");
+                            ui.label(crate::i18n::text("review.077"));
                             ui.add(
                                 egui::DragValue::new(&mut self.params.titration_density_kg_l)
                                     .speed(0.01)
@@ -2372,7 +2384,7 @@ impl EquilibriumUiState {
                         });
                     }
                     ui.horizontal(|ui| {
-                        ui.label("Indep. variables:");
+                        ui.label(crate::i18n::text("review.078"));
                         ui.radio_value(&mut self.params.num_indep_vars, 0, "0");
                         ui.radio_value(&mut self.params.num_indep_vars, 1, "1");
                         if ui
@@ -2385,7 +2397,7 @@ impl EquilibriumUiState {
                     if self.params.num_indep_vars >= 1 {
                         let mut primary_changed = false;
                         ui.horizontal(|ui| {
-                            ui.label("Primary var (X):");
+                            ui.label(crate::i18n::text("review.079"));
                             egui::ComboBox::from_id_salt("primary_var_cb")
                                 .selected_text(self.params.primary_var.label())
                                 .show_ui(ui, |ui| {
@@ -2426,7 +2438,7 @@ impl EquilibriumUiState {
                             .unwrap_or(SweepVariable::PressureBar);
                         let mut sec_changed = false;
                         ui.horizontal(|ui| {
-                            ui.label("Secondary var (Z):");
+                            ui.label(crate::i18n::text("review.080"));
                             egui::ComboBox::from_id_salt("secondary_var_cb")
                                 .selected_text(cur_sec.label())
                                 .show_ui(ui, |ui| {
@@ -2535,7 +2547,7 @@ impl EquilibriumUiState {
                     });
                     if self.params.use_as_base_volume {
                         ui.horizontal(|ui| {
-                            ui.label("Initial Pressure (bar):");
+                            ui.label(crate::i18n::text("review.081"));
                             ui.add(
                                 egui::DragValue::new(&mut self.params.initial_pressure_bar)
                                     .speed(0.1)
@@ -2558,11 +2570,11 @@ impl EquilibriumUiState {
                             .min(self.system.phases.len().saturating_sub(1));
                         let ph = &mut self.system.phases[p_idx];
                         ui.horizontal(|ui| {
-                            ui.label("Selected Phase:");
+                            ui.label(crate::i18n::text("review.082"));
                             ui.strong(&ph.name);
                         });
                         ui.horizontal(|ui| {
-                            ui.label("Solution Model:");
+                            ui.label(crate::i18n::text("review.083"));
                             egui::ComboBox::from_id_salt("phase_data_model_cb")
                                 .selected_text(ph.model.label())
                                 .show_ui(ui, |ui| {
@@ -2579,7 +2591,7 @@ impl EquilibriumUiState {
                         });
                         if self.params.calc_mode == CalculationMode::CellMode {
                             ui.horizontal(|ui| {
-                                ui.label("Electrode:");
+                                ui.label(crate::i18n::text("review.084"));
                                 egui::ComboBox::from_id_salt("phase_electrode_cb")
                                     .selected_text(if ph.electrode_role.is_empty() {
                                         "None"
@@ -2605,7 +2617,7 @@ impl EquilibriumUiState {
                                     });
                             });
                             ui.horizontal(|ui| {
-                                ui.label("Capacitance (F):");
+                                ui.label(crate::i18n::text("review.085"));
                                 ui.add(
                                     egui::DragValue::new(&mut ph.capacitance_farads)
                                         .speed(0.1)
@@ -2615,7 +2627,7 @@ impl EquilibriumUiState {
                         }
                     }
                     ui.horizontal(|ui| {
-                        ui.label("AC Steps:");
+                        ui.label(crate::i18n::text("review.086"));
                         ui.add_enabled(
                             has_non_ideal,
                             egui::DragValue::new(&mut self.params.ac_steps).range(1..=50),
@@ -2640,11 +2652,11 @@ impl EquilibriumUiState {
                 .show(ui, |ui| {
                     ui.checkbox(&mut self.params.target.enabled, "Enabled");
                     ui.horizontal(|ui| {
-                        ui.label("Target Species:");
+                        ui.label(crate::i18n::text("review.087"));
                         ui.text_edit_singleline(&mut self.params.target.target_species);
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Target Value (kmol):");
+                        ui.label(crate::i18n::text("review.088"));
                         ui.add(
                             egui::DragValue::new(&mut self.params.target.target_amount_kmol)
                                 .speed(0.01),
@@ -2700,12 +2712,12 @@ impl EquilibriumUiState {
         // From Elements Modal (Figs. 3-5)
         if self.show_from_elements {
             let mut open = true;
-            egui::Window::new("From Elements (Database Browser & Sort Species)")
+            egui::Window::new(crate::i18n::text("review.089"))
                 .open(&mut open)
                 .default_width(500.0)
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Elements (space/comma sep):");
+                        ui.label(crate::i18n::text("review.090"));
                         ui.text_edit_singleline(&mut self.elem_query);
                     });
                     ui.horizontal(|ui| {
@@ -2748,7 +2760,7 @@ impl EquilibriumUiState {
                     });
 
                     ui.horizontal(|ui| {
-                        if ui.button("Import & Build Phases").clicked() {
+                        if ui.button(crate::i18n::text("review.091")).clicked() {
                             self.system.phases.clear();
                             if self.elem_sort_mode == 2 {
                                 // No sorting: all species in a single Phase #1
@@ -2838,7 +2850,7 @@ impl EquilibriumUiState {
                             }
                             self.show_from_elements = false;
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(crate::i18n::text("common.000")).clicked() {
                             self.show_from_elements = false;
                         }
                     });
@@ -2851,7 +2863,7 @@ impl EquilibriumUiState {
         // Warnings Modal (Figs. 35-38)
         if self.show_warnings_modal {
             let mut open = true;
-            egui::Window::new("Warnings — Cp Extrapolation Check")
+            egui::Window::new(crate::i18n::text("review.092"))
                 .open(&mut open)
                 .default_width(740.0)
                 .show(ctx, |ui| {
@@ -2924,14 +2936,14 @@ impl EquilibriumUiState {
                     });
                     ui.horizontal(|ui| {
                         ui.checkbox(&mut self.dont_show_warnings, "Do not show this dialog");
-                        if ui.button("OK").clicked() {
+                        if ui.button(crate::i18n::text("common.002")).clicked() {
                             self.show_warnings_modal = false;
                             if self.warnings_pending_calc {
                                 self.warnings_pending_calc = false;
                                 self.run_calculate(db);
                             }
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(crate::i18n::text("common.000")).clicked() {
                             self.warnings_pending_calc = false;
                             self.show_warnings_modal = false;
                         }
@@ -2957,7 +2969,7 @@ impl EquilibriumUiState {
                     ui.label("3. Aqua (Extended Debye-Huckel + 55.508435 molality conversion)");
                     ui.label("4. Column-C Formula Evaluator (T, X_row, EXP, LN, LOG10, ln(f))");
                     ui.separator();
-                    if ui.button("Close").clicked() {
+                    if ui.button(crate::i18n::text("common.004")).clicked() {
                         self.show_addins_modal = false;
                     }
                 });
@@ -2983,10 +2995,10 @@ impl EquilibriumUiState {
                         .unwrap_or(false);
 
                     ui.horizontal_wrapped(|ui| {
-                        if ui.button("Select Data for Axes...").clicked() {
+                        if ui.button(crate::i18n::text("review.093")).clicked() {
                             self.show_axes_modal = true;
                         }
-                        if ui.button("Show...Table (Equilibrium Results)").clicked() {
+                        if ui.button(crate::i18n::text("review.094")).clicked() {
                             self.show_diagram_table = true;
                         }
                         ui.separator();
@@ -3017,7 +3029,7 @@ impl EquilibriumUiState {
                             if self.chart_is_3d {
                                 ui.checkbox(&mut self.chart_color_by_levels, "Color by levels");
                                 ui.checkbox(&mut self.chart_3d_show_legend, "Show Legend");
-                                if ui.button("Reset View").clicked() {
+                                if ui.button(crate::i18n::text("common.067")).clicked() {
                                     self.chart_3d_yaw = -0.52;
                                     self.chart_3d_pitch = 0.42;
                                 }
@@ -3071,7 +3083,7 @@ impl EquilibriumUiState {
                                         egui::TextEdit::singleline(&mut self.chart_elem_filter)
                                             .desired_width(78.0),
                                     );
-                                    if ui.small_button("Reset").clicked() {
+                                    if ui.small_button(crate::i18n::text("common.112")).clicked() {
                                         self.chart_elem_filter = "All elements".to_string();
                                     }
                                 });

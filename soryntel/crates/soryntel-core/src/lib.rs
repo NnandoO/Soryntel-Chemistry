@@ -171,38 +171,41 @@ impl BalanceEnergyUnit {
 /// Common error type for Soryntel Chemistry.
 #[derive(Debug, Error)]
 pub enum SoryntelError {
-    #[error("Invalid temperature: {0} K (must be > 0 K)")]
+    #[error("Temperatura no válida: {0} K (debe ser finita y mayor que cero)")]
     InvalidTemperature(f64),
 
-    #[error("Invalid temperature range: from={from} to={to} step={step}")]
+    #[error("Presión no válida: {0} bar (debe ser finita y mayor que cero)")]
+    InvalidPressure(f64),
+
+    #[error("Intervalo de temperatura no válido: desde={from}, hasta={to}, paso={step}. Use valores finitos, paso positivo y un máximo de 100001 puntos")]
     InvalidRange { from: f64, to: f64, step: f64 },
 
-    #[error("Formula parse error: {0}")]
+    #[error("Error al interpretar la fórmula: {0}")]
     ParseError(String),
 
-    #[error("Stoichiometric balance error: {0}")]
+    #[error("Error de balance estequiométrico: {0}")]
     BalanceError(String),
 
-    #[error("Species not found in database: {0}")]
+    #[error("Especie no encontrada en la base de datos: {0}")]
     SpeciesNotFound(String),
 
-    #[error("Database I/O error: {0}")]
+    #[error("Error de lectura o escritura en la base de datos: {0}")]
     DatabaseError(String),
 
-    #[error("Cell formula syntax error: {0}")]
+    #[error("Error de sintaxis en la fórmula de celda: {0}")]
     FormulaSyntaxError(String),
 
-    #[error("Invalid cell reference: {0}")]
+    #[error("Referencia de celda no válida: {0}")]
     InvalidCellReference(String),
 
-    #[error("Circular reference failed to converge: {0}")]
+    #[error("La referencia circular no convergió: {0}")]
     CircularConvergenceFailed(String),
 
-    /// Target solver did not converge or root not bracketed: {0}
-    #[error("Target solver did not converge or root not bracketed: {0}")]
+    /// El cálculo objetivo no convergió o la raíz no está acotada: {0}
+    #[error("El cálculo objetivo no convergió o la raíz no está acotada: {0}")]
     TargetNotBracketed(String),
 
-    #[error("Heat loss calculation error: {0}")]
+    #[error("Error al calcular pérdidas de calor: {0}")]
     HeatLossError(String),
 }
 

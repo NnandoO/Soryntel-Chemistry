@@ -7,18 +7,17 @@
 use crate::excel_grid;
 use eframe::egui;
 use egui_plot::{Legend, Line, Plot, PlotPoints, Text as PlotText};
+use rust_i18n::t;
 use soryntel_application::SoryntelApplication;
 use soryntel_core::{EnergyUnit, ResultFormat, TemperatureUnit};
-use soryntel_db::ThermoDatabase;
+use soryntel_thermo::SpeciesCatalogPort;
 use soryntel_thermo::{
     CalculationRequest, CalculationResponse, ReactionCollectedSheet, ReactionWorkbookFile,
     ReactionYAxis,
 };
 
-const DEFAULT_REA8_PATH: &str = "/tmp/soryntel_reaction.rea8";
-const DEFAULT_XLSX_PATH: &str = "/tmp/soryntel_reaction_workbook.xlsx";
-const DEFAULT_CSV_PATH: &str = "/tmp/soryntel_reaction_export.csv";
-const DEFAULT_SVG_PATH: &str = "/tmp/soryntel_reaction_chart.svg";
+const DEFAULT_REA8_PATH: &str = "soryntel_reaction.rea8";
+const DEFAULT_SVG_PATH: &str = "soryntel_reaction_chart.svg";
 
 const SERIES_PALETTE: [egui::Color32; 6] = [
     egui::Color32::from_rgb(30, 64, 175),
@@ -34,6 +33,9 @@ const SERIES_HEX: [&str; 6] = [
 ];
 
 pub struct ReactionModuleState {
+    image_clipboard: Option<arboard::Clipboard>,
+    pub last_chart_size: egui::Vec2,
+    pub compact_chart: bool,
     pub formula_input: String,
     pub smallest_coeff: f64,
     pub t_from: f64,
@@ -69,8 +71,11 @@ pub struct ReactionModuleState {
 }
 
 impl ReactionModuleState {
-    pub fn new(db: &ThermoDatabase) -> Self {
+    pub fn new(db: &dyn SpeciesCatalogPort) -> Self {
         let mut state = Self {
+            image_clipboard: None,
+            last_chart_size: egui::Vec2::ZERO,
+            compact_chart: false,
             formula_input: "Al2O3".to_string(),
             smallest_coeff: 1.0,
             t_from: 0.0,
@@ -100,7 +105,7 @@ impl ReactionModuleState {
             show_help_modal: false,
             show_file_modal: false,
             file_modal_is_save: true,
-            file_path_buf: DEFAULT_REA8_PATH.to_string(),
+            file_path_buf: crate::ui_common::temp_file_path(DEFAULT_REA8_PATH),
             request_open_browser: false,
             plot_reset_counter: 0,
         };
@@ -133,7 +138,7 @@ impl ReactionModuleState {
         }
     }
 
-    pub fn run_calculate(&mut self, db: &ThermoDatabase) {
+    pub fn run_calculate(&mut self, db: &dyn SpeciesCatalogPort) {
         let req = CalculationRequest {
             input: self.formula_input.clone(),
             t_from: self.t_from,
@@ -197,7 +202,7 @@ impl ReactionModuleState {
 
     pub fn load_preset(
         &mut self,
-        db: &ThermoDatabase,
+        db: &dyn SpeciesCatalogPort,
         eq: &str,
         f: f64,
         t: f64,
@@ -215,7 +220,7 @@ impl ReactionModuleState {
     }
 
     /// Reproduce Fig. 6 from Manual Ch. 10.3: Multi-reaction vapor pressure comparison (`Mg`, `Zn`, `Cd`).
-    pub fn load_fig6_multi_vapor_preset(&mut self, db: &ThermoDatabase) {
+    pub fn load_fig6_multi_vapor_preset(&mut self, db: &dyn SpeciesCatalogPort) {
         self.sheets.clear();
         self.temp_unit = TemperatureUnit::Celsius;
         self.energy_unit = EnergyUnit::Kilojoules;
@@ -232,8 +237,7 @@ impl ReactionModuleState {
             self.run_calculate(db);
         }
         self.active_sheet_idx = 0;
-        self.status_msg =
-            "Cargado preset Fig. 6 (Mg, Zn, Cd vaporización en S1..S3 con Plot All Data)".into();
+        self.status_msg = "Ejemplo de vaporización de Mg, Zn y Cd cargado en tres hojas".into();
         self.status_ok = true;
     }
 
@@ -258,11 +262,12 @@ impl ReactionModuleState {
             sheets: self.sheets.clone(),
             active_sheet_idx: self.active_sheet_idx,
         };
-        match SoryntelApplication::serialize_rea8_workbook(&wb)
-            .and_then(|json| std::fs::write(path, json).map_err(|e| soryntel_core::SoryntelError::DatabaseError(e.to_string())))
-        {
+        match SoryntelApplication::serialize_rea8_workbook(&wb).and_then(|json| {
+            crate::storage::write_atomic(path, json)
+                .map_err(|e| soryntel_core::SoryntelError::DatabaseError(e.to_string()))
+        }) {
             Ok(_) => {
-                self.status_msg = format!("Workbook guardado en {path}");
+                self.status_msg = format!("Libro guardado en {path}");
                 self.status_ok = true;
             }
             Err(e) => {
@@ -297,7 +302,7 @@ impl ReactionModuleState {
                     self.active_sheet_idx = wb.active_sheet_idx.min(wb.sheets.len() - 1);
                     self.sheets = wb.sheets;
                 }
-                self.status_msg = format!("Workbook cargado desde {path}");
+                self.status_msg = format!("Libro cargado desde {path}");
                 self.status_ok = true;
             }
             Err(e) => {
@@ -312,7 +317,7 @@ impl ReactionModuleState {
             return;
         }
         let bytes = SoryntelApplication::export_reaction_workbook_xlsx(&self.sheets);
-        match std::fs::write(path, bytes) {
+        match crate::storage::write_atomic(path, bytes) {
             Ok(_) => {
                 self.status_msg = format!(
                     "Exportado Excel (.xlsx) con {} hoja(s) en {path}",
@@ -328,21 +333,105 @@ impl ReactionModuleState {
     }
 
     pub fn export_active_csv(&mut self) {
-        let Some(sheet) = self.active_sheet() else {
-            return;
+        self.choose_export("csv");
+    }
+
+    fn choose_workbook(&mut self, save: bool) {
+        let title = if save {
+            t!("reaction.save")
+        } else {
+            t!("reaction.open")
         };
-        let tsv = SoryntelApplication::format_reaction_sheet_tsv(sheet, self.decimals);
-        let csv = tsv.replace('\t', ",");
-        match std::fs::write(DEFAULT_CSV_PATH, csv) {
-            Ok(_) => {
-                self.status_msg = format!("Exportado CSV en {DEFAULT_CSV_PATH}");
-                self.status_ok = true;
-            }
-            Err(e) => {
-                self.status_msg = format!("Error exportando CSV: {e}");
-                self.status_ok = false;
+        if let Some(path) =
+            crate::reaction_actions::choose_file(save, &title, "rea8", "reacciones.rea8")
+        {
+            self.file_path_buf = path.to_string_lossy().into_owned();
+            let path = self.file_path_buf.clone();
+            if save {
+                self.save_rea8(&path);
+            } else {
+                self.load_rea8(&path);
             }
         }
+    }
+
+    fn choose_export(&mut self, extension: &str) {
+        if self.active_response().is_none() {
+            self.status_msg = t!("reaction.no_results").into_owned();
+            self.status_ok = false;
+            return;
+        }
+        let title = t!("reaction.export");
+        let Some(path) = crate::reaction_actions::choose_file(
+            true,
+            &title,
+            extension,
+            &format!("reacciones.{extension}"),
+        ) else {
+            return;
+        };
+        let path = path.to_string_lossy().into_owned();
+        match extension {
+            "xlsx" => self.export_excel_xlsx(&path),
+            "svg" => self.save_chart_svg(&path),
+            "csv" => {
+                let tsv = SoryntelApplication::format_reaction_sheet_tsv(
+                    self.active_sheet().unwrap(),
+                    self.decimals,
+                );
+                let result = crate::storage::write_atomic(
+                    &path,
+                    crate::reaction_actions::csv_from_tsv(&tsv),
+                );
+                self.status_ok = result.is_ok();
+                self.status_msg = match result {
+                    Ok(()) => format!("CSV guardado en {path}"),
+                    Err(e) => format!("Error al guardar CSV: {e}"),
+                };
+            }
+            "png" => {
+                let result = self
+                    .build_chart_svg()
+                    .ok_or_else(|| "No hay gráfico".to_string())
+                    .and_then(|svg| crate::reaction_actions::render_svg(&svg))
+                    .and_then(|pixels| pixels.encode_png().map_err(|e| e.to_string()))
+                    .and_then(|png| {
+                        crate::storage::write_atomic(&path, png).map_err(|e| e.to_string())
+                    });
+                self.status_ok = result.is_ok();
+                self.status_msg = match result {
+                    Ok(()) => format!("Imagen guardada en {path}"),
+                    Err(e) => format!("Error al guardar PNG: {e}"),
+                };
+            }
+            _ => unreachable!("extensión interna"),
+        }
+    }
+
+    fn copy_chart_image(&mut self) {
+        let result = (|| -> Result<(), String> {
+            let svg = self
+                .build_chart_svg()
+                .ok_or_else(|| t!("reaction.no_results").into_owned())?;
+            let pixels = crate::reaction_actions::render_svg(&svg)?;
+            if self.image_clipboard.is_none() {
+                self.image_clipboard = Some(arboard::Clipboard::new().map_err(|e| e.to_string())?);
+            }
+            self.image_clipboard
+                .as_mut()
+                .unwrap()
+                .set_image(arboard::ImageData {
+                    width: pixels.width() as usize,
+                    height: pixels.height() as usize,
+                    bytes: std::borrow::Cow::Owned(crate::reaction_actions::rgba(&pixels)),
+                })
+                .map_err(|e| e.to_string())
+        })();
+        self.status_ok = result.is_ok();
+        self.status_msg = match result {
+            Ok(()) => t!("reaction.image_copied").into_owned(),
+            Err(e) => format!("No se pudo copiar la imagen: {e}"),
+        };
     }
 
     pub fn copy_active_sheet_to_clipboard(&mut self, ctx: &egui::Context) {
@@ -406,7 +495,7 @@ impl ReactionModuleState {
         let Some(svg) = self.build_chart_svg() else {
             return;
         };
-        match std::fs::write(path, svg) {
+        match crate::storage::write_atomic(path, svg) {
             Ok(_) => {
                 self.status_msg = format!("Gráfico vectorial guardado en {path}");
                 self.status_ok = true;
@@ -420,11 +509,15 @@ impl ReactionModuleState {
 
     pub fn copy_chart_vector(&mut self, ctx: &egui::Context) {
         if let Some(svg) = self.build_chart_svg() {
-            ctx.copy_text(svg);
-            let _ = std::fs::write(DEFAULT_SVG_PATH, self.build_chart_svg().unwrap_or_default());
-            self.status_msg = format!(
-                "Gráfico vectorial (SVG) copiado al portapapeles y guardado en {DEFAULT_SVG_PATH}"
-            );
+            ctx.copy_text(svg.clone());
+            let path = crate::ui_common::temp_file_path(DEFAULT_SVG_PATH);
+            if let Err(error) = crate::storage::write_atomic(&path, &svg) {
+                self.status_msg = format!("Gráfico copiado; no se pudo guardar en {path}: {error}");
+                self.status_ok = false;
+                return;
+            }
+            self.status_msg =
+                format!("Gráfico vectorial (SVG) copiado al portapapeles y guardado en {path}");
             self.status_ok = true;
         }
     }
@@ -451,7 +544,7 @@ impl ReactionModuleState {
         self.status_ok = true;
     }
 
-    pub fn ui(&mut self, ctx: &egui::Context, db: &ThermoDatabase) {
+    pub fn ui(&mut self, ctx: &egui::Context, db: &dyn SpeciesCatalogPort) {
         let yellow_bg = excel_grid::EXCEL_YELLOW_BG;
 
         // Keyboard shortcut Ctrl+C for copying selected cell or sheet
@@ -466,57 +559,61 @@ impl ReactionModuleState {
         // 1. Top Menu Bar (Fig. 1: File | Edit | Format | Sheet | Options | Help)
         egui::TopBottomPanel::top("reaction_menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("📁 File", |ui| {
-                    if ui.button("📂 Open Workbook (.rea8)...").clicked() {
+                ui.menu_button(t!("common.020"), |ui| {
+                    if ui.button(t!("review.000")).clicked() {
                         self.file_modal_is_save = false;
-                        self.file_path_buf = DEFAULT_REA8_PATH.to_string();
+                        self.file_path_buf = crate::ui_common::temp_file_path(DEFAULT_REA8_PATH);
                         self.show_file_modal = true;
                         ui.close_menu();
                     }
-                    if ui.button("💾 Save Workbook As (.rea8)...").clicked() {
+                    if ui.button(t!("review.001")).clicked() {
                         self.file_modal_is_save = true;
-                        self.file_path_buf = DEFAULT_REA8_PATH.to_string();
+                        self.file_path_buf = crate::ui_common::temp_file_path(DEFAULT_REA8_PATH);
                         self.show_file_modal = true;
                         ui.close_menu();
                     }
                     ui.separator();
                     if ui
-                        .button("📊 Export To Excel (.xlsx)...")
-                        .on_hover_text(DEFAULT_XLSX_PATH)
+                        .button(t!("common.038"))
+                        .on_hover_text(t!("reaction.choose_destination"))
                         .clicked()
                     {
-                        self.export_excel_xlsx(DEFAULT_XLSX_PATH);
+                        self.choose_export("xlsx");
                         ui.close_menu();
                     }
                     if ui
-                        .button("📄 Export Active Sheet (CSV)...")
-                        .on_hover_text(DEFAULT_CSV_PATH)
+                        .button(t!("review.002"))
+                        .on_hover_text(t!("reaction.choose_destination"))
                         .clicked()
                     {
                         self.export_active_csv();
                         ui.close_menu();
                     }
                     if ui
-                        .button("🖼 Save Chart Vector (SVG)...")
-                        .on_hover_text(DEFAULT_SVG_PATH)
+                        .button(t!("review.003"))
+                        .on_hover_text(t!("reaction.choose_destination"))
                         .clicked()
                     {
-                        self.save_chart_svg(DEFAULT_SVG_PATH);
+                        self.choose_export("svg");
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("🔍 Database Browser...").clicked() {
+                    if ui.button(t!("reaction.save_png")).clicked() {
+                        self.choose_export("png");
+                        ui.close_menu();
+                    }
+                    if ui.button(t!("review.004")).clicked() {
                         self.request_open_browser = true;
                         ui.close_menu();
                     }
-                    if ui.button("📄 Print / Summary Report...").clicked() {
+                    if ui.button(t!("review.005")).clicked() {
                         self.show_print_modal = true;
                         ui.close_menu();
                     }
                 });
 
-                ui.menu_button("✏ Edit", |ui| {
-                    if ui.button("📋 Copy Selected Cell (Ctrl+C)").clicked() {
+                ui.menu_button(t!("common.021"), |ui| {
+                    if ui.button(t!("review.006")).clicked() {
                         if let Some((_, _, ref val)) = self.selected_cell {
                             ctx.copy_text(val.clone());
                             self.status_msg = format!("Celda copiada: {val}");
@@ -524,23 +621,23 @@ impl ReactionModuleState {
                         }
                         ui.close_menu();
                     }
-                    if ui.button("📑 Copy Sheet (TSV for MS Excel)").clicked() {
+                    if ui.button(t!("review.007")).clicked() {
                         self.copy_active_sheet_to_clipboard(ctx);
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("📐 Copy Chart Vector (SVG)").clicked() {
+                    if ui.button(t!("review.008")).clicked() {
                         self.copy_chart_vector(ctx);
                         ui.close_menu();
                     }
-                    if ui.button("📊 Copy Chart Series Data").clicked() {
+                    if ui.button(t!("review.009")).clicked() {
                         self.copy_chart_series_data(ctx);
                         ui.close_menu();
                     }
                 });
 
-                ui.menu_button("🎨 Format", |ui| {
-                    ui.label(egui::RichText::new("Numeric Precision:").strong());
+                ui.menu_button(t!("common.042"), |ui| {
+                    ui.label(egui::RichText::new(t!("review.010")).strong());
                     for dec in [2usize, 3, 4, 6] {
                         if ui
                             .radio_value(&mut self.decimals, dec, format!("{dec} decimals"))
@@ -550,20 +647,20 @@ impl ReactionModuleState {
                         }
                     }
                     ui.separator();
-                    ui.label(egui::RichText::new("Result Format (1 Substance):").strong());
+                    ui.label(egui::RichText::new(t!("review.011")).strong());
                     let mut changed = false;
                     changed |= ui
                         .radio_value(
                             &mut self.result_format,
                             ResultFormat::Normal,
-                            "Normal (Absolute H, S, Cp, G)",
+                            "Normal (H, S, Cp y G de la especie)",
                         )
                         .changed();
                     changed |= ui
                         .radio_value(
                             &mut self.result_format,
                             ResultFormat::Delta,
-                            "Delta (Formation ΔHf, ΔSf, ΔGf)",
+                            "Delta (formación: ΔHf, ΔSf, ΔGf)",
                         )
                         .changed();
                     if changed {
@@ -572,26 +669,26 @@ impl ReactionModuleState {
                     }
                 });
 
-                ui.menu_button("📑 Sheet", |ui| {
-                    if ui.button("➕ Collect Current Calculation as New Sheet").clicked() {
+                ui.menu_button(t!("review.012"), |ui| {
+                    if ui.button(t!("review.013")).clicked() {
                         let prev = self.collect_data;
                         self.collect_data = true;
                         self.run_calculate(db);
                         self.collect_data = prev;
                         ui.close_menu();
                     }
-                    if ui.button("📑 Copy Sheet to Clipboard").clicked() {
+                    if ui.button(t!("review.014")).clicked() {
                         self.copy_active_sheet_to_clipboard(ctx);
                         ui.close_menu();
                     }
-                    if self.sheets.len() > 1 && ui.button("🗑 Delete Active Sheet").clicked() {
+                    if self.sheets.len() > 1 && ui.button(t!("common.051")).clicked() {
                         self.sheets.remove(self.active_sheet_idx);
                         if self.active_sheet_idx >= self.sheets.len() {
                             self.active_sheet_idx = self.sheets.len() - 1;
                         }
                         ui.close_menu();
                     }
-                    if ui.button("🗑 Clear Collected Sheets").clicked() {
+                    if ui.button(t!("review.015")).clicked() {
                         if let Some(first) = self.sheets.first().cloned() {
                             self.sheets = vec![first];
                             self.active_sheet_idx = 0;
@@ -600,11 +697,15 @@ impl ReactionModuleState {
                     }
                 });
 
-                ui.menu_button("⚙ Options", |ui| {
+                ui.menu_button(t!("review.016"), |ui| {
                     let mut recalc = false;
-                    ui.label(egui::RichText::new("Temperature Unit:").strong());
+                    ui.label(egui::RichText::new(t!("common.052")).strong());
                     recalc |= ui
-                        .radio_value(&mut self.temp_unit, TemperatureUnit::Celsius, "°C (Celsius)")
+                        .radio_value(
+                            &mut self.temp_unit,
+                            TemperatureUnit::Celsius,
+                            "°C (Celsius)",
+                        )
                         .changed();
                     recalc |= ui
                         .radio_value(&mut self.temp_unit, TemperatureUnit::Kelvin, "K (Kelvin)")
@@ -617,7 +718,7 @@ impl ReactionModuleState {
                         )
                         .changed();
                     ui.separator();
-                    ui.label(egui::RichText::new("Energy Unit:").strong());
+                    ui.label(egui::RichText::new(t!("review.017")).strong());
                     recalc |= ui
                         .radio_value(&mut self.energy_unit, EnergyUnit::Kilojoules, "kJ")
                         .changed();
@@ -631,33 +732,30 @@ impl ReactionModuleState {
                         .radio_value(&mut self.energy_unit, EnergyUnit::Calories, "cal")
                         .changed();
                     ui.separator();
-                    ui.label(egui::RichText::new("Result Format (Ch. 10.1):").strong());
+                    ui.label(egui::RichText::new(t!("review.018")).strong());
                     recalc |= ui
                         .radio_value(
                             &mut self.result_format,
                             ResultFormat::Normal,
-                            "Normal (Absolute: Barin/JANAF)",
+                            "Normal (referencia Barin/JANAF)",
                         )
                         .changed();
                     recalc |= ui
                         .radio_value(
                             &mut self.result_format,
                             ResultFormat::Delta,
-                            "Delta (Formation: NBS/Pankratz)",
+                            "Delta (formación: NBS/Pankratz)",
                         )
                         .changed();
                     ui.separator();
                     recalc |= ui
-                        .checkbox(&mut self.show_transitions, "Show Phase Transitions")
+                        .checkbox(&mut self.show_transitions, "Mostrar transiciones de fase")
                         .changed();
                     recalc |= ui
-                        .checkbox(&mut self.criss_cobble, "Criss-Cobble Extrapolation")
+                        .checkbox(&mut self.criss_cobble, "Extrapolación de Criss–Cobble")
                         .changed();
                     ui.separator();
-                    if ui
-                        .button("💧 Set Recommended Aqueous Range (25..300 °C, step 25)")
-                        .clicked()
-                    {
+                    if ui.button(t!("review.019")).clicked() {
                         self.temp_unit = TemperatureUnit::Celsius;
                         self.t_from = 25.0;
                         self.t_to = 300.0;
@@ -670,8 +768,8 @@ impl ReactionModuleState {
                     }
                 });
 
-                ui.menu_button("❓ Help", |ui| {
-                    if ui.button("📖 Reaction Equations Manual Guide (Ch. 10)...").clicked() {
+                ui.menu_button(t!("common.022"), |ui| {
+                    if ui.button(t!("review.020")).clicked() {
                         self.show_help_modal = true;
                         ui.close_menu();
                     }
@@ -679,7 +777,7 @@ impl ReactionModuleState {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(
-                        egui::RichText::new(format!("🗄 Maindb6: {} especies", db.len()))
+                        egui::RichText::new(format!("🗄 Maindb6: {} especies", db.species_count()))
                             .small()
                             .color(egui::Color32::from_rgb(71, 85, 105)),
                     );
@@ -692,43 +790,46 @@ impl ReactionModuleState {
             .frame(
                 egui::Frame::none()
                     .fill(egui::Color32::from_rgb(248, 250, 252))
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(226, 232, 240)))
+                    .stroke(egui::Stroke::new(
+                        1.0,
+                        egui::Color32::from_rgb(226, 232, 240),
+                    ))
                     .inner_margin(egui::Margin::symmetric(10.0, 4.0)),
             )
             .show(ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     if ui
-                        .button("📂 Open")
+                        .button(t!("common.009"))
                         .on_hover_text("Abrir archivo .rea8 (File -> Open)")
                         .clicked()
                     {
                         self.file_modal_is_save = false;
-                        self.file_path_buf = DEFAULT_REA8_PATH.to_string();
+                        self.file_path_buf = crate::ui_common::temp_file_path(DEFAULT_REA8_PATH);
                         self.show_file_modal = true;
                     }
                     if ui
-                        .button("💾 Save .rea8")
-                        .on_hover_text("Guardar workbook en .rea8 (File -> Save As)")
+                        .button("💾 Guardar .rea8")
+                        .on_hover_text("Guardar libro .rea8 (Archivo → Guardar como)")
                         .clicked()
                     {
-                        self.save_rea8(DEFAULT_REA8_PATH);
+                        self.choose_workbook(true);
                     }
                     if ui
                         .button("📊 Excel .xlsx")
                         .on_hover_text("Exportar todas las hojas a MS Excel (.xlsx)")
                         .clicked()
                     {
-                        self.export_excel_xlsx(DEFAULT_XLSX_PATH);
+                        self.choose_export("xlsx");
                     }
                     if ui
-                        .button("📑 Copy Sheet")
+                        .button(t!("review.021"))
                         .on_hover_text("Copiar hoja activa al portapapeles (TSV para Excel)")
                         .clicked()
                     {
                         self.copy_active_sheet_to_clipboard(ctx);
                     }
                     if ui
-                        .button("📄 Print")
+                        .button(t!("review.022"))
                         .on_hover_text("Vista previa de impresión / reporte")
                         .clicked()
                     {
@@ -736,7 +837,7 @@ impl ReactionModuleState {
                     }
                     ui.separator();
                     if ui
-                        .button("⚖ Balance")
+                        .button(t!("review.023"))
                         .on_hover_text("Balancear coeficientes estequiométricos y carga iónica")
                         .clicked()
                     {
@@ -745,7 +846,7 @@ impl ReactionModuleState {
                     if ui
                         .add(
                             egui::Button::new(
-                                egui::RichText::new("▶ Calculate")
+                                egui::RichText::new(t!("review.024"))
                                     .strong()
                                     .color(egui::Color32::from_rgb(30, 58, 138)),
                             )
@@ -757,7 +858,7 @@ impl ReactionModuleState {
                         self.run_calculate(db);
                     }
                     if ui
-                        .button("🔍 Browse DB")
+                        .button(t!("review.025"))
                         .on_hover_text("Abrir navegador de base de datos (Maindb6 / OwnDB6)")
                         .clicked()
                     {
@@ -766,7 +867,7 @@ impl ReactionModuleState {
                     ui.separator();
 
                     // Quick Format Toggle (Normal vs Delta)
-                    ui.label(egui::RichText::new("Format:").small());
+                    ui.label(egui::RichText::new(t!("review.026")).small());
                     let is_norm = self.result_format == ResultFormat::Normal;
                     if ui.selectable_label(is_norm, "Normal").clicked() && !is_norm {
                         self.result_format = ResultFormat::Normal;
@@ -783,7 +884,7 @@ impl ReactionModuleState {
                     }
 
                     ui.separator();
-                    ui.label(egui::RichText::new("Units:").small());
+                    ui.label(egui::RichText::new(t!("common.024")).small());
                     for u in [TemperatureUnit::Celsius, TemperatureUnit::Kelvin] {
                         if ui
                             .selectable_label(self.temp_unit == u, u.label())
@@ -807,21 +908,24 @@ impl ReactionModuleState {
                 });
             });
 
-        // 3. Upper Specifications + Chart Control Panels (Figs. 1, 3, 7, 8 — Responsive)
+        // Keep controls scrollable so small windows retain space for results.
         egui::TopBottomPanel::top("reaction_top_controls").show(ctx, |ui| {
-            ui.add_space(3.0);
-            let avail_w = ui.available_width();
-            if avail_w >= 860.0 {
-                ui.columns(2, |cols| {
-                    self.render_specifications_box(&mut cols[0], db, yellow_bg);
-                    self.render_chart_controls_box(&mut cols[1], ctx, db, yellow_bg);
+            egui::ScrollArea::vertical()
+                .id_salt("reaction_controls_scroll")
+                .max_height((ctx.screen_rect().height() * 0.32).clamp(90.0, 280.0))
+                .show(ui, |ui| {
+                    if ui.available_width() >= 860.0 {
+                        ui.columns(2, |cols| {
+                            self.render_specifications_box(&mut cols[0], db, yellow_bg);
+                            self.render_chart_controls_box(&mut cols[1], ctx, db, yellow_bg);
+                        });
+                    } else {
+                        self.render_specifications_box(ui, db, yellow_bg);
+                        egui::CollapsingHeader::new("Opciones del gráfico").show(ui, |ui| {
+                            self.render_chart_controls_box(ui, ctx, db, yellow_bg);
+                        });
+                    }
                 });
-            } else {
-                self.render_specifications_box(ui, db, yellow_bg);
-                ui.add_space(4.0);
-                self.render_chart_controls_box(ui, ctx, db, yellow_bg);
-            }
-            ui.add_space(3.0);
         });
 
         // 4. Bottom Status Bar (with Outotec/Soryntel badge matching Fig. 1)
@@ -865,14 +969,15 @@ impl ReactionModuleState {
                     self.render_right_chart_pane(&mut cols[1], ctx);
                 });
             } else {
-                egui::ScrollArea::vertical()
-                    .id_salt("reaction_compact_vscroll")
-                    .show(ui, |ui| {
-                        self.render_left_spreadsheet_pane(ui, db);
-                        ui.add_space(8.0);
-                        ui.set_min_height(360.0);
-                        self.render_right_chart_pane(ui, ctx);
-                    });
+                ui.horizontal(|ui| {
+                    ui.selectable_value(&mut self.compact_chart, false, "Datos y cantidades");
+                    ui.selectable_value(&mut self.compact_chart, true, "Gráfico");
+                });
+                if self.compact_chart {
+                    self.render_right_chart_pane(ui, ctx);
+                } else {
+                    self.render_left_spreadsheet_pane(ui, db);
+                }
             }
         });
 
@@ -886,15 +991,15 @@ impl ReactionModuleState {
     fn render_specifications_box(
         &mut self,
         ui: &mut egui::Ui,
-        db: &ThermoDatabase,
+        db: &dyn SpeciesCatalogPort,
         yellow_bg: egui::Color32,
     ) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.strong("📋 Specifications");
+            ui.horizontal_wrapped(|ui| {
+                ui.strong("📋 Parámetros");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .button("⚖ Balance")
+                        .button(t!("review.023"))
                         .on_hover_text("Resolver coeficientes desconocidos (Ch. 10.3)")
                         .clicked()
                     {
@@ -905,11 +1010,11 @@ impl ReactionModuleState {
                             .speed(0.1)
                             .range(0.01..=1000.0),
                     );
-                    ui.label("Smallest Coefficient");
+                    ui.label(t!("review.027"));
                 });
             });
             ui.label(
-                egui::RichText::new("Reaction Equation or Chemical Formula")
+                egui::RichText::new(t!("review.028"))
                     .size(11.5)
                     .color(egui::Color32::from_rgb(51, 65, 85)),
             );
@@ -930,12 +1035,12 @@ impl ReactionModuleState {
 
             let t_lbl = self.temp_unit.label();
             ui.horizontal_wrapped(|ui| {
-                ui.label("Temperature");
-                ui.label(format!("From ({t_lbl})"));
+                ui.label(t!("common.005"));
+                ui.label(format!("Desde ({t_lbl})"));
                 ui.add(egui::DragValue::new(&mut self.t_from).speed(5.0));
-                ui.label(format!("To ({t_lbl})"));
+                ui.label(format!("Hasta ({t_lbl})"));
                 ui.add(egui::DragValue::new(&mut self.t_to).speed(5.0));
-                ui.label(format!("Step ({t_lbl})"));
+                ui.label(format!("Paso ({t_lbl})"));
                 ui.add(
                     egui::DragValue::new(&mut self.t_step)
                         .speed(1.0)
@@ -945,14 +1050,14 @@ impl ReactionModuleState {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
                         .add(
-                            egui::Button::new(egui::RichText::new("▶ Calculate").strong())
+                            egui::Button::new(egui::RichText::new(t!("review.024")).strong())
                                 .fill(egui::Color32::from_rgb(219, 234, 254)),
                         )
                         .clicked()
                     {
                         self.run_calculate(db);
                     }
-                    if ui.button("🔍 Browse...").clicked() {
+                    if ui.button(t!("review.029")).clicked() {
                         self.request_open_browser = true;
                     }
                 });
@@ -964,14 +1069,14 @@ impl ReactionModuleState {
         &mut self,
         ui: &mut egui::Ui,
         ctx: &egui::Context,
-        db: &ThermoDatabase,
+        db: &dyn SpeciesCatalogPort,
         yellow_bg: egui::Color32,
     ) {
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.strong("📈 Chart");
+            ui.strong("📈 Gráfico");
             ui.horizontal_wrapped(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Y - Axis");
+                    ui.label(t!("review.030"));
                     if let Some(res) = self.active_response().cloned() {
                         let is_delta = res.result_format == ResultFormat::Delta;
                         let selected_lbl = self.y_axis.axis_label(&res, self.log_y_scale);
@@ -1016,36 +1121,39 @@ impl ReactionModuleState {
 
                 ui.add_space(8.0);
                 ui.vertical(|ui| {
-                    ui.checkbox(&mut self.collect_data, "Collect Data");
-                    ui.checkbox(&mut self.plot_all_data, "Plot All Data");
+                    ui.checkbox(&mut self.collect_data, "Recopilar datos");
+                    ui.checkbox(&mut self.plot_all_data, "Representar todas las hojas");
                 });
                 ui.vertical(|ui| {
-                    ui.checkbox(&mut self.log_y_scale, "Log Y (for K)");
-                    ui.checkbox(&mut self.show_curve_labels, "Curve Labels");
+                    ui.checkbox(&mut self.log_y_scale, "Escala logarítmica Y (para K)");
+                    ui.checkbox(&mut self.show_curve_labels, "Etiquetas de curvas");
                 });
             });
 
             // Buttons matching Fig. 1: Open in new Window | Copy Vector | Copy Raster + Presets
             ui.horizontal_wrapped(|ui| {
-                if ui.button("🖥 Open in new Window").clicked() {
+                if ui.button(t!("review.031")).clicked() {
                     self.show_detached_chart = true;
                 }
                 if ui
-                    .button("📐 Copy Vector")
+                    .button(t!("review.032"))
                     .on_hover_text("Copiar gráfico como SVG vectorial al portapapeles")
                     .clicked()
                 {
                     self.copy_chart_vector(ctx);
                 }
                 if ui
-                    .button("🖼 Copy Raster")
-                    .on_hover_text("Copiar puntos tabulados de la curva al portapapeles")
+                    .button(t!("review.033"))
+                    .on_hover_text(t!("reaction.copy_image"))
                     .clicked()
                 {
-                    self.copy_chart_series_data(ctx);
+                    self.copy_chart_image();
+                }
+                if ui.button(t!("reaction.save_png")).clicked() {
+                    self.choose_export("png");
                 }
                 ui.separator();
-                ui.label(egui::RichText::new("Presets:").small());
+                ui.label(egui::RichText::new(t!("common.045")).small());
                 if ui.small_button("Al2O3 (Fig.1)").clicked() {
                     self.load_preset(db, "Al2O3", 0.0, 2000.0, 100.0, ReactionYAxis::Cp, false);
                 }
@@ -1089,7 +1197,7 @@ impl ReactionModuleState {
         });
     }
 
-    fn render_left_spreadsheet_pane(&mut self, ui: &mut egui::Ui, db: &ThermoDatabase) {
+    fn render_left_spreadsheet_pane(&mut self, ui: &mut egui::Ui, db: &dyn SpeciesCatalogPort) {
         let Some(sheet_clone) = self.active_sheet().cloned() else {
             return;
         };
@@ -1136,9 +1244,9 @@ impl ReactionModuleState {
                             // Row 1: Formula / Reaction Equation header banner (Figs. 1, 5, 9)
                             excel_grid::row_num_cell(ui, 1, 34.0);
                             let banner_lbl = if res.is_single_substance {
-                                "Formula"
+                                "Fórmula"
                             } else {
-                                "Reaction Equation"
+                                "Ecuación de reacción"
                             };
                             for c in 0..num_cols {
                                 let txt = if c == 2 { banner_lbl } else { "" };
@@ -1156,7 +1264,7 @@ impl ReactionModuleState {
 
                             // Row 4: Reaction Data section title
                             excel_grid::row_num_cell(ui, 4, 34.0);
-                            excel_grid::section_cell(ui, "Reaction Data", col_w(0), false);
+                            excel_grid::section_cell(ui, "Datos de reacción", col_w(0), false);
                             for c in 1..num_cols {
                                 excel_grid::section_cell(ui, "", col_w(c), false);
                             }
@@ -1191,7 +1299,7 @@ impl ReactionModuleState {
                                     col_w(4),
                                     true,
                                 );
-                                excel_grid::section_cell(ui, "Reference", col_w(5), true);
+                                excel_grid::section_cell(ui, "Referencia", col_w(5), true);
                                 ui.end_row();
 
                                 // Row 6: Units row (Fig. 1)
@@ -1352,13 +1460,15 @@ impl ReactionModuleState {
 
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                ui.strong("🔬 Species Data");
+                ui.strong("🔬 Datos de especies");
                 ui.label(
-                    egui::RichText::new("(edita mol o g en Input Amounts para escalar cantidades)")
-                        .small()
-                        .color(egui::Color32::from_rgb(100, 116, 139)),
+                    egui::RichText::new(
+                        "(edite mol o g en las cantidades de entrada para ajustar la escala)",
+                    )
+                    .small()
+                    .color(egui::Color32::from_rgb(100, 116, 139)),
                 );
-                if (new_scale - 1.0).abs() > 1e-6 && ui.small_button("↺ Reset 1x").clicked() {
+                if (new_scale - 1.0).abs() > 1e-6 && ui.small_button(t!("review.034")).clicked() {
                     new_scale = 1.0;
                 }
             });
@@ -1375,14 +1485,14 @@ impl ReactionModuleState {
                         .show(ui, |ui| {
                             // Top header row: Formula | M | Conc. | Input Amounts (col 3..6) | Extrapolated
                             excel_grid::row_num_cell(ui, 1, 34.0);
-                            excel_grid::section_cell(ui, "Formula", widths[0], false);
+                            excel_grid::section_cell(ui, "Fórmula", widths[0], false);
                             excel_grid::section_cell(ui, "M", widths[1], true);
                             excel_grid::section_cell(ui, "Conc.", widths[2], true);
-                            excel_grid::section_cell(ui, "Input", widths[3], true);
-                            excel_grid::section_cell(ui, "Amounts", widths[4], true);
+                            excel_grid::section_cell(ui, "Entrada", widths[3], true);
+                            excel_grid::section_cell(ui, "Cantidades", widths[4], true);
                             excel_grid::section_cell(ui, "", widths[5], true);
                             excel_grid::section_cell(ui, "", widths[6], true);
-                            excel_grid::section_cell(ui, "Extrapolated", widths[7], true);
+                            excel_grid::section_cell(ui, "Extrapolación", widths[7], true);
                             ui.end_row();
 
                             // Second header row: units
@@ -1392,9 +1502,9 @@ impl ReactionModuleState {
                             excel_grid::section_cell(ui, "wt-%", widths[2], true);
                             excel_grid::section_cell(ui, "mol", widths[3], true);
                             excel_grid::section_cell(ui, "g", widths[4], true);
-                            excel_grid::section_cell(ui, "Volume", widths[5], true);
-                            excel_grid::section_cell(ui, "Unit", widths[6], true);
-                            excel_grid::section_cell(ui, "From T(K)", widths[7], true);
+                            excel_grid::section_cell(ui, "Volumen", widths[5], true);
+                            excel_grid::section_cell(ui, "Unidad", widths[6], true);
+                            excel_grid::section_cell(ui, "Desde T (K)", widths[7], true);
                             ui.end_row();
 
                             let mut prev_side: Option<&str> = None;
@@ -1402,8 +1512,10 @@ impl ReactionModuleState {
                                 // Double line divider between Reactants and Products (Figs. 5 & 9)
                                 if let Some(ps) = prev_side {
                                     if ps != s.side {
-                                        let (sep_r, _) =
-                                            ui.allocate_exact_size(egui::vec2(34.0, 4.0), egui::Sense::hover());
+                                        let (sep_r, _) = ui.allocate_exact_size(
+                                            egui::vec2(34.0, 4.0),
+                                            egui::Sense::hover(),
+                                        );
                                         ui.painter().rect_filled(
                                             sep_r,
                                             0.0,
@@ -1449,14 +1561,7 @@ impl ReactionModuleState {
                                 };
                                 excel_grid::row_num_cell(ui, idx + 3, 34.0);
                                 excel_grid::text_cell(
-                                    ui,
-                                    &s.formula,
-                                    widths[0],
-                                    bg,
-                                    dark_txt,
-                                    false,
-                                    true,
-                                    false,
+                                    ui, &s.formula, widths[0], bg, dark_txt, false, true, false,
                                 );
                                 excel_grid::text_cell(
                                     ui,
@@ -1532,14 +1637,7 @@ impl ReactionModuleState {
                                     .map(|k| format!("{k:.2}"))
                                     .unwrap_or_else(|| "-".into());
                                 excel_grid::text_cell(
-                                    ui,
-                                    &ext,
-                                    widths[7],
-                                    bg,
-                                    dark_txt,
-                                    true,
-                                    false,
-                                    false,
+                                    ui, &ext, widths[7], bg, dark_txt, true, false, false,
                                 );
                                 ui.end_row();
                             }
@@ -1549,15 +1647,25 @@ impl ReactionModuleState {
             ui.separator();
             // Bottom Excel Sheet Tabs Bar (`|< < > >|  S1  S2 ... +` matching Fig. 1)
             ui.horizontal(|ui| {
-                if ui.small_button("|<").on_hover_text("Primera hoja").clicked() {
+                if ui
+                    .small_button("|<")
+                    .on_hover_text("Primera hoja")
+                    .clicked()
+                {
                     self.active_sheet_idx = 0;
                 }
-                if ui.small_button("<").on_hover_text("Hoja anterior").clicked()
+                if ui
+                    .small_button("<")
+                    .on_hover_text("Hoja anterior")
+                    .clicked()
                     && self.active_sheet_idx > 0
                 {
                     self.active_sheet_idx -= 1;
                 }
-                if ui.small_button(">").on_hover_text("Siguiente hoja").clicked()
+                if ui
+                    .small_button(">")
+                    .on_hover_text("Siguiente hoja")
+                    .clicked()
                     && self.active_sheet_idx + 1 < self.sheets.len()
                 {
                     self.active_sheet_idx += 1;
@@ -1610,7 +1718,7 @@ impl ReactionModuleState {
                     }
                 }
                 ui.horizontal_wrapped(|ui| {
-                    ui.label(egui::RichText::new("Series:").strong().size(11.5));
+                    ui.label(egui::RichText::new(t!("review.035")).strong().size(11.5));
                     for sheet in &mut self.sheets {
                         ui.checkbox(
                             &mut sheet.visible_in_plot,
@@ -1636,11 +1744,11 @@ impl ReactionModuleState {
                     .inner_margin(egui::Margin::symmetric(8.0, 4.0))
                     .show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
-                            ui.strong("🎨 Chart Toolbox:");
-                            ui.checkbox(&mut self.show_grid, "Grid");
-                            ui.checkbox(&mut self.show_curve_labels, "Curve Labels");
+                            ui.strong("🎨 Herramientas del gráfico:");
+                            ui.checkbox(&mut self.show_grid, "Cuadrícula");
+                            ui.checkbox(&mut self.show_curve_labels, "Etiquetas de curvas");
                             ui.checkbox(&mut self.log_y_scale, "Log10(K)");
-                            ui.label("Width:");
+                            ui.label(t!("review.036"));
                             ui.add(
                                 egui::DragValue::new(&mut self.line_width)
                                     .speed(0.1)
@@ -1651,12 +1759,10 @@ impl ReactionModuleState {
             }
 
             // Horizontal layout: Left Vertical Chart Tools Strip (Fig. 2) | Right Plot Canvas
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 self.render_fig2_chart_tools_strip(ui, ctx);
-                ui.vertical(|ui| {
-                    self.render_chart(ui, "thermo_plot_main");
-                });
             });
+            self.render_chart(ui, "thermo_plot_main");
         });
     }
 
@@ -1664,28 +1770,34 @@ impl ReactionModuleState {
     fn render_fig2_chart_tools_strip(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         egui::Frame::none()
             .fill(egui::Color32::from_rgb(248, 250, 252))
-            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(214, 220, 229)))
+            .stroke(egui::Stroke::new(
+                1.0,
+                egui::Color32::from_rgb(214, 220, 229),
+            ))
             .rounding(5.0)
             .inner_margin(egui::Margin::symmetric(4.0, 6.0))
             .show(ui, |ui| {
-                ui.vertical(|ui| {
-                    ui.spacing_mut().item_spacing.y = 6.0;
-                    if chart_tool_icon_btn(ui, "💾", "Save Chart as Vector SVG (Ch. 10.2)").clicked()
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = 6.0;
+                    if chart_tool_icon_btn(ui, "💾", "Guardar gráfico vectorial SVG (cap. 10.2)")
+                        .clicked()
                     {
-                        self.save_chart_svg(DEFAULT_SVG_PATH);
+                        self.choose_export("svg");
                     }
-                    if chart_tool_icon_btn(ui, "📋", "Copy Chart Vector / Data to Clipboard")
+                    if chart_tool_icon_btn(ui, "📋", "Copiar gráfico o datos al portapapeles")
                         .clicked()
                     {
                         self.copy_chart_vector(ctx);
                     }
-                    if chart_tool_icon_btn(ui, "📄", "Print / View Formatted Report").clicked() {
+                    if chart_tool_icon_btn(ui, "📄", "Imprimir o ver informe").clicked() {
                         self.show_print_modal = true;
                     }
-                    if chart_tool_icon_btn(ui, "📑", "Clone Chart in Detached Window").clicked() {
+                    if chart_tool_icon_btn(ui, "📑", "Duplicar gráfico en ventana independiente")
+                        .clicked()
+                    {
                         self.show_detached_chart = true;
                     }
-                    if chart_tool_icon_btn(ui, "🔄", "Redraw / Reset Chart Axes").clicked() {
+                    if chart_tool_icon_btn(ui, "🔄", "Redibujar y restablecer ejes").clicked() {
                         self.plot_reset_counter = self.plot_reset_counter.wrapping_add(1);
                         self.status_msg = "Gráfico redibujado y reescalado".into();
                         self.status_ok = true;
@@ -1693,7 +1805,7 @@ impl ReactionModuleState {
                     if chart_tool_icon_btn(
                         ui,
                         "🎨",
-                        "Toolbox: Edit Chart Grid, Labels & Line Style",
+                        "Editar cuadrícula, etiquetas y estilo de línea",
                     )
                     .clicked()
                     {
@@ -1721,19 +1833,18 @@ impl ReactionModuleState {
         let y_label = self.y_axis.axis_label(&primary, self.log_y_scale);
 
         let full_id = format!("{plot_id}_{}", self.plot_reset_counter);
-        let mut plot = Plot::new(full_id)
+        let plot = Plot::new(full_id)
+            .width(ui.available_width().max(1.0))
+            .height(ui.available_height().clamp(320.0, 1200.0))
             .x_axis_label(x_label)
             .y_axis_label(y_label)
             .show_grid(self.show_grid)
             .legend(Legend::default());
-        if self.plot_reset_counter > 0 {
-            plot = plot.reset();
-        }
 
         let show_labels = self.show_curve_labels;
         let line_w = self.line_width;
 
-        plot.show(ui, |plot_ui| {
+        let response = plot.show(ui, |plot_ui| {
             if self.plot_all_data && self.sheets.len() > 1 {
                 let total_sheets = self.sheets.len();
                 for (idx, sheet) in self.sheets.iter().enumerate() {
@@ -1802,6 +1913,7 @@ impl ReactionModuleState {
                 }
             }
         });
+        self.last_chart_size = response.response.rect.size();
     }
 
     fn render_detached_chart_window(&mut self, ctx: &egui::Context) {
@@ -1809,23 +1921,25 @@ impl ReactionModuleState {
             return;
         }
         let mut open = self.show_detached_chart;
-        egui::Window::new("📈 Chart — Reaction Equations (Soryntel Chemistry)")
+        egui::Window::new(t!("review.037"))
             .open(&mut open)
             .default_size([800.0, 540.0])
+            .min_size([360.0, 320.0])
+            .resizable(true)
             .show(ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    if ui.button("💾 Save SVG").clicked() {
-                        self.save_chart_svg(DEFAULT_SVG_PATH);
+                    if ui.button(t!("review.038")).clicked() {
+                        self.choose_export("svg");
                     }
-                    if ui.button("📐 Copy Vector").clicked() {
+                    if ui.button(t!("review.032")).clicked() {
                         self.copy_chart_vector(ctx);
                     }
-                    if ui.button("📄 Save CSV").clicked() {
+                    if ui.button(t!("review.039")).clicked() {
                         self.export_active_csv();
                     }
-                    ui.checkbox(&mut self.log_y_scale, "Log Y (for K)");
-                    ui.checkbox(&mut self.plot_all_data, "Plot All Data");
-                    ui.checkbox(&mut self.show_curve_labels, "Curve Labels");
+                    ui.checkbox(&mut self.log_y_scale, "Escala logarítmica Y (para K)");
+                    ui.checkbox(&mut self.plot_all_data, "Representar todas las hojas");
+                    ui.checkbox(&mut self.show_curve_labels, "Etiquetas de curvas");
                 });
                 ui.separator();
                 self.render_chart(ui, "thermo_plot_detached");
@@ -1833,50 +1947,11 @@ impl ReactionModuleState {
         self.show_detached_chart = open;
     }
 
-    fn render_file_modal(&mut self, ctx: &egui::Context) {
-        if !self.show_file_modal {
-            return;
+    fn render_file_modal(&mut self, _ctx: &egui::Context) {
+        if self.show_file_modal {
+            self.show_file_modal = false;
+            self.choose_workbook(self.file_modal_is_save);
         }
-        let mut open = self.show_file_modal;
-        let title = if self.file_modal_is_save {
-            "💾 Save Workbook As (.rea8)"
-        } else {
-            "📂 Open Workbook (.rea8)"
-        };
-        let mut trigger_save = false;
-        let mut trigger_load = false;
-        egui::Window::new(title)
-            .open(&mut open)
-            .collapsible(false)
-            .resizable(false)
-            .default_width(460.0)
-            .show(ctx, |ui| {
-                ui.label("File path (.rea8):");
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.file_path_buf).desired_width(f32::INFINITY),
-                );
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    if self.file_modal_is_save {
-                        if ui.button("💾 Save").clicked() {
-                            trigger_save = true;
-                        }
-                    } else if ui.button("📂 Open").clicked() {
-                        trigger_load = true;
-                    }
-                });
-            });
-        if trigger_save {
-            let p = self.file_path_buf.clone();
-            self.save_rea8(&p);
-            open = false;
-        }
-        if trigger_load {
-            let p = self.file_path_buf.clone();
-            self.load_rea8(&p);
-            open = false;
-        }
-        self.show_file_modal = open;
     }
 
     fn render_print_report_modal(&mut self, ctx: &egui::Context) {
@@ -1888,18 +1963,18 @@ impl ReactionModuleState {
             .active_sheet()
             .map(|s| SoryntelApplication::format_reaction_sheet_tsv(s, self.decimals))
             .unwrap_or_default();
-        egui::Window::new("📄 Print / Reaction Summary Report")
+        egui::Window::new(t!("review.041"))
             .open(&mut open)
             .default_size([680.0, 480.0])
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("📋 Copy Report to Clipboard").clicked() {
+                    if ui.button(t!("review.042")).clicked() {
                         ctx.copy_text(report_txt.clone());
                         self.status_msg = "Reporte copiado al portapapeles".into();
                         self.status_ok = true;
                     }
-                    if ui.button("📊 Export To Excel (.xlsx)").clicked() {
-                        self.export_excel_xlsx(DEFAULT_XLSX_PATH);
+                    if ui.button(t!("review.043")).clicked() {
+                        self.choose_export("xlsx");
                     }
                 });
                 ui.separator();
@@ -1919,17 +1994,17 @@ impl ReactionModuleState {
             return;
         }
         let mut open = self.show_help_modal;
-        egui::Window::new("❓ Help — Reaction Equations Module (Chapter 10)")
+        egui::Window::new(t!("review.044"))
             .open(&mut open)
             .default_size([560.0, 420.0])
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.heading("10. Reaction Equations Module");
-                    ui.label("• One Chemical Substance (10.1): Enter a formula (e.g., Al2O3, Fe, SO4(-2a)) to tabulate and plot Cp, H, S, and G vs. temperature.");
-                    ui.label("• Normal vs. Delta Format: Normal shows absolute H(T), S(T), Cp(T), G(T) (Barin/JANAF). Delta subtracts reference elements (ΔHf, ΔSf, ΔGf; NBS/Pankratz), including the H2(g)/H(+a) charge balance for aqueous ions.");
-                    ui.label("• Criss-Cobble Extrapolation: Extrapolates Cp(T) for aqueous ions above 25 °C when Kelley B, C, D coefficients are zero. Recommended range: 25 to 300 °C, step 25 °C.");
-                    ui.label("• Reaction Equations (10.3): Enter any chemical or ionic half-cell reaction (with e-) and press Balance to compute exact rational stoichiometric coefficients.");
-                    ui.label("• Interpretation (10.4): K > 1 (log K > 0) favors products (right); ΔH < 0 is exothermic; E vs. SHE follows the IUPAC reduction potential convention.");
+                    ui.heading(t!("review.045"));
+                    ui.label("• Una sustancia (10.1): introduzca una fórmula, p. ej., Al2O3, Fe o SO4(-2a), para tabular y representar Cp, H, S y G frente a la temperatura.");
+                    ui.label("• Formatos Normal y Delta: Normal muestra H(T), S(T), Cp(T) y G(T) de la especie. Delta resta los elementos de referencia para calcular propiedades de formación e incluye el balance de carga de iones acuosos mediante H2(g)/H(+a).");
+                    ui.label("• Extrapolación de Criss–Cobble: estima Cp de iones acuosos por encima de 25 °C cuando los coeficientes B, C y D de Kelley son cero. Intervalo recomendado: 25–300 °C con paso de 25 °C. Revise el alcance aproximado del modelo.");
+                    ui.label("• Ecuaciones de reacción (10.3): introduzca una reacción química o una semirreacción iónica con e- y pulse Balancear para obtener los coeficientes estequiométricos.");
+                    ui.label("• Interpretación (10.4): K > 1 favorece productos en términos de estados estándar; ΔH < 0 indica reacción exotérmica. Compruebe la convención de signo del potencial frente al electrodo estándar de hidrógeno.");
                     ui.label("• Plot All Data: Superimposes multiple collected sheets (S1..Sn) when they share the same calculation mode, units, and format.");
                 });
             });
@@ -1950,6 +2025,39 @@ fn chart_tool_icon_btn(ui: &mut egui::Ui, icon: &str, tooltip: &str) -> egui::Re
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soryntel_db::ThermoDatabase;
+
+    #[test]
+    fn compact_reaction_ui_keeps_data_and_chart_accessible() {
+        let db = ThermoDatabase::with_open_defaults();
+        let mut state = ReactionModuleState::new(&db);
+        let ctx = egui::Context::default();
+        for size in [
+            egui::vec2(480.0, 360.0),
+            egui::vec2(360.0, 640.0),
+            egui::vec2(1340.0, 820.0),
+        ] {
+            for chart in [false, true] {
+                state.compact_chart = chart;
+                for _ in 0..2 {
+                    let output = ctx.run(
+                        egui::RawInput {
+                            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                            ..Default::default()
+                        },
+                        |ctx| state.ui(ctx, &db),
+                    );
+                    assert!(!output.shapes.is_empty());
+                }
+                assert!(state.status_ok);
+                assert!(state.active_response().is_some());
+                if chart {
+                    assert!(state.last_chart_size.y >= 240.0, "ventana={size:?}, lienzo={:?}", state.last_chart_size);
+                    assert!(state.last_chart_size.x > 200.0);
+                }
+            }
+        }
+    }
 
     #[test]
     fn reaction_ui_renders_wide_and_compact_and_supports_rea8_and_fig6_preset() {

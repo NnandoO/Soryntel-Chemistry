@@ -201,7 +201,7 @@ impl BalanceModuleState {
 
     pub fn save_bal8(&mut self, path: &str) {
         match SoryntelApplication::serialize_bal8_workbook(&self.wb).and_then(|json| {
-            std::fs::write(path, json)
+            crate::storage::write_atomic(path, json)
                 .map_err(|e| soryntel_core::SoryntelError::DatabaseError(e.to_string()))
         }) {
             Ok(_) => {
@@ -233,7 +233,7 @@ impl BalanceModuleState {
 
     pub fn export_xlsx(&mut self, path: &str) {
         let bytes = SoryntelApplication::export_balance_workbook_xlsx(&self.wb);
-        match std::fs::write(path, bytes) {
+        match crate::storage::write_atomic(path, bytes) {
             Ok(_) => {
                 self.status_msg = format!("Exportado Excel (.xlsx) en {path}");
                 self.status_ok = true;
@@ -337,20 +337,20 @@ impl BalanceModuleState {
         // 1. Classic HSC Menu Bar with Semantic Icons (File | Edit | View | Insert | Delete | Format | Units | Calculate | Target | Diagram | Help)
         egui::TopBottomPanel::top("bal_menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                ui.menu_button("📁 File", |ui| {
-                    if ui.button("📂 Open Workbook (.bal8)...").clicked() {
+                ui.menu_button(crate::i18n::text("common.020"), |ui| {
+                    if ui.button(crate::i18n::text("review.104")).clicked() {
                         self.file_modal_is_save = false;
                         self.file_path_buf = DEFAULT_BAL8_PATH.to_string();
                         self.show_file_modal = true;
                         ui.close_menu();
                     }
-                    if ui.button("💾 Save Workbook As (.bal8)...").clicked() {
+                    if ui.button(crate::i18n::text("review.105")).clicked() {
                         self.file_modal_is_save = true;
                         self.file_path_buf = DEFAULT_BAL8_PATH.to_string();
                         self.show_file_modal = true;
                         ui.close_menu();
                     }
-                    if ui.button("📊 Export To Excel (.xlsx)...").clicked() {
+                    if ui.button(crate::i18n::text("common.038")).clicked() {
                         self.export_xlsx(DEFAULT_BAL_XLSX_PATH);
                         ui.close_menu();
                     }
@@ -385,8 +385,8 @@ impl BalanceModuleState {
                     }
                 });
 
-                ui.menu_button("✏ Edit", |ui| {
-                    if ui.button("🔄 Recalculate Workbook").clicked() {
+                ui.menu_button(crate::i18n::text("common.021"), |ui| {
+                    if ui.button(crate::i18n::text("review.106")).clicked() {
                         self.recalculate(db);
                         ui.close_menu();
                     }
@@ -406,7 +406,7 @@ impl BalanceModuleState {
                     ui.checkbox(&mut self.copy_mode_whole_row, "Copy Mode (Whole Row - Ch. 11.1)");
                 });
 
-                ui.menu_button("👁 View", |ui| {
+                ui.menu_button(crate::i18n::text("common.039"), |ui| {
                     if ui.button("📊 BALANCE Sheet").clicked() {
                         self.active_tab = ActiveSheetTab::Balance;
                         ui.close_menu();
@@ -427,7 +427,7 @@ impl BalanceModuleState {
                     ui.checkbox(&mut self.show_tools_sidebar, "🔧 Show Right Tools Sidebar");
                 });
 
-                ui.menu_button("➕ Insert", |ui| {
+                ui.menu_button(crate::i18n::text("common.040"), |ui| {
                     if ui.button("➕ Balance Area (INx + OUTx)").clicked() {
                         let n = self.wb.areas.len() + 1;
                         self.wb.areas.push(BalanceArea {
@@ -474,24 +474,24 @@ impl BalanceModuleState {
                     }
                 });
 
-                ui.menu_button("🗑 Delete", |ui| {
-                    if ui.button("🗑 Balance Area").clicked() && self.wb.areas.len() > 1 {
+                ui.menu_button(crate::i18n::text("common.041"), |ui| {
+                    if ui.button(crate::i18n::text("review.109")).clicked() && self.wb.areas.len() > 1 {
                         self.wb.areas.remove(self.active_area);
                         self.active_area = self.active_area.min(self.wb.areas.len() - 1);
                         self.active_tab = ActiveSheetTab::In(self.active_area);
                         self.recalculate(db);
                         ui.close_menu();
                     }
-                    if ui.button("🗑 Selected Stream").clicked() {
+                    if ui.button(crate::i18n::text("review.110")).clicked() {
                         self.delete_selected_stream(db);
                         ui.close_menu();
                     }
-                    if ui.button("🗑 Selected Row").clicked() {
+                    if ui.button(crate::i18n::text("review.111")).clicked() {
                         self.delete_selected_row(db);
                         ui.close_menu();
                     }
                     if let ActiveSheetTab::User(u_idx) = self.active_tab {
-                        if ui.button("🗑 Active Custom Sheet").clicked()
+                        if ui.button(crate::i18n::text("review.112")).clicked()
                             && u_idx < self.wb.user_sheets.len()
                         {
                             self.wb.user_sheets.remove(u_idx);
@@ -501,15 +501,15 @@ impl BalanceModuleState {
                     }
                 });
 
-                ui.menu_button("🎨 Format", |ui| {
+                ui.menu_button(crate::i18n::text("common.042"), |ui| {
                     ui.checkbox(
                         &mut self.wb.red_font_shield,
                         "🛡 Red Font Shield (Ch. 11.6 & 11.10)",
                     );
                 });
 
-                ui.menu_button("📏 Units", |ui| {
-                    ui.label(egui::RichText::new("Temperature:").strong());
+                ui.menu_button(crate::i18n::text("review.113"), |ui| {
+                    ui.label(egui::RichText::new(crate::i18n::text("common.007")).strong());
                     for u in [TemperatureUnit::Celsius, TemperatureUnit::Kelvin] {
                         let sel = self.wb.temp_unit == u;
                         if ui.radio(sel, u.label()).clicked() && !sel {
@@ -519,7 +519,7 @@ impl BalanceModuleState {
                         }
                     }
                     ui.separator();
-                    ui.label(egui::RichText::new("Energy:").strong());
+                    ui.label(egui::RichText::new(crate::i18n::text("common.043")).strong());
                     for eu in [
                         BalanceEnergyUnit::Mcal,
                         BalanceEnergyUnit::MJ,
@@ -541,8 +541,8 @@ impl BalanceModuleState {
                     }
                 });
 
-                ui.menu_button("⚡ Calculate", |ui| {
-                    if ui.button("🔄 ReCalc All").clicked() {
+                ui.menu_button(crate::i18n::text("common.008"), |ui| {
+                    if ui.button(crate::i18n::text("review.114")).clicked() {
                         self.recalculate(db);
                         ui.close_menu();
                     }
@@ -554,19 +554,19 @@ impl BalanceModuleState {
                         self.active_tab = ActiveSheetTab::OutPct(self.active_area);
                         ui.close_menu();
                     }
-                    if ui.button("∑ Total Balance Overview").clicked() {
+                    if ui.button(crate::i18n::text("review.115")).clicked() {
                         self.active_tab = ActiveSheetTab::Balance;
                         ui.close_menu();
                     }
                 });
 
-                if ui.button("🎯 Target").clicked() {
+                if ui.button(crate::i18n::text("common.044")).clicked() {
                     self.show_target_dialog = true;
                 }
-                if ui.button("📈 Diagram").clicked() {
+                if ui.button(crate::i18n::text("common.012")).clicked() {
                     self.show_diagram_settings = true;
                 }
-                if ui.button("❓ Help").clicked() {
+                if ui.button(crate::i18n::text("common.022")).clicked() {
                     self.show_help_modal = true;
                 }
 
@@ -593,7 +593,7 @@ impl BalanceModuleState {
                     if ui.small_button("📘 CUCONV1").clicked() {
                         self.load_preset(SoryntelApplication::balance_preset_cuconv1(), db);
                     }
-                    ui.label(egui::RichText::new("Presets:").small());
+                    ui.label(egui::RichText::new(crate::i18n::text("common.045")).small());
                 });
             });
 
@@ -601,7 +601,7 @@ impl BalanceModuleState {
             ui.separator();
             ui.horizontal_wrapped(|ui| {
                 if ui
-                    .small_button("📂 Open")
+                    .small_button(crate::i18n::text("common.009"))
                     .on_hover_text("Abrir archivo .bal8")
                     .clicked()
                 {
@@ -645,7 +645,7 @@ impl BalanceModuleState {
                     self.run_selected_targets(db, false);
                 }
                 if ui
-                    .small_button("📈 Diagram")
+                    .small_button(crate::i18n::text("common.012"))
                     .on_hover_text("Abrir configuración de Diagrama paramétrico")
                     .clicked()
                 {
@@ -660,14 +660,14 @@ impl BalanceModuleState {
                 }
                 ui.separator();
                 if ui
-                    .small_button("📋 Copy Stream")
+                    .small_button(crate::i18n::text("review.107"))
                     .on_hover_text("Copiar corriente seleccionada")
                     .clicked()
                 {
                     self.copy_selected_stream();
                 }
                 if ui
-                    .small_button("📌 Paste Stream")
+                    .small_button(crate::i18n::text("review.108"))
                     .on_hover_text("Pegar corriente con fórmulas vinculadas ='OUTx'!Dy")
                     .clicked()
                 {
@@ -801,7 +801,7 @@ impl BalanceModuleState {
     fn render_tools_sidebar(&mut self, ui: &mut egui::Ui, db: &ThermoDatabase) {
         egui::ScrollArea::both().show(ui, |ui| {
             ui.label(
-                egui::RichText::new("🔧 Tools")
+                egui::RichText::new(crate::i18n::text("review.116"))
                     .strong()
                     .size(13.0)
                     .color(egui::Color32::from_rgb(30, 41, 59)),
@@ -811,8 +811,8 @@ impl BalanceModuleState {
             // Balance Area selector
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.label(egui::RichText::new("Balance Area").strong().small());
-                ui.label(egui::RichText::new("View Balance Area:").small());
+                ui.label(egui::RichText::new(crate::i18n::text("review.117")).strong().small());
+                ui.label(egui::RichText::new(crate::i18n::text("review.118")).small());
                 let cur_name = self
                     .wb
                     .areas
@@ -840,7 +840,7 @@ impl BalanceModuleState {
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.set_width(ui.available_width());
                 ui.label(
-                    egui::RichText::new("Get Species from Database")
+                    egui::RichText::new(crate::i18n::text("review.119"))
                         .strong()
                         .small(),
                 );
@@ -874,7 +874,7 @@ impl BalanceModuleState {
             ui.columns(2, |cols| {
                 egui::Frame::group(cols[0].style()).show(&mut cols[0], |ui| {
                     ui.set_width(ui.available_width());
-                    ui.label(egui::RichText::new("Insert").strong().small());
+                    ui.label(egui::RichText::new(crate::i18n::text("common.010")).strong().small());
                     let bw = ui.available_width();
                     if ui
                         .add_sized([bw, 22.0], egui::Button::new("➕ Balance Area"))
@@ -912,7 +912,7 @@ impl BalanceModuleState {
                 });
                 egui::Frame::group(cols[1].style()).show(&mut cols[1], |ui| {
                     ui.set_width(ui.available_width());
-                    ui.label(egui::RichText::new("Delete").strong().small());
+                    ui.label(egui::RichText::new(crate::i18n::text("common.013")).strong().small());
                     let bw = ui.available_width();
                     if ui
                         .add_sized([bw, 22.0], egui::Button::new("🗑 Balance Area"))
@@ -944,11 +944,11 @@ impl BalanceModuleState {
             // Measure Units (with automatic numeric/formula conversion per Ch. 11.1 Step 3)
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.label(egui::RichText::new("Measure Units").strong().small());
+                ui.label(egui::RichText::new(crate::i18n::text("review.120")).strong().small());
                 let mut new_t_unit = None;
                 let mut new_e_unit = None;
                 ui.columns(2, |cols| {
-                    cols[0].label(egui::RichText::new("Temperature:").small());
+                    cols[0].label(egui::RichText::new(crate::i18n::text("common.007")).small());
                     for u in [TemperatureUnit::Celsius, TemperatureUnit::Kelvin] {
                         if cols[0].radio(self.wb.temp_unit == u, u.label()).clicked()
                             && self.wb.temp_unit != u
@@ -957,7 +957,7 @@ impl BalanceModuleState {
                         }
                     }
 
-                    cols[1].label(egui::RichText::new("Energy:").small());
+                    cols[1].label(egui::RichText::new(crate::i18n::text("common.043")).small());
                     for eu in [
                         BalanceEnergyUnit::Mcal,
                         BalanceEnergyUnit::MJ,
@@ -994,7 +994,7 @@ impl BalanceModuleState {
             // Functions
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.label(egui::RichText::new("Functions").strong().small());
+                ui.label(egui::RichText::new(crate::i18n::text("review.121")).strong().small());
                 ui.columns(2, |cols| {
                     if cols[0]
                         .add_sized(
@@ -2098,7 +2098,7 @@ impl BalanceModuleState {
         let mut run_all = false;
 
         ui.horizontal_wrapped(|ui| {
-            if ui.button("➕ Ins Row").clicked() {
+            if ui.button(crate::i18n::text("common.046")).clicked() {
                 self.wb.target_rows.push(TargetRow {
                     name: "Var".into(),
                     var_cell_ref: "IN1!D11".into(),
@@ -2113,13 +2113,13 @@ impl BalanceModuleState {
                 });
                 self.selected_target_rows.push(true);
             }
-            if ui.button("🗑 Del Row").clicked() && !self.wb.target_rows.is_empty() {
+            if ui.button(crate::i18n::text("common.047")).clicked() && !self.wb.target_rows.is_empty() {
                 self.wb.target_rows.pop();
                 self.selected_target_rows.pop();
             }
             ui.separator();
             if ui
-                .button("📌 Set variable cell")
+                .button(crate::i18n::text("review.122"))
                 .on_hover_text("Usar la celda activa de la barra de fórmulas como Variable")
                 .clicked()
             {
@@ -2128,7 +2128,7 @@ impl BalanceModuleState {
                 }
             }
             if ui
-                .button("🎯 Set target cell")
+                .button(crate::i18n::text("review.123"))
                 .on_hover_text("Usar BALANCE1!H4 o la celda activa como Target")
                 .clicked()
             {
@@ -2139,14 +2139,14 @@ impl BalanceModuleState {
             ui.separator();
             if ui
                 .add(
-                    egui::Button::new(egui::RichText::new("▶ Iterate Selected Rows (F8)").strong())
+                    egui::Button::new(egui::RichText::new(crate::i18n::text("review.124")).strong())
                         .fill(egui::Color32::from_rgb(219, 234, 254)),
                 )
                 .clicked()
             {
                 run_sel = true;
             }
-            if ui.button("⏩ Iterate All").clicked() {
+            if ui.button(crate::i18n::text("common.048")).clicked() {
                 run_all = true;
             }
         });
@@ -2280,7 +2280,7 @@ impl BalanceModuleState {
         if let Some(t_adiab) = self.temp_bal_modal {
             let mut close = false;
             let mut apply = false;
-            egui::Window::new("🔥 Temperature Balance")
+            egui::Window::new(crate::i18n::text("review.125"))
                 .collapsible(false)
                 .resizable(true)
                 .show(ctx, |ui| {
@@ -2295,11 +2295,11 @@ impl BalanceModuleState {
                     );
                     ui.add_space(10.0);
                     ui.horizontal(|ui| {
-                        if ui.button("✔ Apply to Outputs").clicked() {
+                        if ui.button(crate::i18n::text("review.126")).clicked() {
                             apply = true;
                             close = true;
                         }
-                        if ui.button("  OK  ").clicked() {
+                        if ui.button(crate::i18n::text("common.023")).clicked() {
                             close = true;
                         }
                     });
@@ -2336,7 +2336,7 @@ impl BalanceModuleState {
         if self.show_diagram_settings {
             let mut open = self.show_diagram_settings;
             let mut run_plot = false;
-            egui::Window::new("📈 Diagram Settings")
+            egui::Window::new(crate::i18n::text("review.127"))
                 .open(&mut open)
                 .default_size([560.0, 320.0])
                 .show(ctx, |ui| {
@@ -2347,7 +2347,7 @@ impl BalanceModuleState {
                         ui.add(egui::DragValue::new(&mut cfg.x_min).speed(1.0));
                         ui.label("MAX:");
                         ui.add(egui::DragValue::new(&mut cfg.x_max).speed(1.0));
-                        ui.label("STEP:");
+                        ui.label(crate::i18n::text("review.128"));
                         ui.add(
                             egui::DragValue::new(&mut cfg.x_step)
                                 .speed(0.1)
@@ -2355,23 +2355,23 @@ impl BalanceModuleState {
                         );
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Diagram title:");
+                        ui.label(crate::i18n::text("review.129"));
                         ui.text_edit_singleline(&mut cfg.title);
                     });
                     ui.separator();
                     ui.horizontal(|ui| {
-                        ui.label("X Cell Ref:");
+                        ui.label(crate::i18n::text("review.130"));
                         ui.text_edit_singleline(&mut cfg.x_cell_ref);
-                        ui.label("Label:");
+                        ui.label(crate::i18n::text("common.049"));
                         ui.text_edit_singleline(&mut cfg.x_label);
                     });
                     if let Some(y1) = cfg.y_series.first_mut() {
                         ui.horizontal(|ui| {
-                            ui.label("Y1 Cell Ref:");
+                            ui.label(crate::i18n::text("review.131"));
                             ui.text_edit_singleline(&mut y1.cell_ref);
-                            ui.label("Label:");
+                            ui.label(crate::i18n::text("common.049"));
                             ui.text_edit_singleline(&mut y1.label);
-                            ui.label("Units:");
+                            ui.label(crate::i18n::text("common.024"));
                             ui.text_edit_singleline(&mut y1.units);
                         });
                     }
@@ -2399,7 +2399,7 @@ impl BalanceModuleState {
                         if ui.button("📌 Set X cell (from Formula Bar)").clicked() {
                             self.wb.diagram_config.x_cell_ref = self.formula_bar_ref.clone();
                         }
-                        if ui.button("📈 Diagram").clicked() {
+                        if ui.button(crate::i18n::text("common.012")).clicked() {
                             run_plot = true;
                         }
                     });
@@ -2455,7 +2455,7 @@ impl BalanceModuleState {
                             ui.separator();
                             ui.strong(&res.title);
                             ui.separator();
-                            if ui.small_button("⚙ Diagram Settings...").clicked() {
+                            if ui.small_button(crate::i18n::text("review.132")).clicked() {
                                 self.show_diagram_settings = true;
                             }
                         });
@@ -2472,14 +2472,14 @@ impl BalanceModuleState {
                                 egui::DragValue::new(&mut self.wb.diagram_config.x_max)
                                     .speed(0.5),
                             );
-                            ui.label("Step");
+                            ui.label(crate::i18n::text("review.133"));
                             ui.add(
                                 egui::DragValue::new(&mut self.wb.diagram_config.x_step)
                                     .speed(0.1)
                                     .range(0.001..=10000.0),
                             );
                             if ui
-                                .small_button("🔄 Recalc Sweep")
+                                .small_button(crate::i18n::text("review.134"))
                                 .on_hover_text("Recalcular barrido con el nuevo rango X")
                                 .clicked()
                             {
@@ -2513,7 +2513,7 @@ impl BalanceModuleState {
                                 .changed();
                             if bounds_edited
                                 || ui
-                                    .small_button("📐 Apply X/Y")
+                                    .small_button(crate::i18n::text("common.050"))
                                     .on_hover_text("Aplicar límites de los ejes X e Y")
                                     .clicked()
                             {
@@ -2691,7 +2691,7 @@ impl BalanceModuleState {
                     ui.label("H_loss [kcal/h] = (6.8 + 0.046 * T2) * (T2 - T1) * A");
                     ui.separator();
                     ui.horizontal(|ui| {
-                        ui.label("Outer Surface Area A (m²):");
+                        ui.label(crate::i18n::text("review.135"));
                         ui.add(
                             egui::DragValue::new(&mut self.hf_area_m2)
                                 .speed(0.5)
@@ -2699,11 +2699,11 @@ impl BalanceModuleState {
                         );
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Reactor Surface Temp T2 (°C):");
+                        ui.label(crate::i18n::text("review.136"));
                         ui.add(egui::DragValue::new(&mut self.hf_t_surface_c).speed(1.0));
                     });
                     ui.horizontal(|ui| {
-                        ui.label("Room Temperature T1 (°C):");
+                        ui.label(crate::i18n::text("review.137"));
                         ui.add(egui::DragValue::new(&mut self.hf_t_room_c).speed(1.0));
                     });
                     ui.separator();
@@ -2748,14 +2748,14 @@ impl BalanceModuleState {
                 .collapsible(false)
                 .default_width(440.0)
                 .show(ctx, |ui| {
-                    ui.label("File path (.bal8):");
+                    ui.label(crate::i18n::text("review.138"));
                     ui.text_edit_singleline(&mut self.file_path_buf);
                     ui.add_space(6.0);
                     if self.file_modal_is_save {
-                        if ui.button("💾 Save").clicked() {
+                        if ui.button(crate::i18n::text("common.014")).clicked() {
                             do_save = true;
                         }
-                    } else if ui.button("📂 Open").clicked() {
+                    } else if ui.button(crate::i18n::text("common.009")).clicked() {
                         do_open = true;
                     }
                 });
@@ -2807,7 +2807,7 @@ impl BalanceModuleState {
                                     ui.monospace(&sp.formula);
                                     ui.label(&sp.name);
                                     ui.monospace(format!("{:.3}", sp.molecular_weight));
-                                    if ui.small_button("➕ Add").clicked() {
+                                    if ui.small_button(crate::i18n::text("review.139")).clicked() {
                                         chosen = Some(sp.formula.clone());
                                     }
                                     ui.end_row();

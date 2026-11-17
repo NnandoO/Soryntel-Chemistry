@@ -1602,7 +1602,7 @@ pub fn estimate_benson(
     }
 
     let mut entries = Vec::with_capacity(active_groups.len());
-    let mut warnings = Vec::new();
+    let warnings = Vec::new();
     let mut dh_gas_kcal = params.ring_strain_kcal
         + (params.gauche_count as f64) * 0.80
         + (params.cis_count as f64) * 1.00;
@@ -1635,23 +1635,7 @@ pub fn estimate_benson(
                 is_estimated_fallback: false,
             });
         } else {
-            // Reasonable fallback for unparameterized exotic groups so UI remains informative
-            warnings.push(format!("Missing tabulated Benson group '{name}'; using generic fallback."));
-            dh_gas_kcal += n_f * 2.0;
-            s_int_cal += n_f * 10.0;
-            for v in &mut cp_grid_cal {
-                *v += n_f * 5.0;
-            }
-            sum_tb += n_f * 25.0;
-            sum_tm += n_f * 12.0;
-            entries.push(BensonGroupEntry {
-                group_name: name.clone(),
-                count: *count,
-                dh_kcal_each: 2.0,
-                s_cal_each: 10.0,
-                cp_cal_300_each: 5.0,
-                is_estimated_fallback: true,
-            });
+            return Err(format!("Faltan parámetros tabulados para el grupo de Benson '{name}'; no se puede calcular una estimación respaldada por datos."));
         }
     }
 

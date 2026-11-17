@@ -149,10 +149,11 @@ impl EstimateRow {
     }
 }
 
-/// Atomic weights (g/mol) for common elements.
+/// Atomic weights (g/mol) for elements H..U.
 pub fn atomic_weight(sym: &str) -> f64 {
     match sym {
         "H" => 1.008,
+        "He" => 4.0026,
         "Li" => 6.941,
         "Be" => 9.0122,
         "B" => 10.811,
@@ -160,6 +161,7 @@ pub fn atomic_weight(sym: &str) -> f64 {
         "N" => 14.007,
         "O" => 15.999,
         "F" => 18.998,
+        "Ne" => 20.180,
         "Na" => 22.990,
         "Mg" => 24.305,
         "Al" => 26.982,
@@ -167,8 +169,10 @@ pub fn atomic_weight(sym: &str) -> f64 {
         "P" => 30.974,
         "S" => 32.065,
         "Cl" => 35.453,
+        "Ar" => 39.948,
         "K" => 39.098,
         "Ca" => 40.078,
+        "Sc" => 44.956,
         "Ti" => 47.867,
         "V" => 50.942,
         "Cr" => 51.996,
@@ -178,24 +182,48 @@ pub fn atomic_weight(sym: &str) -> f64 {
         "Ni" => 58.693,
         "Cu" => 63.546,
         "Zn" => 65.38,
+        "Ga" => 69.723,
+        "Ge" => 72.64,
         "As" => 74.922,
         "Se" => 78.96,
         "Br" => 79.904,
+        "Kr" => 83.798,
+        "Rb" => 85.468,
         "Sr" => 87.62,
+        "Y" => 88.906,
         "Zr" => 91.224,
+        "Nb" => 92.906,
         "Mo" => 95.96,
+        "Ru" => 101.07,
+        "Rh" => 102.906,
+        "Pd" => 106.42,
         "Ag" => 107.868,
         "Cd" => 112.411,
+        "In" => 114.818,
         "Sn" => 118.710,
         "Sb" => 121.760,
+        "Te" => 127.60,
         "I" => 126.904,
+        "Xe" => 131.293,
+        "Cs" => 132.905,
         "Ba" => 137.327,
+        "La" => 138.905,
+        "Ce" => 140.116,
+        "Nd" => 144.242,
+        "Hf" => 178.49,
+        "Ta" => 180.948,
         "W" => 183.84,
+        "Re" => 186.207,
+        "Os" => 190.23,
+        "Ir" => 192.217,
         "Pt" => 195.084,
         "Au" => 196.967,
         "Hg" => 200.59,
+        "Tl" => 204.383,
         "Pb" => 207.2,
         "Bi" => 208.98,
+        "Th" => 232.038,
+        "U" => 238.029,
         _ => 50.0,
     }
 }
@@ -203,34 +231,49 @@ pub fn atomic_weight(sym: &str) -> f64 {
 /// Common oxidation states for elements (ordered by prevalence).
 fn common_ox_states(sym: &str) -> &'static [i32] {
     match sym {
+        "He" | "Ne" | "Ar" | "Kr" | "Xe" => &[0],
         "O" => &[-2],
         "H" => &[1, -1],
         "F" => &[-1],
-        "Cl" | "Br" | "I" => &[-1, 1, 5, 7],
-        "Li" | "Na" | "K" | "Ag" => &[1],
-        "Be" | "Mg" | "Ca" | "Sr" | "Ba" | "Zn" | "Cd" => &[2],
-        "Al" | "B" => &[3],
-        "Si" | "Zr" => &[4],
+        "Cl" | "Br" | "I" => &[-1, 1, 5, 7, 3],
+        "Li" | "Na" | "K" | "Rb" | "Cs" | "Ag" => &[1],
+        "Be" | "Mg" | "Ca" | "Sr" | "Ba" | "Zn" | "Cd" | "Hg" => &[2],
+        "Al" | "B" | "Ga" | "In" | "Sc" | "Y" | "La" => &[3],
+        "Si" | "Ti" | "Zr" | "Hf" | "Ge" => &[4, 3],
         "C" => &[4, 2, -4],
         "N" => &[5, 3, -3],
-        "P" => &[5, 3, -3],
-        "S" => &[6, 4, -2],
-        "Se" => &[4, 6, -2],
-        "Fe" => &[3, 2, 4],
+        "P" | "As" | "Sb" | "Bi" => &[5, 3, -3],
+        "S" | "Se" | "Te" => &[6, 4, -2],
+        "Fe" => &[3, 2, 4, 6],
         "Mn" => &[2, 4, 3, 7, 6],
         "V" => &[5, 4, 3, 2],
+        "Nb" | "Ta" => &[5, 4],
         "Cr" => &[3, 6, 2],
         "Cu" => &[2, 1],
         "Co" | "Ni" => &[2, 3],
-        "Ti" => &[4, 3],
         "Pb" | "Sn" => &[2, 4],
         "W" | "Mo" => &[6, 4],
+        "Re" => &[7, 4, 6],
+        "Pt" | "Pd" | "Ru" | "Rh" | "Ir" | "Os" => &[2, 4, 3],
+        "Au" => &[3, 1],
+        "Tl" => &[1, 3],
+        "Ce" => &[3, 4],
+        "Th" => &[4],
+        "U" => &[6, 4],
         _ => &[2, 3, 1],
     }
 }
 
-/// Enumerate valid charge-neutral oxidation number assignments for up to 5 elements.
+/// Enumerate valid charge-neutral oxidation number assignments for up to 6 elements.
 pub fn enumerate_oxidation_sets(elems: &BTreeMap<String, f64>) -> Vec<BTreeMap<String, i32>> {
+    enumerate_oxidation_sets_with_charge(elems, 0)
+}
+
+/// Enumerate valid oxidation number assignments matching total formula charge `net_charge`.
+pub fn enumerate_oxidation_sets_with_charge(
+    elems: &BTreeMap<String, f64>,
+    net_charge: i32,
+) -> Vec<BTreeMap<String, i32>> {
     let keys: Vec<String> = elems.keys().cloned().collect();
     let mut results = Vec::new();
     if keys.is_empty() || keys.len() > 6 {
@@ -243,13 +286,14 @@ pub fn enumerate_oxidation_sets(elems: &BTreeMap<String, f64>) -> Vec<BTreeMap<S
         elems: &BTreeMap<String, f64>,
         current: &mut BTreeMap<String, i32>,
         sum_charge: f64,
+        target_charge: f64,
         out: &mut Vec<BTreeMap<String, i32>>,
     ) {
         if out.len() >= 8 {
             return;
         }
         if idx == keys.len() {
-            if sum_charge.abs() < 1e-3 {
+            if (sum_charge - target_charge).abs() < 1e-3 {
                 out.push(current.clone());
             }
             return;
@@ -264,6 +308,7 @@ pub fn enumerate_oxidation_sets(elems: &BTreeMap<String, f64>) -> Vec<BTreeMap<S
                 elems,
                 current,
                 sum_charge + amt * (ox as f64),
+                target_charge,
                 out,
             );
         }
@@ -271,7 +316,7 @@ pub fn enumerate_oxidation_sets(elems: &BTreeMap<String, f64>) -> Vec<BTreeMap<S
     }
 
     let mut cur = BTreeMap::new();
-    backtrack(0, &keys, elems, &mut cur, 0.0, &mut results);
+    backtrack(0, &keys, elems, &mut cur, 0.0, net_charge as f64, &mut results);
     results
 }
 
@@ -279,6 +324,8 @@ pub fn enumerate_oxidation_sets(elems: &BTreeMap<String, f64>) -> Vec<BTreeMap<S
 fn element_kopp_cp_params(sym: &str) -> (f64, f64) {
     match sym {
         "H" => (9.6, 0.012),
+        "Be" => (9.2, 0.014),
+        "B" => (11.1, 0.015),
         "C" => (8.5, 0.014),
         "N" => (12.6, 0.010),
         "O" => (16.7, 0.011),
@@ -287,24 +334,48 @@ fn element_kopp_cp_params(sym: &str) -> (f64, f64) {
         "Br" => (26.0, 0.010),
         "I" => (26.8, 0.010),
         "S" => (22.6, 0.012),
+        "Se" => (25.0, 0.010),
+        "Te" => (25.7, 0.009),
         "P" => (23.8, 0.012),
+        "As" => (24.6, 0.009),
+        "Sb" => (25.2, 0.008),
+        "Bi" => (25.5, 0.008),
         "Si" => (20.0, 0.010),
-        "B" => (11.1, 0.015),
-        "Li" => (24.8, 0.012),
+        "Ge" => (23.3, 0.009),
+        "Sn" => (26.9, 0.009),
+        "Pb" => (26.8, 0.009),
+        "Li" => (21.5, 0.012),
         "Na" => (28.2, 0.012),
         "K" => (29.6, 0.012),
-        "Mg" => (24.9, 0.010),
+        "Rb" => (31.1, 0.011),
+        "Cs" => (32.2, 0.011),
+        "Mg" => (22.5, 0.010),
         "Ca" => (25.9, 0.010),
+        "Sr" => (26.4, 0.010),
         "Ba" => (28.1, 0.010),
         "Al" => (24.2, 0.011),
+        "Ga" => (25.9, 0.010),
+        "In" => (26.7, 0.009),
+        "Ti" => (25.0, 0.010),
+        "Zr" => (25.4, 0.009),
+        "Hf" => (25.7, 0.008),
+        "V" => (24.9, 0.009),
+        "Nb" | "Ta" => (25.0, 0.008),
+        "Cr" => (23.3, 0.010),
+        "Mo" => (24.1, 0.007),
+        "W" => (24.3, 0.006),
+        "Mn" => (26.3, 0.010),
         "Fe" => (25.1, 0.012),
+        "Co" => (24.8, 0.010),
+        "Ni" => (26.1, 0.010),
         "Cu" => (24.4, 0.008),
         "Zn" => (25.4, 0.010),
+        "Cd" => (26.0, 0.009),
+        "Hg" => (27.9, 0.008),
         "Ag" => (25.4, 0.008),
-        "Mn" => (26.3, 0.010),
-        "V" => (24.9, 0.009),
-        "W" => (24.3, 0.006),
-        "Pb" => (26.8, 0.009),
+        "Au" | "Pt" | "Pd" => (25.8, 0.007),
+        "La" | "Ce" => (27.0, 0.008),
+        "Th" | "U" => (27.5, 0.008),
         _ => (25.5, 0.010),
     }
 }
@@ -316,6 +387,9 @@ fn latimer_element_entropy(sym: &str, charge: i32) -> f64 {
     }
     if sym == "H" {
         return 8.5;
+    }
+    if sym == "F" && charge < 0 {
+        return 22.0;
     }
     if sym == "Cl" && charge < 0 {
         return 41.8;
@@ -338,12 +412,86 @@ fn latimer_element_entropy(sym: &str, charge: i32) -> f64 {
     if sym == "Si" {
         return 14.0;
     }
-    if sym == "N" {
+    if sym == "N" || sym == "P" {
         return 15.0;
     }
     // Latimer formula for cations: S_cat ≈ 1.5 * R * ln(AW) - 0.94 * |z| * 4.184 + 12.0
     let aw = atomic_weight(sym).max(2.0);
-    (12.47 * aw.ln() - 3.93 * (charge.abs() as f64) + 8.0).max(12.0)
+    (12.47 * aw.ln() - 3.93 * (charge.abs() as f64) + 8.0).max(10.0)
+}
+
+/// Standard element molar entropy at 298.15 K (J/(mol·K)) per gram-atom for ΔGf° calculations.
+fn element_std_entropy_298(sym: &str) -> f64 {
+    match sym {
+        "H" => 65.34,
+        "He" => 126.15,
+        "Li" => 29.12,
+        "Be" => 9.50,
+        "B" => 5.90,
+        "C" => 5.74,
+        "N" => 95.81,
+        "O" => 102.57,
+        "F" => 101.39,
+        "Ne" => 146.33,
+        "Na" => 51.30,
+        "Mg" => 32.67,
+        "Al" => 28.30,
+        "Si" => 18.81,
+        "P" => 41.09,
+        "S" => 32.05,
+        "Cl" => 111.54,
+        "Ar" => 154.84,
+        "K" => 64.68,
+        "Ca" => 41.59,
+        "Sc" => 34.64,
+        "Ti" => 30.72,
+        "V" => 28.91,
+        "Cr" => 23.77,
+        "Mn" => 32.01,
+        "Fe" => 27.28,
+        "Co" => 30.04,
+        "Ni" => 29.87,
+        "Cu" => 33.15,
+        "Zn" => 41.63,
+        "Ga" => 40.88,
+        "Ge" => 31.09,
+        "As" => 35.10,
+        "Se" => 42.44,
+        "Br" => 76.11,
+        "Rb" => 76.78,
+        "Sr" => 55.70,
+        "Y" => 44.43,
+        "Zr" => 38.99,
+        "Nb" => 36.40,
+        "Mo" => 28.66,
+        "Ru" => 28.53,
+        "Rh" => 31.51,
+        "Pd" => 37.57,
+        "Ag" => 42.55,
+        "Cd" => 51.80,
+        "In" => 57.82,
+        "Sn" => 51.18,
+        "Sb" => 45.69,
+        "Te" => 49.71,
+        "I" => 58.07,
+        "Cs" => 85.23,
+        "Ba" => 62.42,
+        "La" => 56.90,
+        "Ce" => 72.00,
+        "Hf" => 43.56,
+        "Ta" => 41.51,
+        "W" => 32.64,
+        "Re" => 36.86,
+        "Pt" => 41.63,
+        "Au" => 47.40,
+        "Hg" => 75.90,
+        "Tl" => 64.18,
+        "Pb" => 64.80,
+        "Bi" => 56.74,
+        "Th" => 51.80,
+        "U" => 50.20,
+        _ => 35.0,
+    }
 }
 
 /// Approximate standard enthalpy contribution per element/oxide in inorganic solids (kJ/mol).
@@ -355,54 +503,168 @@ fn inorganic_enthalpy_contrib(sym: &str, ox: i32) -> f64 {
         ("Cl", -1) => -165.0,
         ("Br", -1) => -130.0,
         ("I", -1) => -95.0,
-        ("P", 5) => -520.0,
-        ("P", 3) => -340.0,
+        ("P", 5) => -460.0,
+        ("P", 3) => -320.0,
+        ("As", 5) => -290.0,
+        ("As", 3) => -175.0,
         ("Se", 4) => -110.0,
         ("Se", 6) => -160.0,
+        ("B", 3) => -385.0,
+        ("Ti", 4) => -580.0,
         ("Zr", 4) => -740.0,
+        ("Hf", 4) => -760.0,
         ("S", -2) => -65.0,
-        ("S", 6) => -410.0,
-        ("S", 4) => -290.0,
-        ("C", 4) => -360.0,
-        ("C", 2) => -210.0,
-        ("Si", 4) => -520.0,
-        ("Al", 3) => -510.0,
+        ("S", 6) => -210.0,
+        ("S", 4) => -165.0,
+        ("C", 4) => -260.0,
+        ("C", 2) => -160.0,
+        ("N", 5) => -120.0,
+        ("Si", 4) => -550.0,
+        ("Al", 3) => -555.0,
+        ("Cr", 3) => -320.0,
+        ("Cr", 6) => -310.0,
         ("Fe", 3) => -160.0,
         ("Fe", 2) => -95.0,
         ("Mn", 2) => -210.0,
         ("Mn", 4) => -220.0,
         ("V", 5) => -420.0,
         ("V", 4) => -360.0,
-        ("W", 6) => -490.0,
-        ("Ca", 2) => -450.0,
+        ("Nb", 5) => -490.0,
+        ("Ta", 5) => -525.0,
+        ("Mo", 6) => -390.0,
+        ("W", 6) => -480.0,
+        ("Be", 2) => -425.0,
         ("Mg", 2) => -420.0,
-        ("Ba", 2) => -445.0,
-        ("Na", 1) => -220.0,
-        ("K", 1) => -235.0,
-        ("Li", 1) => -230.0,
+        ("Ca", 2) => -450.0,
+        ("Sr", 2) => -415.0,
+        ("Ba", 2) => -370.0,
+        ("Li", 1) => -208.0,
+        ("Na", 1) => -120.0,
+        ("K", 1) => -92.0,
+        ("Rb", 1) => -85.0,
+        ("Cs", 1) => -82.0,
         ("Ag", 1) => 38.0,
         ("Cu", 2) => 15.0,
         ("Cu", 1) => -10.0,
+        ("Co", 2) => -65.0,
+        ("Ni", 2) => -65.0,
         ("Zn", 2) => -175.0,
+        ("Cd", 2) => -90.0,
+        ("Sn", 4) => -220.0,
+        ("Sn", 2) => -110.0,
         ("Pb", 2) => -50.0,
+        ("Bi", 3) => -45.0,
+        ("La", 3) => -620.0,
+        ("Ce", 4) => -690.0,
+        ("U", 4) => -720.0,
         _ => -120.0 * (ox.max(0) as f64 / 2.0),
     }
 }
 
-fn is_gas_formula(formula: &str) -> bool {
+/// Detect phase and formal net charge from trailing HSC species-type parentheses `(g)`, `(M)`, `(-a)`, etc.
+fn parse_formula_metadata(formula: &str) -> (&str, i32, Option<Phase>) {
     let f = formula.trim();
-    f.ends_with("(g)") || f.ends_with("(G)")
+    if f == "e-" || f == "e(-)" {
+        return (f, -1, Some(Phase::AqueousIon));
+    }
+    if let Some(open) = f.rfind('(') {
+        if f.ends_with(')') && open < f.len() - 2 {
+            let suf = &f[open + 1..f.len() - 1];
+            match suf {
+                "g" | "G" => return (&f[..open], 0, Some(Phase::Gas)),
+                "l" | "L" => return (&f[..open], 0, Some(Phase::Liquid)),
+                "s" | "D" | "M" | "R" | "Q" | "A" | "T" | "E" | "II" | "III" => {
+                    return (&f[..open], 0, Some(Phase::Solid))
+                }
+                "ia" | "ao" | "ai" => return (&f[..open], 0, Some(Phase::AqueousNeutral)),
+                "a" | "aq" => return (&f[..open], 0, Some(Phase::AqueousNeutral)),
+                "+" | "+a" => return (&f[..open], 1, Some(Phase::AqueousIon)),
+                "-" | "-a" => return (&f[..open], -1, Some(Phase::AqueousIon)),
+                "+g" => return (&f[..open], 1, Some(Phase::Gas)),
+                "-g" => return (&f[..open], -1, Some(Phase::Gas)),
+                _ => {
+                    let is_gas = suf.ends_with('g');
+                    let trimmed = suf.trim_end_matches(['a', 'g']);
+                    if let Some(rest) = trimmed.strip_prefix('+') {
+                        let z = if rest.is_empty() { 1 } else { rest.parse().unwrap_or(1) };
+                        let ph = if is_gas { Phase::Gas } else { Phase::AqueousIon };
+                        return (&f[..open], z, Some(ph));
+                    }
+                    if let Some(rest) = trimmed.strip_prefix('-') {
+                        let z = if rest.is_empty() { 1 } else { rest.parse().unwrap_or(1) };
+                        let ph = if is_gas { Phase::Gas } else { Phase::AqueousIon };
+                        return (&f[..open], -z, Some(ph));
+                    }
+                    // High-pressure labels (e.g. Ar(100bar)) and HSC organic isomer+phase tags
+                    // like C6H6(BZEg), C8H18(OCTl), C8H18(224Tg), C8H18(2233TMB)
+                    if suf.ends_with("bar") || suf.ends_with("atm") {
+                        return (&f[..open], 0, Some(Phase::Gas));
+                    }
+                    let (iso_core, iso_phase) = if let Some(b) = suf.strip_suffix(['g', 'G']) {
+                        (b, Phase::Gas)
+                    } else if let Some(b) = suf.strip_suffix(['l', 'L']) {
+                        (b, Phase::Liquid)
+                    } else if let Some(b) = suf.strip_suffix('a') {
+                        (b, Phase::AqueousNeutral)
+                    } else if let Some(b) = suf.strip_suffix('s') {
+                        (b, Phase::Solid)
+                    } else {
+                        (suf, Phase::Solid)
+                    };
+                    if iso_core.len() >= 3
+                        && iso_core != "COOH"
+                        && iso_core
+                            .bytes()
+                            .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit())
+                    {
+                        return (&f[..open], 0, Some(iso_phase));
+                    }
+                }
+            }
+        }
+    }
+    (f, 0, None)
+}
+
+/// Parse elemental composition specifically following HSC Estimate Section 16.3 rules.
+pub fn parse_estimate_formula(formula: &str) -> Result<(BTreeMap<String, f64>, i32, Option<Phase>), String> {
+    let trimmed = formula.trim();
+    if trimmed.is_empty() {
+        return Err("Empty formula".into());
+    }
+    // Reject HSC-invalid pattern `*(...)` such as `AlO*(OH)` (§16.3)
+    if trimmed.contains("*(") {
+        return Err(format!("Invalid '*(' syntax in '{trimmed}'"));
+    }
+    let (core, charge, phase_opt) = parse_formula_metadata(trimmed);
+    let elems = parse_hsc_species_elements(core).map_err(|e| e.to_string())?;
+    Ok((elems, charge, phase_opt))
+}
+
+fn is_gas_formula(formula: &str) -> bool {
+    parse_formula_metadata(formula).2 == Some(Phase::Gas)
+}
+
+fn is_liquid_formula(formula: &str) -> bool {
+    parse_formula_metadata(formula).2 == Some(Phase::Liquid)
 }
 
 fn is_aqueous_formula(formula: &str) -> bool {
-    let f = formula.trim();
-    f.ends_with("a)") || f.ends_with("(a)") || f.ends_with("(ia)")
+    matches!(
+        parse_formula_metadata(formula).2,
+        Some(Phase::AqueousIon | Phase::AqueousNeutral)
+    )
 }
 
 fn detect_species_type(formula: &str, elems: &BTreeMap<String, f64>) -> EstimateSpeciesType {
-    if elems.contains_key("C") && elems.contains_key("H") && !elems.contains_key("Na") && !elems.contains_key("K") {
-        // Organic hydrocarbon/derivative check (unless simple bicarbonate/formate)
-        if !formula.contains("CO3") && !formula.contains("HCO3") && !formula.contains("COOH") {
+    let has_metal = elems.keys().any(|k| {
+        !matches!(
+            k.as_str(),
+            "C" | "H" | "O" | "N" | "S" | "P" | "F" | "Cl" | "Br" | "I" | "Si" | "B"
+        )
+    });
+    if !has_metal && elems.contains_key("C") && elems.contains_key("H") {
+        if !formula.contains("CO3") && !formula.contains("HCO3") {
             return EstimateSpeciesType::Organic;
         }
     }
@@ -429,6 +691,113 @@ fn split_hydrate(formula: &str) -> (&str, f64) {
     (formula, 0.0)
 }
 
+/// Estimate organic 298.15 K `(Hf°, S°, Cp°, vib_theta_K)` using Benson / Joback group additivity.
+fn estimate_organic_298(
+    elems: &BTreeMap<String, f64>,
+    org_group: OrganicGroup,
+    func_group: FunctionalGroup,
+    is_liq: bool,
+) -> (f64, f64, f64) {
+    let n_c = elems.get("C").copied().unwrap_or(0.0);
+    let n_h = elems.get("H").copied().unwrap_or(0.0);
+    let n_o = elems.get("O").copied().unwrap_or(0.0);
+
+    let (mut hf, mut s, mut cp) =
+        if org_group == OrganicGroup::Aromatics || (org_group == OrganicGroup::None && n_c >= 6.0 && n_h <= n_c + 1.0) {
+            let n_subst = (n_c - 6.0).max(0.0);
+            (82.9 - 32.0 * n_subst, 269.2 + 39.0 * n_subst, 82.4 + 26.0 * n_subst)
+        } else if org_group == OrganicGroup::Acids || func_group == FunctionalGroup::Carboxyl {
+            let n_alkyl = (n_c - 1.0).max(0.0);
+            (-378.6 - 20.6 * n_alkyl, 248.9 + 39.0 * n_alkyl, 45.2 + 22.8 * n_alkyl)
+        } else if org_group == OrganicGroup::Alcohols || func_group == FunctionalGroup::Hydroxyl {
+            let n_ch2 = (n_c - 1.0).max(0.0);
+            (-201.0 - 20.6 * n_ch2, 239.9 + 39.5 * n_ch2, 44.1 + 22.8 * n_ch2)
+        } else if matches!(func_group, FunctionalGroup::Triene) {
+            let n_ex = (n_c - 6.0).max(0.0);
+            (168.0 - 20.6 * n_ex, 315.0 + 39.0 * n_ex, 102.0 + 23.0 * n_ex)
+        } else if matches!(func_group, FunctionalGroup::Diene) {
+            let n_ex = (n_c - 4.0).max(0.0);
+            (110.0 - 20.6 * n_ex, 278.7 + 39.0 * n_ex, 79.5 + 23.0 * n_ex)
+        } else if org_group == OrganicGroup::Alkenes
+            || func_group == FunctionalGroup::Ene
+            || (n_c >= 2.0 && (n_h - 2.0 * n_c).abs() < 0.1 && n_o == 0.0)
+        {
+            if (n_c - 2.0).abs() < 0.1 && (n_h - 4.0).abs() < 0.1 {
+                (60.52, 226.78, 40.47)
+            } else {
+                let n_ex = (n_c - 2.0).max(0.0);
+                (52.0 - 20.6 * n_ex, 220.0 + 39.0 * n_ex, 42.0 + 23.0 * n_ex)
+            }
+        } else if org_group == OrganicGroup::Alkynes || func_group == FunctionalGroup::Yne {
+            let n_ex = (n_c - 2.0).max(0.0);
+            (226.7 - 20.6 * n_ex, 201.0 + 39.0 * n_ex, 44.0 + 22.5 * n_ex)
+        } else {
+            // Alkanes & oxygenated aliphatic organics
+            let n_ch3 = if n_c >= 2.0 { 2.0 } else { 1.0 };
+            let n_ch2 = (n_c - n_ch3).max(0.0);
+            (
+                n_ch3 * (-42.2) + n_ch2 * (-22.08) - n_o * 165.0,
+                186.0 + n_c * 33.6 + n_o * 20.0,
+                n_ch3 * 25.9 + n_ch2 * 22.72 + n_o * 18.0,
+            )
+        };
+
+    if is_liq {
+        let dh_vap = 26.0 + 3.8 * n_c.min(12.0);
+        hf -= dh_vap;
+        s = (s - 95.0).max(40.0);
+        cp += 24.0 + 2.5 * n_c.min(12.0);
+    }
+    (hf, s, cp)
+}
+
+/// Evaluate Einstein-Kelley curved Cp(T) anchored identically at `(298.15 K, cp298_j)`.
+fn eval_einstein_cp(t_k: f64, cp298_j: f64, dcp_298: f64, cp_inf_boost: f64, is_monatomic_gas: bool) -> f64 {
+    if is_monatomic_gas {
+        return cp298_j;
+    }
+    let einstein = |x: f64| -> f64 {
+        let xs = x.clamp(1e-3, 40.0);
+        let sh = (0.5 * xs).sinh();
+        let val = (0.5 * xs / sh).powi(2);
+        val
+    };
+    let theta_k = 620.0;
+    let f298 = einstein(theta_k / T_REF_K);
+    let ft = einstein(theta_k / t_k.max(10.0));
+    let curved = cp298_j + cp_inf_boost * (ft - f298) / (1.0 - f298).max(0.15);
+    let high_t_lin = dcp_298 * 0.45 * (t_k - T_REF_K);
+    (curved + high_t_lin).max(4.0)
+}
+
+/// Integrate Cp(T) from `T_REF_K` to `t_k` using 16-point Simpson quadrature for exact `H(T), S(T)`.
+fn integrate_cp_simpson<F>(t_k: f64, cp_fn: F) -> (f64, f64)
+where
+    F: Fn(f64) -> f64,
+{
+    if (t_k - T_REF_K).abs() < 1e-6 {
+        return (0.0, 0.0);
+    }
+    let n = 16usize;
+    let h = (t_k - T_REF_K) / (n as f64);
+    let mut sum_h = 0.0;
+    let mut sum_s = 0.0;
+    for i in 0..=n {
+        let t = T_REF_K + (i as f64) * h;
+        let w = if i == 0 || i == n {
+            1.0
+        } else if i % 2 == 1 {
+            4.0
+        } else {
+            2.0
+        };
+        let c = cp_fn(t);
+        sum_h += w * c;
+        sum_s += w * c / t.max(1.0);
+    }
+    (sum_h * h / 3000.0, sum_s * h / 3.0)
+}
+
 /// Evaluate thermodynamic estimate for a formula at `temp_c`.
 pub fn evaluate_estimate_row(row: &mut EstimateRow, repo: &dyn SpeciesRepository) {
     let formula = row.formula.trim().to_string();
@@ -443,7 +812,8 @@ pub fn evaluate_estimate_row(row: &mut EstimateRow, repo: &dyn SpeciesRepository
         return;
     }
 
-    let Ok(elems) = parse_hsc_species_elements(&formula) else {
+    let Ok((elems, net_charge, _)) = parse_estimate_formula(&formula) else {
+        row.mw = 0.0;
         row.est_h_kj_mol = None;
         row.est_s_j_molk = None;
         row.est_cp_j_molk = None;
@@ -457,7 +827,7 @@ pub fn evaluate_estimate_row(row: &mut EstimateRow, repo: &dyn SpeciesRepository
     let total_atoms: f64 = elems.values().sum();
     row.mw = mw;
 
-    let ox_sets = enumerate_oxidation_sets(&elems);
+    let ox_sets = enumerate_oxidation_sets_with_charge(&elems, net_charge);
     row.available_sets = ox_sets.len().max(1);
     if row.oxidation_set_idx >= row.available_sets {
         row.oxidation_set_idx = 0;
@@ -495,139 +865,120 @@ pub fn evaluate_estimate_row(row: &mut EstimateRow, repo: &dyn SpeciesRepository
 
     let t_k = (row.temp_c + 273.15).max(1.0);
     let is_gas = is_gas_formula(&formula);
+    let is_liq = is_liquid_formula(&formula);
     let is_aq = is_aqueous_formula(&formula);
+    let is_monatomic_gas = is_gas && total_atoms <= 1.1;
 
-    let (h298_kj, s298_j, cp298_j, dcp_dt) = if effective_type == EstimateSpeciesType::Organic {
-        // Benson / Joback-Reid group estimation for hydrocarbons & simple organics
-        let n_c = elems.get("C").copied().unwrap_or(0.0);
-        let n_h = elems.get("H").copied().unwrap_or(0.0);
-        let n_o = elems.get("O").copied().unwrap_or(0.0);
-
-        let is_alkene = row.organic_group == OrganicGroup::Alkenes
-            || row.functional_group == FunctionalGroup::Ene
-            || (n_c >= 2.0 && (n_h - 2.0 * n_c).abs() < 0.1 && n_o == 0.0);
-        let is_alkyne = row.organic_group == OrganicGroup::Alkynes
-            || row.functional_group == FunctionalGroup::Yne;
-
-        let (hf_est, s_est, cp_est) = if is_alkene && (n_c - 2.0).abs() < 0.1 && (n_h - 4.0).abs() < 0.1 {
-            // 2 * (=CH2) Benson/Joback
-            (60.52, 226.78, 40.47)
-        } else if is_alkene {
-            let hf = 52.0 - 20.6 * (n_c - 2.0).max(0.0);
-            let s = 220.0 + 39.0 * (n_c - 2.0).max(0.0);
-            let cp = 42.0 + 23.0 * (n_c - 2.0).max(0.0);
-            (hf, s, cp)
-        } else if is_alkyne {
-            let hf = 226.7 - 20.6 * (n_c - 2.0).max(0.0);
-            let s = 201.0 + 39.0 * (n_c - 2.0).max(0.0);
-            let cp = 44.0 + 22.5 * (n_c - 2.0).max(0.0);
-            (hf, s, cp)
+    let (h298_kj, s298_j, cp298_j, dcp_dt, cp_inf_boost) =
+        if effective_type == EstimateSpeciesType::Organic {
+            let (hf, s, cp) = estimate_organic_298(
+                &elems,
+                row.organic_group,
+                row.functional_group,
+                is_liq,
+            );
+            (hf, s, cp, cp * 0.0018, cp * 0.42)
         } else {
-            // Alkanes CnH(2n+2): -CH3 (-42.2 kJ, 127.2 J/K, 25.9 Cp) + -CH2- (-20.6 kJ, 39.4 J/K, 22.8 Cp)
-            let n_ch3 = if n_c >= 2.0 { 2.0 } else { 1.0 };
-            let n_ch2 = (n_c - n_ch3).max(0.0);
-            let hf = n_ch3 * (-42.2) + n_ch2 * (-22.08) - n_o * 165.0;
-            let s = 186.0 + n_c * 33.6 + n_o * 20.0;
-            let cp = n_ch3 * 25.9 + n_ch2 * 22.72 + n_o * 18.0;
-            (hf, s, cp)
+            let (_base, n_h2o) = split_hydrate(&formula);
+            let mut h_sum = 0.0;
+            let mut s_sum = 0.0;
+            let mut cp_sum = 0.0;
+            let mut slope_sum = 0.0;
+            let mut alkali_mol = 0.0;
+            let mut has_halide_or_oxoanion = false;
+            let n_o = elems.get("O").copied().unwrap_or(0.0);
+
+            for (sym, &amt) in &elems {
+                let ox = active_ox
+                    .and_then(|m| m.get(sym).copied())
+                    .unwrap_or_else(|| common_ox_states(sym)[0]);
+                h_sum += amt * inorganic_enthalpy_contrib(sym, ox);
+                s_sum += amt * latimer_element_entropy(sym, ox);
+                let (cp_e, sl_e) = element_kopp_cp_params(sym);
+                cp_sum += amt * cp_e;
+                slope_sum += amt * sl_e;
+
+                if matches!(sym.as_str(), "Li" | "Na" | "K" | "Rb" | "Cs") {
+                    alkali_mol += amt;
+                }
+                if matches!(sym.as_str(), "F" | "Cl" | "Br" | "I")
+                    || (matches!(sym.as_str(), "S" | "N" | "P" | "W" | "Mo" | "Cr")
+                        && ox >= 5
+                        && n_o > 0.0)
+                {
+                    has_halide_or_oxoanion = true;
+                }
+            }
+
+            // Alkali halide / oxoanion stabilization (M+ next to Cl-/F- or SO4/CO3/NO3/WO4)
+            if alkali_mol > 0.0 && has_halide_or_oxoanion {
+                h_sum -= 130.0 * alkali_mol;
+            }
+            // High-valence covalent oxoanion slightly tightens O vibrational Cp
+            if elems.keys().any(|s| matches!(s.as_str(), "S" | "C" | "N" | "P")) && n_o >= 3.0 {
+                cp_sum -= 2.4 * n_o.min(8.0);
+            }
+
+            if n_h2o > 0.0 {
+                s_sum += n_h2o * 4.5;
+                cp_sum += n_h2o * 4.5;
+                h_sum -= n_h2o * 25.0;
+            }
+
+            let mut inf_boost = cp_sum * 0.28;
+            if is_gas {
+                let n_atoms = total_atoms.max(1.0);
+                h_sum += 145.0;
+                let s_trans = 115.0 + 12.47 * mw.max(2.0).ln();
+                let s_rot_vib = if n_atoms <= 1.1 {
+                    0.0
+                } else if n_atoms <= 2.1 {
+                    45.0
+                } else {
+                    62.0 + 18.0 * (n_atoms - 2.0).min(12.0)
+                };
+                s_sum = s_trans + s_rot_vib;
+                cp_sum = if n_atoms <= 1.1 {
+                    20.79
+                } else if n_atoms <= 2.1 {
+                    29.1 + 4.0 * (mw / 80.0).min(1.5)
+                } else {
+                    (cp_sum * 0.80).max(33.0)
+                };
+                slope_sum = if is_monatomic_gas { 0.0 } else { cp_sum * 0.00025 };
+                inf_boost = if is_monatomic_gas { 0.0 } else { cp_sum * 0.36 };
+            } else if is_liq {
+                h_sum += 14.0;
+                s_sum += 18.0;
+                cp_sum *= 1.12;
+            } else if is_aq {
+                h_sum -= 45.0;
+                s_sum = (s_sum * 0.85).max(-120.0);
+                cp_sum = (cp_sum * 0.75).max(20.0);
+            }
+
+            (h_sum, s_sum, cp_sum, slope_sum, inf_boost)
         };
-        (hf_est, s_est, cp_est, cp_est * 0.0018)
-    } else {
-        // Inorganic estimation (Neumann-Kopp Cp, Latimer S, Oxides/Ionic H, + hydrate correction)
-        let (_base, n_h2o) = split_hydrate(&formula);
-        let mut h_sum = 0.0;
-        let mut s_sum = 0.0;
-        let mut cp_sum = 0.0;
-        let mut slope_sum = 0.0;
 
-        for (sym, &amt) in &elems {
-            let ox = active_ox
-                .and_then(|m| m.get(sym).copied())
-                .unwrap_or_else(|| common_ox_states(sym)[0]);
-            h_sum += amt * inorganic_enthalpy_contrib(sym, ox);
-            s_sum += amt * latimer_element_entropy(sym, ox);
-            let (cp_e, sl_e) = element_kopp_cp_params(sym);
-            cp_sum += amt * cp_e;
-            slope_sum += amt * sl_e;
-        }
-
-        // Hydrate crystal water adjustment
-        if n_h2o > 0.0 {
-            // H2O in crystal contributes ~39.3 J/(mol*K) to S and ~40.5 J/(mol*K) to Cp
-            s_sum += n_h2o * 4.5;
-            cp_sum += n_h2o * 4.5;
-            h_sum -= n_h2o * 25.0;
-        }
-
-        // Gas phase adjustment (translational + rotational + vibrational entropy)
-        if is_gas {
-            let n_atoms = total_atoms.max(1.0);
-            h_sum += 145.0;
-            // Sackur-Tetrode + rotational/vibrational scaling for gas species
-            let s_trans = 115.0 + 12.47 * mw.max(2.0).ln();
-            let s_rot_vib = if n_atoms <= 1.1 {
-                0.0
-            } else if n_atoms <= 2.1 {
-                45.0
-            } else {
-                62.0 + 18.0 * (n_atoms - 2.0).min(12.0)
-            };
-            s_sum = s_trans + s_rot_vib;
-            cp_sum = if n_atoms <= 1.1 {
-                20.79
-            } else if n_atoms <= 2.1 {
-                29.1 + 4.0 * (mw / 80.0).min(1.5)
-            } else {
-                (cp_sum * 0.80).max(33.0)
-            };
-        } else if is_aq {
-            // Aqueous ion / neutral species hydration contribution
-            h_sum -= 45.0;
-            s_sum = (s_sum * 0.85).max(-120.0);
-            cp_sum = (cp_sum * 0.75).max(20.0);
-        }
-
-        (h_sum, s_sum, cp_sum, slope_sum)
-    };
-
-    // Integrate Cp(T) from 298.15 K to t_k for H(T) and S(T)
-    let cp_t = (cp298_j + dcp_dt * (t_k - T_REF_K)).max(4.0);
-    let dh_kj = 0.5 * (cp298_j + cp_t) * (t_k - T_REF_K) / 1000.0;
-    let ds_j = if (t_k - T_REF_K).abs() > 1e-4 {
-        0.5 * (cp298_j + cp_t) * (t_k / T_REF_K).ln()
-    } else {
-        0.0
-    };
+    let cp_fn = |tk: f64| eval_einstein_cp(tk, cp298_j, dcp_dt, cp_inf_boost, is_monatomic_gas);
+    let cp_t = cp_fn(t_k);
+    let (dh_kj, ds_j) = integrate_cp_simpson(t_k, cp_fn);
     let h_t_kj = h298_kj + dh_kj;
     let s_t_j = s298_j + ds_j;
 
-    // ΔG estimate consistent with HSC Estimate (ΔGf°(298) ≈ Hf° - T*(S° - Σ S°_elem))
+    // ΔG° formation at T using Maindb6 reference elements when available, else CODATA fallback
     let s_elem_ref: f64 = elems
         .iter()
         .map(|(sym, &amt)| {
-            let s_e = match sym.as_str() {
-                "O" => 102.57,
-                "H" => 65.34,
-                "N" => 95.81,
-                "Cl" => 111.54,
-                "F" => 101.39,
-                "S" => 32.05,
-                "C" => 5.74,
-                "Si" => 18.81,
-                "Fe" => 27.28,
-                "Cu" => 33.15,
-                "Ag" => 42.55,
-                "Mg" => 32.67,
-                "Ca" => 41.59,
-                "Ba" => 62.42,
-                "Al" => 28.30,
-                "K" => 64.68,
-                "Na" => 51.30,
-                "Mn" => 32.01,
-                "V" => 28.91,
-                "W" => 32.64,
-                _ => 35.0,
-            };
+            let s_e = repo
+                .get_reference_element(sym)
+                .and_then(|ref_sp| {
+                    let ok = evaluate_species_si(&ref_sp, t_k, false, false).ok()?;
+                    let ref_elems = parse_hsc_species_elements(&ref_sp.formula).ok()?;
+                    let denom = ref_elems.get(sym).copied().unwrap_or(1.0).max(1e-9);
+                    Some(ok.0.s / denom)
+                })
+                .unwrap_or_else(|| element_std_entropy_298(sym));
             amt * s_e
         })
         .sum();
@@ -638,7 +989,6 @@ pub fn evaluate_estimate_row(row: &mut EstimateRow, repo: &dyn SpeciesRepository
     row.est_cp_j_molk = Some(cp_t);
     row.est_dg_kj_mol = Some(dg_t_kj);
 
-    // Lookup experimental Database values in Maindb6 if available
     if let Some(sp) = repo.get_species(&formula) {
         if let Ok((pt, _)) = evaluate_species_si(&sp, t_k, false, false) {
             let dg_db = (pt.h / 1000.0) - t_k * (pt.s - s_elem_ref) / 1000.0;
@@ -763,37 +1113,80 @@ pub fn fit_kelley_cp(points: &[(f64, f64)]) -> KelleyCoefficients {
 }
 
 /// Build a `ChemicalSpecies` record from an estimated row + fitted Kelley coefficients.
+/// Always anchors interval enthalpy/entropy at `T_REF_K = 298.15 K` regardless of sheet Temp.
 pub fn build_estimated_species(
     row: &EstimateRow,
     t_min_k: f64,
     t_max_k: f64,
     kelley: KelleyCoefficients,
 ) -> ChemicalSpecies {
-    let phase = if is_gas_formula(&row.formula) {
-        Phase::Gas
-    } else if row.formula.ends_with("(l)") {
-        Phase::Liquid
-    } else {
-        Phase::Solid
-    };
+    build_estimated_species_with_intervals(row, vec![(t_min_k, t_max_k, kelley)], "HSC Estimate")
+}
+
+/// Build a `ChemicalSpecies` record with one or more Kelley intervals anchored at `298.15 K`.
+pub fn build_estimated_species_with_intervals(
+    row: &EstimateRow,
+    ranges: Vec<(f64, f64, KelleyCoefficients)>,
+    reference: &str,
+) -> ChemicalSpecies {
+    struct NoopRepo;
+    impl SpeciesRepository for NoopRepo {
+        fn get_species(&self, _formula: &str) -> Option<ChemicalSpecies> {
+            None
+        }
+        fn get_reference_element(&self, _symbol: &str) -> Option<ChemicalSpecies> {
+            None
+        }
+    }
+
+    let (_, charge, detected_phase) = parse_formula_metadata(&row.formula);
+    let phase = detected_phase.unwrap_or(Phase::Solid);
+
+    let mut ref_row = row.clone();
+    ref_row.temp_c = 25.0;
+    evaluate_estimate_row(&mut ref_row, &NoopRepo);
+    let h298_j = ref_row.est_h_kj_mol.unwrap_or(0.0) * 1000.0;
+    let s298_j = ref_row.est_s_j_molk.unwrap_or(50.0);
+
+    let intervals = ranges
+        .into_iter()
+        .enumerate()
+        .map(|(idx, (t1, t2, kelley))| {
+            let t_lo = t1.max(1.0);
+            let t_hi = t2.max(t_lo + 1.0);
+            SpeciesThermoInterval {
+                t_min: t_lo,
+                t_max: t_hi,
+                phase,
+                kelley,
+                h_or_delta_h_tr: if idx == 0 { h298_j } else { 0.0 },
+                s_or_delta_s_tr: if idx == 0 { s298_j } else { 0.0 },
+                reference: reference.to_string(),
+            }
+        })
+        .collect();
 
     ChemicalSpecies {
-        formula: row.formula.clone(),
-        name: format!("{} (Estimated)", row.formula),
+        formula: row.formula.trim().to_string(),
+        name: format!("{} (Estimated)", row.formula.trim()),
         phase,
-        molecular_weight: row.mw,
-        density_g_cm3: if phase == Phase::Gas { 0.001 } else { 3.0 },
-        charge: 0,
-        intervals: vec![SpeciesThermoInterval {
-            t_min: t_min_k,
-            t_max: t_max_k,
-            phase,
-            kelley,
-            h_or_delta_h_tr: row.est_h_kj_mol.unwrap_or(0.0) * 1000.0,
-            s_or_delta_s_tr: row.est_s_j_molk.unwrap_or(50.0),
-            reference: "HSC Estimate".to_string(),
-        }],
+        molecular_weight: ref_row.mw,
+        density_g_cm3: match phase {
+            Phase::Gas => 0.001,
+            Phase::Liquid | Phase::AqueousIon | Phase::AqueousNeutral => 1.0,
+            Phase::Solid => 3.0,
+        },
+        charge,
+        intervals,
     }
+}
+
+/// Fig. 5 oxides & sulfates selection example (`Li2O..CaO`).
+pub fn fig5_oxides_rows() -> Vec<EstimateRow> {
+    ["Li2O", "Na2O", "Na2SO4", "K2O", "K2SO4", "BeO", "MgO", "CaO"]
+        .into_iter()
+        .map(EstimateRow::new)
+        .collect()
 }
 
 #[derive(Debug, Clone, Default)]
@@ -953,5 +1346,98 @@ mod tests {
         assert!((stats.max_error - 5.0).abs() < 1e-9);
         assert_eq!(stats.max_error_species, "B");
         assert!((stats.median_error - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn section_16_formula_rules_and_ions() {
+        // FeS2(M) strips (M) polymorph instead of creating element "M"
+        let (elems, chg, ph) = parse_estimate_formula("FeS2(M)").unwrap();
+        assert_eq!(elems.len(), 2);
+        assert_eq!(chg, 0);
+        assert_eq!(ph, Some(Phase::Solid));
+
+        // C(D) strips (D)
+        let (elems_cd, _, _) = parse_estimate_formula("C(D)").unwrap();
+        assert_eq!(elems_cd.get("C"), Some(&1.0));
+
+        // OH(-a) assigns net charge -1 and valid oxidation charges O=-2, H=+1
+        let mut oh = EstimateRow::new("OH(-a)");
+        evaluate_estimate_row(&mut oh, &EmptyRepo);
+        assert_eq!(oh.elements.len(), 2);
+        let h_chg = oh.elements.iter().find(|e| e.symbol == "H").unwrap().charge;
+        let o_chg = oh.elements.iter().find(|e| e.symbol == "O").unwrap().charge;
+        assert_eq!(h_chg + o_chg, -1);
+
+        // Fractional non-stoichiometry Fe0.998O & nested groups
+        let mut feo = EstimateRow::new("Fe0.998O");
+        evaluate_estimate_row(&mut feo, &EmptyRepo);
+        assert!((feo.mw - (0.998 * 55.845 + 15.999)).abs() < 0.05);
+
+        let (et2o, _, _) = parse_estimate_formula("(C2H5)2O").unwrap();
+        assert_eq!(et2o.get("C"), Some(&4.0));
+        assert_eq!(et2o.get("H"), Some(&10.0));
+        assert_eq!(et2o.get("O"), Some(&1.0));
+
+        // Invalid *(...) pattern rejected per Section 16.3
+        assert!(parse_estimate_formula("AlO*(OH)").is_err());
+
+        // HSC6 organic isomer+phase suffixes like C6H6(BZEg) and C8H18(224Tg)
+        let (bz, bz_chg, bz_ph) = parse_estimate_formula("C6H6(BZEg)").unwrap();
+        assert_eq!(bz.get("C"), Some(&6.0));
+        assert_eq!(bz.get("H"), Some(&6.0));
+        assert_eq!(bz_chg, 0);
+        assert_eq!(bz_ph, Some(Phase::Gas));
+
+        let (oct, _, oct_ph) = parse_estimate_formula("C8H18(224Tg)").unwrap();
+        assert_eq!(oct.get("C"), Some(&8.0));
+        assert_eq!(oct.get("H"), Some(&18.0));
+        assert_eq!(oct_ph, Some(Phase::Gas));
+    }
+
+    #[test]
+    fn nonlinear_cp_curve_and_organic_groups_and_build_ref_temp() {
+        // Na2WO4(g) Cp curve over 298.15..600 K has real 4-parameter Kelley curvature
+        let mut nw = EstimateRow::new("Na2WO4(g)");
+        evaluate_estimate_row(&mut nw, &EmptyRepo);
+        assert!((nw.mw - 293.816).abs() < 0.1);
+        let pts = generate_cp_curve(&nw, &EmptyRepo, 298.15, 600.0, 50);
+        assert!(pts.last().unwrap().1 > pts.first().unwrap().1 + 10.0);
+        let kelley = fit_kelley_cp(&pts);
+        assert!(kelley.c.abs() > 0.1, "Expected non-zero Kelley C curvature, got {:?}", kelley);
+
+        // Evaluating at high T must NOT corrupt saved 298.15 K enthalpy in build_estimated_species
+        let mut nw_hot = nw.clone();
+        nw_hot.temp_c = 600.0;
+        evaluate_estimate_row(&mut nw_hot, &EmptyRepo);
+        let sp = build_estimated_species(&nw_hot, 298.15, 600.0, kelley);
+        assert!((sp.intervals[0].h_or_delta_h_tr / 1000.0 - nw.est_h_kj_mol.unwrap()).abs() < 1e-6);
+        assert_eq!(sp.phase, Phase::Gas);
+
+        // Aromatics / Alcohols / Acids produce distinct group-additive values
+        let mut benz = EstimateRow::new("C6H6(g)");
+        benz.species_type = EstimateSpeciesType::Organic;
+        benz.organic_group = OrganicGroup::Aromatics;
+        evaluate_estimate_row(&mut benz, &EmptyRepo);
+        assert!(benz.est_h_kj_mol.unwrap() > 50.0);
+
+        let mut etoh = EstimateRow::new("C2H5OH(g)");
+        etoh.species_type = EstimateSpeciesType::Organic;
+        etoh.organic_group = OrganicGroup::Alcohols;
+        evaluate_estimate_row(&mut etoh, &EmptyRepo);
+        assert!(etoh.est_h_kj_mol.unwrap() < -200.0);
+
+        // Metal carboxylates (NaCOOH) stay Inorganic while CH3COOH(g) auto-detects as Organic
+        let elems_na: BTreeMap<String, f64> =
+            [("Na", 1.0), ("C", 1.0), ("O", 2.0), ("H", 1.0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect();
+        assert_eq!(detect_species_type("NaCOOH", &elems_na), EstimateSpeciesType::Inorganic);
+        let elems_ac: BTreeMap<String, f64> =
+            [("C", 2.0), ("H", 4.0), ("O", 2.0)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect();
+        assert_eq!(detect_species_type("CH3COOH(g)", &elems_ac), EstimateSpeciesType::Organic);
     }
 }

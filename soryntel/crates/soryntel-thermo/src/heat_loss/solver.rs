@@ -88,8 +88,7 @@ fn evaluate_column_resistance(
                         &col.iterative_gas_eps_table,
                         t_g,
                         "Iterative gas emissivity",
-                    )
-                    .unwrap_or(0.15)
+                    )?
                 } else {
                     col.gas_emissivity.unwrap_or(0.0)
                 };
@@ -98,8 +97,7 @@ fn evaluate_column_resistance(
                         &col.iterative_gas_eps_table,
                         t_s,
                         "Iterative gas absorptivity",
-                    )
-                    .unwrap_or(eps_g);
+                    )?;
                     (e_ts * (t_g / t_s.max(1.0)).sqrt()).clamp(0.0, 0.999)
                 } else {
                     col.gas_absorptivity.unwrap_or(eps_g)

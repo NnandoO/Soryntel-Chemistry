@@ -145,6 +145,11 @@ pub struct EhPhResult {
     pub warnings: Vec<String>,
     pub segments: Vec<BoundarySegment>,
     pub regions: Vec<PredominanceRegion>,
+    /// Optional aqueous-species-only diagram layer overlaid in blue dotted lines when `show_predominance_ions` is enabled (§17.3.7).
+    #[serde(default)]
+    pub ion_segments: Vec<BoundarySegment>,
+    #[serde(default)]
+    pub ion_regions: Vec<PredominanceRegion>,
     pub water_upper_line: [(f64, f64); 2],
     pub water_lower_line: [(f64, f64); 2],
     pub table_rows: Vec<SpeciesTableRow>,
@@ -253,12 +258,25 @@ fn prepare_species(
         return None;
     }
 
+    // Determine the activity-controlling element: `main_elem` if the species contains it,
+    // otherwise the secondary element present in the species and element settings.
+    let ref_elem: &str = if other_elements.contains_key(main_elem) {
+        main_elem
+    } else {
+        other_elements
+            .keys()
+            .find(|el| elem_map.contains_key(el.as_str()))
+            .or_else(|| other_elements.keys().next())
+            .map(|s| s.as_str())
+            .unwrap_or(main_elem)
+    };
+
     // Activity term RT ln(a_i)
     let ln_a = match sp.phase {
         Phase::Solid | Phase::Liquid => 0.0,
         Phase::Gas => {
             let p_bar = elem_map
-                .get(main_elem)
+                .get(ref_elem)
                 .map(|e| e.pressure_bar)
                 .unwrap_or(1.0)
                 .max(1e-12);
@@ -266,12 +284,12 @@ fn prepare_species(
         }
         Phase::AqueousIon | Phase::AqueousNeutral => {
             let m = elem_map
-                .get(main_elem)
+                .get(ref_elem)
                 .map(|e| e.molality)
                 .unwrap_or(1.0)
                 .max(1e-12);
-            let nu_m = *other_elements.get(main_elem).unwrap_or(&1.0);
-            let m_i = (m / nu_m.max(1.0)).max(1e-12);
+            let nu_ref = *other_elements.get(ref_elem).unwrap_or(&1.0);
+            let m_i = (m / nu_ref.max(1.0)).max(1e-12);
             let ln_gamma = if use_davies {
                 davies_ln_gamma(charge, t_k, eps, ionic_strength, corr_factor)
             } else {
@@ -438,112 +456,25 @@ pub fn delta_g_formation_h2o_kcal(
     (pt.g - g_ref) / (1000.0 * CAL_TO_JOULE)
 }
 
-/// Computes the Eh-pH diagram for `req`.
-pub fn calculate_ehph(
+/// Solved grid + contour segments + interior regions for one diagram layer.
+struct DiagramLayer {
+    segments: Vec<BoundarySegment>,
+    regions: Vec<PredominanceRegion>,
+    grid_region_idx: Vec<Option<usize>>,
+    table_rows: Vec<SpeciesTableRow>,
+}
+
+/// Evaluates a predominance diagram layer on the grid and extracts boundary contours and labels.
+fn solve_diagram_layer(
+    main_species: &[PreparedSpecies],
+    sec_species: &[PreparedSpecies],
     req: &EhPhRequest,
-    repo: Option<&dyn SpeciesRepository>,
-) -> Result<EhPhResult, String> {
-    if req.main_element.trim().is_empty() {
-        return Err("Main element is required.".to_string());
-    }
-    if req.max_ph <= req.min_ph {
-        return Err("Max pH must be greater than Min pH.".to_string());
-    }
-    if req.max_eh_v <= req.min_eh_v {
-        return Err("Max Eh must be greater than Min Eh.".to_string());
-    }
-    let t_k = req.t_k.max(273.15);
-    let eps = req
-        .dielectric_constant
-        .unwrap_or_else(|| water_dielectric_constant(t_k));
-
-    let dg_h2o_kcal = if let Some(v) = req.delta_g_h2o_kcal {
-        v
-    } else if let Some(r) = repo {
-        let h2o_sp = r.get_species("H2O").or_else(|| r.get_species("H2O(L)"));
-        if let Some(h2o) = h2o_sp {
-            let (pt, _) = evaluate_species_si(&h2o, t_k, req.criss_cobble, false)
-                .map_err(|e| format!("Failed evaluating H2O: {e}"))?;
-            let g_ref = parse_term(&h2o.formula)
-                .ok()
-                .and_then(|t| sum_element_references(&t, t_k, req.criss_cobble, r).ok())
-                .map(|(_, _, g, _)| g)
-                .unwrap_or(0.0);
-            (pt.g - g_ref) / (1000.0 * CAL_TO_JOULE)
-        } else {
-            -56.678
-        }
-    } else {
-        -56.678
-    };
-    let dg_h2o_j = dg_h2o_kcal * 1000.0 * CAL_TO_JOULE;
-
-    let p_sat_h2o_bar = h2o_saturation_pressure_bar(t_k);
-    let mut warnings = Vec::new();
-    for el in &req.elements {
-        if el.pressure_bar < p_sat_h2o_bar {
-            warnings.push(format!(
-                "Pressure for {} ({:.3} bar) is below H2O saturation pressure ({:.3} bar) at {:.2} °C.",
-                el.symbol,
-                el.pressure_bar,
-                p_sat_h2o_bar,
-                t_k - 273.15
-            ));
-        }
-    }
-
-    let elem_map: HashMap<String, &ElementSpec> = req
-        .elements
-        .iter()
-        .map(|e| (e.symbol.clone(), e))
-        .collect();
-    let sec_elems: Vec<String> = req
-        .elements
-        .iter()
-        .map(|e| e.symbol.clone())
-        .filter(|s| s != &req.main_element && s != "H" && s != "O")
-        .collect();
-
-    let mut main_species = Vec::new();
-    let mut sec_species = Vec::new();
-
-    for sp in &req.species {
-        if req.show_predominance_ions
-            && !matches!(sp.phase, Phase::AqueousIon | Phase::AqueousNeutral)
-        {
-            continue;
-        }
-        if let Some(prep) = prepare_species(
-            sp,
-            t_k,
-            req.criss_cobble,
-            repo,
-            &req.delta_g_overrides_kcal,
-            &elem_map,
-            &req.main_element,
-            req.use_davies,
-            eps,
-            req.ionic_strength,
-            req.correction_factor,
-        ) {
-            if prep.other_elements.contains_key(&req.main_element) {
-                main_species.push(prep);
-            } else {
-                sec_species.push(prep);
-            }
-        }
-    }
-
-    if main_species.is_empty() {
-        return Err(format!(
-            "No valid species containing main element '{}'.",
-            req.main_element
-        ));
-    }
-
-    let n = req.grid_resolution.clamp(60, 360);
-    let scale_off = req.potential_scale.offset_v();
-    // Internally compute on SHE scale, then shift by -scale_off for display.
+    t_k: f64,
+    dg_h2o_j: f64,
+    sec_elems: &[String],
+    scale_off: f64,
+    n: usize,
+) -> DiagramLayer {
     let min_she = req.min_eh_v + scale_off;
     let max_she = req.max_eh_v + scale_off;
     let dph = (req.max_ph - req.min_ph) / (n as f64 - 1.0);
@@ -555,23 +486,45 @@ pub fn calculate_ehph(
         let eh_she = min_she + (iy as f64) * deh;
         for ix in 0..n {
             let ph = req.min_ph + (ix as f64) * dph;
-            let idx = eval_norm_energies(
-                &main_species,
-                &sec_species,
+            winner[iy * n + ix] = eval_norm_energies(
+                main_species,
+                sec_species,
                 &req.main_element,
                 ph,
                 eh_she,
                 t_k,
                 dg_h2o_j,
-                &sec_elems,
+                sec_elems,
                 &mut g_buf,
             );
-            winner[iy * n + ix] = idx;
         }
     }
 
+    let push_edge = |crossings: &mut Vec<(usize, usize, (f64, f64))>,
+                     wa: usize,
+                     wb: usize,
+                     p0: (f64, f64),
+                     p1: (f64, f64)| {
+        if wa != wb {
+            let pt = refine_crossing(
+                main_species,
+                sec_species,
+                &req.main_element,
+                sec_elems,
+                t_k,
+                dg_h2o_j,
+                wa,
+                wb,
+                p0,
+                p1,
+            );
+            crossings.push((wa.min(wb), wa.max(wb), pt));
+        }
+    };
+
     // Dual-cell contour extraction for crisp boundary segments.
     let mut segments = Vec::new();
+    let mut crossings = Vec::with_capacity(4);
     for iy in 0..(n - 1) {
         let eh0 = min_she + (iy as f64) * deh;
         let eh1 = eh0 + deh;
@@ -585,70 +538,16 @@ pub fn calculate_ehph(
             if w00 == w10 && w00 == w01 && w00 == w11 {
                 continue;
             }
-            // Collect exact crossings on the 4 cell edges.
-            let mut crossings: Vec<(usize, usize, (f64, f64))> = Vec::new();
-            if w00 != w10 {
-                let p = refine_crossing(
-                    &main_species,
-                    &sec_species,
-                    &req.main_element,
-                    &sec_elems,
-                    t_k,
-                    dg_h2o_j,
-                    w00,
-                    w10,
-                    (ph0, eh0),
-                    (ph1, eh0),
-                );
-                crossings.push((w00.min(w10), w00.max(w10), p));
-            }
-            if w01 != w11 {
-                let p = refine_crossing(
-                    &main_species,
-                    &sec_species,
-                    &req.main_element,
-                    &sec_elems,
-                    t_k,
-                    dg_h2o_j,
-                    w01,
-                    w11,
-                    (ph0, eh1),
-                    (ph1, eh1),
-                );
-                crossings.push((w01.min(w11), w01.max(w11), p));
-            }
-            if w00 != w01 {
-                let p = refine_crossing(
-                    &main_species,
-                    &sec_species,
-                    &req.main_element,
-                    &sec_elems,
-                    t_k,
-                    dg_h2o_j,
-                    w00,
-                    w01,
-                    (ph0, eh0),
-                    (ph0, eh1),
-                );
-                crossings.push((w00.min(w01), w00.max(w01), p));
-            }
-            if w10 != w11 {
-                let p = refine_crossing(
-                    &main_species,
-                    &sec_species,
-                    &req.main_element,
-                    &sec_elems,
-                    t_k,
-                    dg_h2o_j,
-                    w10,
-                    w11,
-                    (ph1, eh0),
-                    (ph1, eh1),
-                );
-                crossings.push((w10.min(w11), w10.max(w11), p));
-            }
+            crossings.clear();
+            push_edge(&mut crossings, w00, w10, (ph0, eh0), (ph1, eh0));
+            push_edge(&mut crossings, w01, w11, (ph0, eh1), (ph1, eh1));
+            push_edge(&mut crossings, w00, w01, (ph0, eh0), (ph0, eh1));
+            push_edge(&mut crossings, w10, w11, (ph1, eh0), (ph1, eh1));
 
-            if crossings.len() == 2 && crossings[0].0 == crossings[1].0 && crossings[0].1 == crossings[1].1 {
+            if crossings.len() == 2
+                && crossings[0].0 == crossings[1].0
+                && crossings[0].1 == crossings[1].1
+            {
                 let (a, b, p_a) = crossings[0];
                 let (_, _, p_b) = crossings[1];
                 segments.push(BoundarySegment {
@@ -663,7 +562,7 @@ pub fn calculate_ehph(
                 // Triple point inside cell: connect each crossing to cell center.
                 let cx = 0.5 * (ph0 + ph1);
                 let cy = 0.5 * (eh0 + eh1) - scale_off;
-                for (a, b, p_a) in crossings {
+                for &(a, b, p_a) in &crossings {
                     segments.push(BoundarySegment {
                         species_a: main_species[a].formula.clone(),
                         species_b: main_species[b].formula.clone(),
@@ -677,7 +576,7 @@ pub fn calculate_ehph(
         }
     }
 
-    // Compute region counts & interior label positions (pole-of-inaccessibility approximation).
+    // Compute region counts & interior label positions near region centroids.
     let mut counts = vec![0usize; main_species.len()];
     for &w in &winner {
         counts[w] += 1;
@@ -689,7 +588,6 @@ pub fn calculate_ehph(
         if cnt == 0 {
             continue;
         }
-        // Compute mean position and refine to deepest interior cell.
         let mut sum_x = 0.0;
         let mut sum_y = 0.0;
         for iy in 0..n {
@@ -700,9 +598,10 @@ pub fn calculate_ehph(
                 }
             }
         }
-        let mut best_x = sum_x / cnt as f64;
-        let mut best_y = sum_y / cnt as f64;
-        // Find grid cell of `sp_idx` closest to centroid that is also surrounded by `sp_idx`.
+        let cx = sum_x / cnt as f64;
+        let cy = sum_y / cnt as f64;
+        let mut best_x = cx;
+        let mut best_y = cy;
         let mut best_score = f64::INFINITY;
         for iy in 1..(n - 1) {
             for ix in 1..(n - 1) {
@@ -715,7 +614,7 @@ pub fn calculate_ehph(
                     && winner[(iy + 1) * n + ix] == sp_idx;
                 let px = req.min_ph + (ix as f64) * dph;
                 let py = req.min_eh_v + (iy as f64) * deh;
-                let dist2 = (px - best_x).powi(2) + (py - best_y).powi(2)
+                let dist2 = (px - cx).powi(2) + (py - cy).powi(2)
                     + if is_interior { 0.0 } else { 100.0 };
                 if dist2 < best_score {
                     best_score = dist2;
@@ -743,21 +642,6 @@ pub fn calculate_ehph(
         .map(|w| active_map.get(w).copied())
         .collect();
 
-    // Water stability limits:
-    // Upper: O2(g) + 4 H+ + 4 e- = 2 H2O  => E_SHE = (-2 * dG_H2O_J) / (4*F) - slope * pH
-    // Lower: 2 H+ + 2 e- = H2(g)          => E_SHE = 0 - slope * pH
-    let slope_v_per_ph = (R_JOULE * t_k * std::f64::consts::LN_10) / FARADAY_C_MOL;
-    let e0_o2_she = (-2.0 * dg_h2o_j) / (4.0 * FARADAY_C_MOL);
-    let water_upper_line = [
-        (req.min_ph, e0_o2_she - slope_v_per_ph * req.min_ph - scale_off),
-        (req.max_ph, e0_o2_she - slope_v_per_ph * req.max_ph - scale_off),
-    ];
-    let water_lower_line = [
-        (req.min_ph, -slope_v_per_ph * req.min_ph - scale_off),
-        (req.max_ph, -slope_v_per_ph * req.max_ph - scale_off),
-    ];
-
-    // Table rows
     let mut table_rows = Vec::with_capacity(main_species.len());
     for (sp_idx, sp) in main_species.iter().enumerate() {
         let area_no = active_map.get(&sp_idx).map(|i| i + 1);
@@ -774,6 +658,161 @@ pub fn calculate_ehph(
         });
     }
 
+    DiagramLayer {
+        segments,
+        regions,
+        grid_region_idx,
+        table_rows,
+    }
+}
+
+/// Computes the Eh-pH diagram for `req`.
+pub fn calculate_ehph(
+    req: &EhPhRequest,
+    repo: Option<&dyn SpeciesRepository>,
+) -> Result<EhPhResult, String> {
+    if req.main_element.trim().is_empty() {
+        return Err("Main element is required.".to_string());
+    }
+    if req.max_ph - req.min_ph < 0.2 - 1e-9 {
+        return Err("Max pH - Min pH must be at least 0.2.".to_string());
+    }
+    if req.max_eh_v - req.min_eh_v < 0.2 - 1e-9 {
+        return Err("Max Eh - Min Eh must be at least 0.2 V.".to_string());
+    }
+    let t_k = req.t_k.max(273.15);
+    let eps = req
+        .dielectric_constant
+        .unwrap_or_else(|| water_dielectric_constant(t_k));
+
+    let dg_h2o_kcal = req.delta_g_h2o_kcal.unwrap_or_else(|| {
+        repo.map(|r| delta_g_formation_h2o_kcal(r, t_k, req.criss_cobble))
+            .unwrap_or(-56.678)
+    });
+    let dg_h2o_j = dg_h2o_kcal * 1000.0 * CAL_TO_JOULE;
+
+    let p_sat_h2o_bar = h2o_saturation_pressure_bar(t_k);
+    let mut warnings = Vec::new();
+    // Per §17.3.6, system total pressure is the highest pressure among selected elements.
+    let max_p_bar = req
+        .elements
+        .iter()
+        .map(|e| e.pressure_bar)
+        .fold(0.0_f64, f64::max);
+    if !req.elements.is_empty() && max_p_bar < p_sat_h2o_bar {
+        warnings.push(format!(
+            "Total system pressure ({:.3} bar) is below H2O saturation pressure ({:.3} bar) at {:.2} °C; liquid water may vaporize.",
+            max_p_bar,
+            p_sat_h2o_bar,
+            t_k - 273.15
+        ));
+    }
+
+    let elem_map: HashMap<String, &ElementSpec> = req
+        .elements
+        .iter()
+        .map(|e| (e.symbol.clone(), e))
+        .collect();
+    let sec_elems: Vec<String> = req
+        .elements
+        .iter()
+        .map(|e| e.symbol.clone())
+        .filter(|s| s != &req.main_element && s != "H" && s != "O")
+        .collect();
+
+    let mut main_species = Vec::new();
+    let mut sec_species = Vec::new();
+    let mut ion_main_species = Vec::new();
+    let mut ion_sec_species = Vec::new();
+
+    for sp in &req.species {
+        if let Some(prep) = prepare_species(
+            sp,
+            t_k,
+            req.criss_cobble,
+            repo,
+            &req.delta_g_overrides_kcal,
+            &elem_map,
+            &req.main_element,
+            req.use_davies,
+            eps,
+            req.ionic_strength,
+            req.correction_factor,
+        ) {
+            let is_aq = matches!(sp.phase, Phase::AqueousIon | Phase::AqueousNeutral);
+            if prep.other_elements.contains_key(&req.main_element) {
+                if is_aq {
+                    ion_main_species.push(prep.clone());
+                }
+                main_species.push(prep);
+            } else {
+                if is_aq {
+                    ion_sec_species.push(prep.clone());
+                }
+                sec_species.push(prep);
+            }
+        }
+    }
+
+    if main_species.is_empty() {
+        return Err(format!(
+            "No valid species containing main element '{}'.",
+            req.main_element
+        ));
+    }
+
+    let n = req.grid_resolution.clamp(60, 360);
+    let scale_off = req.potential_scale.offset_v();
+
+    let full = solve_diagram_layer(
+        &main_species,
+        &sec_species,
+        req,
+        t_k,
+        dg_h2o_j,
+        &sec_elems,
+        scale_off,
+        n,
+    );
+
+    let (ion_segments, ion_regions) = if req.show_predominance_ions {
+        if ion_main_species.is_empty() {
+            warnings.push(format!(
+                "No aqueous species containing '{}' available for the Ions overlay.",
+                req.main_element
+            ));
+            (Vec::new(), Vec::new())
+        } else {
+            let ion_layer = solve_diagram_layer(
+                &ion_main_species,
+                &ion_sec_species,
+                req,
+                t_k,
+                dg_h2o_j,
+                &sec_elems,
+                scale_off,
+                n,
+            );
+            (ion_layer.segments, ion_layer.regions)
+        }
+    } else {
+        (Vec::new(), Vec::new())
+    };
+
+    // Water stability limits:
+    // Upper: O2(g) + 4 H+ + 4 e- = 2 H2O  => E_SHE = (-2 * dG_H2O_J) / (4*F) - slope * pH
+    // Lower: 2 H+ + 2 e- = H2(g)          => E_SHE = 0 - slope * pH
+    let slope_v_per_ph = (R_JOULE * t_k * std::f64::consts::LN_10) / FARADAY_C_MOL;
+    let e0_o2_she = (-2.0 * dg_h2o_j) / (4.0 * FARADAY_C_MOL);
+    let water_upper_line = [
+        (req.min_ph, e0_o2_she - slope_v_per_ph * req.min_ph - scale_off),
+        (req.max_ph, e0_o2_she - slope_v_per_ph * req.max_ph - scale_off),
+    ];
+    let water_lower_line = [
+        (req.min_ph, -slope_v_per_ph * req.min_ph - scale_off),
+        (req.max_ph, -slope_v_per_ph * req.max_ph - scale_off),
+    ];
+
     let mut sys_parts = vec![req.main_element.clone()];
     for s in &sec_elems {
         sys_parts.push(s.clone());
@@ -787,13 +826,15 @@ pub fn calculate_ehph(
         delta_g_h2o_kcal: dg_h2o_kcal,
         p_sat_h2o_bar,
         warnings,
-        segments,
-        regions,
+        segments: full.segments,
+        regions: full.regions,
+        ion_segments,
+        ion_regions,
         water_upper_line,
         water_lower_line,
-        table_rows,
+        table_rows: full.table_rows,
         grid_n: n,
-        grid_region_idx,
+        grid_region_idx: full.grid_region_idx,
     })
 }
 
@@ -916,5 +957,118 @@ mod tests {
         let names: Vec<&str> = res.regions.iter().map(|r| r.species.as_str()).collect();
         assert!(names.contains(&"Cu2S"));
         assert!(!res.warnings.is_empty());
+    }
+
+    #[test]
+    fn secondary_element_molality_shifts_sulfide_region() {
+        let make_req = |m_s: f64| EhPhRequest {
+            elements: vec![
+                ElementSpec {
+                    symbol: "Cu".to_string(),
+                    molality: 1e-3,
+                    pressure_bar: 1.0,
+                },
+                ElementSpec {
+                    symbol: "S".to_string(),
+                    molality: m_s,
+                    pressure_bar: 1.0,
+                },
+            ],
+            main_element: "Cu".to_string(),
+            species: vec![
+                make_sp("Cu", Phase::Solid, 0.0),
+                make_sp("Cu(+2a)", Phase::AqueousIon, 15.66),
+                make_sp("Cu2S", Phase::Solid, -20.6),
+                make_sp("HS(-a)", Phase::AqueousIon, 2.88),
+                make_sp("SO4(-2a)", Phase::AqueousIon, -177.95),
+            ],
+            t_k: 298.15,
+            delta_g_h2o_kcal: Some(-56.678),
+            grid_resolution: 80,
+            ..Default::default()
+        };
+
+        let high_s = calculate_ehph(&make_req(1.0), None).unwrap();
+        let low_s = calculate_ehph(&make_req(1e-6), None).unwrap();
+        let cells_high = high_s
+            .regions
+            .iter()
+            .find(|r| r.species == "Cu2S")
+            .map(|r| r.cell_count)
+            .unwrap_or(0);
+        let cells_low = low_s
+            .regions
+            .iter()
+            .find(|r| r.species == "Cu2S")
+            .map(|r| r.cell_count)
+            .unwrap_or(0);
+        assert!(
+            cells_high > cells_low,
+            "higher S molality must enlarge Cu2S domain (high={cells_high}, low={cells_low})"
+        );
+    }
+
+    #[test]
+    fn show_predominance_ions_calculates_both_layers() {
+        let req = EhPhRequest {
+            elements: vec![ElementSpec {
+                symbol: "Cu".to_string(),
+                molality: 1.0,
+                pressure_bar: 1.0,
+            }],
+            main_element: "Cu".to_string(),
+            species: vec![
+                make_sp("Cu", Phase::Solid, 0.0),
+                make_sp("Cu2O", Phase::Solid, -35.335),
+                make_sp("Cu(+2a)", Phase::AqueousIon, 15.66),
+                make_sp("CuO2(-2a)", Phase::AqueousIon, -43.9),
+            ],
+            t_k: 298.15,
+            delta_g_h2o_kcal: Some(-56.678),
+            show_predominance_ions: true,
+            grid_resolution: 80,
+            ..Default::default()
+        };
+        let res = calculate_ehph(&req, None).unwrap();
+        let full_names: Vec<&str> = res.regions.iter().map(|r| r.species.as_str()).collect();
+        let ion_names: Vec<&str> = res.ion_regions.iter().map(|r| r.species.as_str()).collect();
+        assert!(full_names.contains(&"Cu"));
+        assert!(ion_names.contains(&"Cu(+2a)"));
+        assert!(ion_names.contains(&"CuO2(-2a)"));
+        assert!(!ion_names.contains(&"Cu"));
+        assert!(!res.ion_segments.is_empty());
+    }
+
+    #[test]
+    fn potential_scale_offsets_water_lines_and_pressure_uses_max() {
+        let req = EhPhRequest {
+            elements: vec![
+                ElementSpec {
+                    symbol: "Cu".to_string(),
+                    molality: 1.0,
+                    pressure_bar: 1.0,
+                },
+                ElementSpec {
+                    symbol: "S".to_string(),
+                    molality: 1.0,
+                    pressure_bar: 5.0, // Total system P = 5 bar >= P_sat(120 C)
+                },
+            ],
+            main_element: "Cu".to_string(),
+            species: vec![make_sp("Cu", Phase::Solid, 0.0)],
+            t_k: 393.15,
+            potential_scale: PotentialScale::Calomel,
+            delta_g_h2o_kcal: Some(-54.0),
+            grid_resolution: 60,
+            ..Default::default()
+        };
+        let res = calculate_ehph(&req, None).unwrap();
+        assert!(res.warnings.is_empty());
+        assert!((res.water_lower_line[0].1 - (-0.2412)).abs() < 1e-4);
+
+        let mut narrow = req;
+        narrow.max_ph = 7.1;
+        narrow.min_ph = 7.0;
+        assert!(calculate_ehph(&narrow, None).is_err());
     }
 }

@@ -54,6 +54,7 @@ pub struct WaterModuleState {
     pub show_cp_diagram_modal: bool,
     pub show_about_modal: bool,
     pub status_msg: String,
+    pub input_error: Option<String>,
 }
 
 impl WaterModuleState {
@@ -79,7 +80,8 @@ impl WaterModuleState {
             decimal_places: 3,
             show_cp_diagram_modal: false,
             show_about_modal: false,
-            status_msg: "Click or drag [1]/[2] on the p-T diagram or edit cells on the left."
+            input_error: None,
+            status_msg: "Pulse o arrastre [1]/[2] en el diagrama p-T o edite las celdas de la izquierda."
                 .to_string(),
         };
         s.sync_input_buffers();
@@ -87,7 +89,10 @@ impl WaterModuleState {
     }
 
     fn recalculate(&mut self, catalog: &dyn SpeciesCatalogPort) {
-        self.result = SoryntelApplication::calculate_water(catalog, &self.req);
+        match SoryntelApplication::try_calculate_water(catalog, &self.req) {
+            Ok(result) => { self.result = result; self.input_error = None; }
+            Err(error) => { self.input_error = Some(format!("{error}. Se conserva el último resultado válido.")); return; }
+        }
         // Write back effective auto-resolved P or T when saturation is selected
         if self.result.point1.temp_is_auto {
             self.req.point1.temp = self.result.point1.temp_display;
@@ -121,7 +126,10 @@ impl WaterModuleState {
         ctx: &egui::Context,
         catalog: &dyn SpeciesCatalogPort,
     ) {
-        self.result = SoryntelApplication::calculate_water(catalog, &self.req);
+        match SoryntelApplication::try_calculate_water(catalog, &self.req) {
+            Ok(result) => { self.result = result; self.input_error = None; }
+            Err(error) => { self.input_error = Some(format!("{error}. Se conserva el último resultado válido.")); return; }
+        }
         if self.result.point1.temp_is_auto {
             self.req.point1.temp = self.result.point1.temp_display;
         }
@@ -279,6 +287,10 @@ impl WaterModuleState {
     }
 
     fn export_csv(&mut self) {
+        if self.input_error.is_some() {
+            self.status_msg = "Corrija los datos antes de exportar.".into();
+            return;
+        }
         let dp = self.decimal_places;
         let tu = self.req.temp_unit.label();
         let pu = self.req.pressure_unit.label();
@@ -337,14 +349,17 @@ impl WaterModuleState {
             r.point2.exergy_tot,
             r.delta_exergy_tot,
         );
-        let path = "/tmp/soryntel_water_calc.csv";
-        match std::fs::write(path, csv) {
+        let path = crate::ui_common::temp_file_path("soryntel_water_calc.csv");
+        match crate::storage::write_atomic(&path, csv) {
             Ok(_) => self.status_msg = format!("Saved Water calculation CSV to {path}"),
             Err(e) => self.status_msg = format!("CSV export error: {e}"),
         }
     }
 
     pub fn ui(&mut self, ctx: &egui::Context, catalog: &dyn SpeciesCatalogPort) {
+        egui::TopBottomPanel::top("water_model_notice").show(ctx, |ui| {
+            ui.label("Modelo aproximado de agua y vapor. La correlación de saturación procede de IAPWS; las demás propiedades no implementan IF97 completo.");
+        });
         // 1. Classic Top Menu Bar: File | Edit | Format | Show | Set | Help (Fig. 1)
         egui::TopBottomPanel::top("water_menu_bar")
             .frame(
@@ -355,7 +370,7 @@ impl WaterModuleState {
             )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
+                    ui.menu_button(crate::i18n::text("common.001"), |ui| {
                         if ui.button("Preset 1: 180 °C Steam → Triple Point (Fig. 1)").clicked() {
                             self.load_example_preset(1, catalog);
                             ui.close_menu();
@@ -378,7 +393,7 @@ impl WaterModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Edit", |ui| {
+                    ui.menu_button(crate::i18n::text("common.006"), |ui| {
                         if ui.button("Point 2 = Triple Point (Steam Table Ref)").clicked() {
                             self.active_point = ActiveWaterPoint::Point2;
                             self.set_active_to_triple_point(catalog);
@@ -407,7 +422,7 @@ impl WaterModuleState {
                             }
                         }
                     });
-                    ui.menu_button("Format", |ui| {
+                    ui.menu_button(crate::i18n::text("common.019"), |ui| {
                         for dp in [2usize, 3, 4] {
                             if ui
                                 .selectable_label(
@@ -422,7 +437,7 @@ impl WaterModuleState {
                             }
                         }
                     });
-                    ui.menu_button("Show", |ui| {
+                    ui.menu_button(crate::i18n::text("common.103"), |ui| {
                         ui.checkbox(&mut self.show_line, "Line between Point 1 and Point 2");
                         ui.checkbox(&mut self.show_exergy, "Exergy Rows (Ph / Ch / Tot)");
                         ui.checkbox(
@@ -435,7 +450,7 @@ impl WaterModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Set", |ui| {
+                    ui.menu_button(crate::i18n::text("common.104"), |ui| {
                         if ui
                             .selectable_label(
                                 self.active_point == ActiveWaterPoint::Point1,
@@ -457,8 +472,8 @@ impl WaterModuleState {
                             ui.close_menu();
                         }
                     });
-                    ui.menu_button("Help", |ui| {
-                        if ui.button("About Water / Steam Calculator").clicked() {
+                    ui.menu_button(crate::i18n::text("common.003"), |ui| {
+                        if ui.button(crate::i18n::text("common.105")).clicked() {
                             self.show_about_modal = true;
                             ui.close_menu();
                         }
@@ -477,18 +492,18 @@ impl WaterModuleState {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(
-                        egui::RichText::new("Outotec")
+                        egui::RichText::new("Soryntel")
                             .strong()
                             .size(15.0)
                             .color(egui::Color32::from_rgb(198, 52, 40)),
                     );
                     ui.separator();
-                    let note = self
+                    let note = self.input_error.as_deref().or(self
                         .result
                         .point1
                         .warning
                         .as_deref()
-                        .or(self.result.point2.warning.as_deref())
+                        .or(self.result.point2.warning.as_deref()))
                         .unwrap_or(&self.status_msg);
                     ui.label(
                         egui::RichText::new(note)
@@ -543,7 +558,7 @@ impl WaterModuleState {
                     ui.vertical(|ui| {
                         ui.horizontal(|ui| {
                             ui.label(
-                                egui::RichText::new("Water / Steam Calculator")
+                                egui::RichText::new(crate::i18n::text("review.095"))
                                     .strong()
                                     .size(16.0)
                                     .color(egui::Color32::from_rgb(26, 28, 34)),
@@ -558,7 +573,7 @@ impl WaterModuleState {
                         });
                         ui.add_space(4.0);
                         ui.horizontal(|ui| {
-                            ui.label(egui::RichText::new("Amount").size(12.0));
+                            ui.label(egui::RichText::new(crate::i18n::text("common.017")).size(12.0));
                             let resp = ui.add(
                                 egui::TextEdit::singleline(&mut self.amount_buf)
                                     .desired_width(82.0)
@@ -613,7 +628,7 @@ impl WaterModuleState {
                         .inner_margin(egui::Margin::symmetric(10.0, 6.0))
                         .show(ui, |ui| {
                             ui.label(
-                                egui::RichText::new("Data Limits")
+                                egui::RichText::new(crate::i18n::text("review.096"))
                                     .size(11.0)
                                     .color(egui::Color32::from_rgb(56, 60, 68)),
                             );
@@ -1244,11 +1259,11 @@ impl WaterModuleState {
         ui.horizontal_wrapped(|ui| {
             ui.checkbox(
                 &mut self.show_exergy,
-                egui::RichText::new("Exergy").strong().size(12.0),
+                egui::RichText::new(crate::i18n::text("review.097")).strong().size(12.0),
             );
             ui.label(
                 egui::RichText::new(
-                    "All exergy calculations are based on Szargut theory with the standard state of 25°C and 1 bar.",
+                    crate::i18n::text("review.098"),
                 )
                 .size(10.5)
                 .color(egui::Color32::from_rgb(56, 60, 68)),
@@ -1301,7 +1316,7 @@ impl WaterModuleState {
     fn render_right_pt_diagram(&mut self, ui: &mut egui::Ui, catalog: &dyn SpeciesCatalogPort) {
         let avail = ui.available_size();
         if avail.x < 160.0 || avail.y < 160.0 {
-            ui.label("Resize window to display P-T Diagram.");
+            ui.label(crate::i18n::text("review.099"));
             return;
         }
 
@@ -1687,7 +1702,7 @@ impl WaterModuleState {
     fn render_modals(&mut self, ctx: &egui::Context, catalog: &dyn SpeciesCatalogPort) {
         if self.show_cp_diagram_modal {
             let mut open = true;
-            egui::Window::new("Cp Heat Capacity — Steam Pressures (Fig. 5)")
+            egui::Window::new(crate::i18n::text("review.100"))
                 .open(&mut open)
                 .default_width(640.0)
                 .default_height(420.0)
@@ -1695,7 +1710,7 @@ impl WaterModuleState {
                     ui.label("Pressure-corrected steam Cp functions vs ideal-gas H2O(g) [J/(kg·K)] from Maindb6 & Water EOS:");
                     Plot::new("water_cp_fig5_plot")
                         .legend(Legend::default())
-                        .x_axis_label("Temperature (°C)")
+                        .x_axis_label(crate::i18n::text("common.090"))
                         .y_axis_label("Cp [J/(kg·K)]")
                         .show(ui, |plot_ui| {
                             let specs = [
@@ -1722,7 +1737,7 @@ impl WaterModuleState {
                                 }
                             }
                         });
-                    if ui.button("Close").clicked() {
+                    if ui.button(crate::i18n::text("common.004")).clicked() {
                         self.show_cp_diagram_modal = false;
                     }
                 });
@@ -1733,16 +1748,16 @@ impl WaterModuleState {
 
         if self.show_about_modal {
             let mut open = true;
-            egui::Window::new("About Pressure and Temperature Calculator (Water)")
+            egui::Window::new(crate::i18n::text("review.101"))
                 .open(&mut open)
                 .collapsible(false)
                 .show(ctx, |ui| {
-                    ui.label("Soryntel Chemistry — Module 13: Water / Steam Calculator (PTCalc)");
-                    ui.label("• Valid range: T = -270.15..2000 °C, P = 0.001..1000 bar.");
-                    ui.label("• Phases: Solid (s), Liquid (l), Gas (g), Sat. (g,l), Sat. (g,s), Sat. (l,s), and Supercritical.");
-                    ui.label("• Triple Point = (0.01 °C, 0.006117 bar); Critical Point = (373.946 °C, 220.64 bar).");
-                    ui.label("• Szargut exergy model referenced to 25 °C and 1 bar.");
-                    if ui.button("OK").clicked() {
+                    ui.label(crate::i18n::text("review.102"));
+                    ui.label("• Límites numéricos: T = -270,15 a 2000 °C y P = 0,001 a 1000 bar. Estos límites no garantizan exactitud científica.");
+                    ui.label("• Fases: sólido (s), líquido (l), gas (g), mezclas saturadas (g,l), (g,s), (l,s) y fluido supercrítico.");
+                    ui.label("• Punto triple: 0,01 °C y 0,006117 bar. Punto crítico: 373,946 °C y 220,64 bar.");
+                    ui.label("• Modelo de exergía de Szargut con referencia a 25 °C y 1 bar.");
+                    if ui.button(crate::i18n::text("common.002")).clicked() {
                         self.show_about_modal = false;
                     }
                 });
@@ -1869,7 +1884,7 @@ fn draw_cell_btn(
             fg,
         );
     }
-    resp.on_hover_text("Click to activate this point for P-T Diagram clicking/dragging")
+    resp.on_hover_text(crate::i18n::text("review.103"))
 }
 
 #[allow(clippy::too_many_arguments)]

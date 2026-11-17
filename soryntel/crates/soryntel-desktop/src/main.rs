@@ -1,6 +1,10 @@
 //! Soryntel Chemistry — Native Desktop Application (Módulos 01, 02 & 03).
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 
+rust_i18n::i18n!("locales", fallback = "es");
+
+mod i18n;
+mod storage;
 mod addins_bridge;
 mod aqua_ui;
 mod balance_ui;
@@ -18,6 +22,7 @@ mod launcher_ui;
 mod lca_ui;
 mod mass_balance_ui;
 mod phase_stability_ui;
+mod reaction_actions;
 mod reaction_ui;
 mod sim_ui;
 mod species_converter_ui;
@@ -84,6 +89,7 @@ fn kill_child(slot: &mut Option<std::process::Child>) {
 }
 
 fn main() -> eframe::Result<()> {
+    rust_i18n::set_locale("es");
     let mut db = ThermoDatabase::with_open_defaults();
 
     // Load external user-supplied HSC database in read-only mode if provided via --hsc-db or default path
@@ -240,82 +246,82 @@ fn main() -> eframe::Result<()> {
 
     let (title, size, min_size) = match window_mode {
         WindowMode::Launcher => (
-            "Soryntel Chemistry® 10 — Thermodynamic & Metallurgical Suite",
+            crate::i18n::text("window.000"),
             [1120.0, 680.0],
             [720.0, 480.0],
         ),
         WindowMode::Reaction => (
-            "Módulo 1 · Reaction Equations — Soryntel Chemistry",
+            crate::i18n::text("window.001"),
             [1340.0, 820.0],
             [480.0, 360.0],
         ),
         WindowMode::Balance => (
-            "Módulo 2 · Heat & Material Balance — Soryntel Chemistry",
+            crate::i18n::text("window.002"),
             [1380.0, 840.0],
             [480.0, 360.0],
         ),
         WindowMode::HeatLoss => (
-            "Módulo 3 · Heat Loss — Soryntel Chemistry",
+            crate::i18n::text("window.003"),
             [1340.0, 820.0],
             [480.0, 360.0],
         ),
         WindowMode::Equilibrium => (
-            "Módulo 4 · Equilibrium (Gibbs) — Soryntel Chemistry",
+            crate::i18n::text("window.004"),
             [1400.0, 860.0],
             [480.0, 360.0],
         ),
         WindowMode::Exergy => (
-            "Exergy Balance — Soryntel Chemistry",
+            crate::i18n::text("window.005"),
             [1380.0, 820.0],
             [480.0, 360.0],
         ),
         WindowMode::Estimate => (
-            "HSC Estimate — Soryntel Chemistry",
+            crate::i18n::text("window.006"),
             [1100.0, 700.0],
             [480.0, 360.0],
         ),
         WindowMode::EhPh => (
-            "Eh-pH Diagram — Soryntel Chemistry",
+            crate::i18n::text("window.007"),
             [1180.0, 740.0],
             [480.0, 360.0],
         ),
         WindowMode::Diagrams => (
-            "Thermochemical Data Diagrams — Soryntel Chemistry",
+            crate::i18n::text("window.008"),
             [1260.0, 760.0],
             [480.0, 360.0],
         ),
         WindowMode::PhaseStability => (
-            "Phase Stability Diagrams (Tpp / Lpp) — Soryntel Chemistry",
+            crate::i18n::text("window.009"),
             [1220.0, 740.0],
             [480.0, 360.0],
         ),
         WindowMode::SpeciesConverter => (
-            "Species Converter — Soryntel Chemistry",
+            crate::i18n::text("window.010"),
             [1280.0, 760.0],
             [480.0, 360.0],
         ),
         WindowMode::Benson => (
-            "HSC-BEN - Estimating HSC values for organic compounds by Benson GAV method",
+            crate::i18n::text("window.011"),
             [1220.0, 760.0],
             [480.0, 360.0],
         ),
         WindowMode::Elements => (
-            "Periodic Chart — Elements (Soryntel Chemistry)",
+            crate::i18n::text("window.012"),
             [1320.0, 780.0],
             [480.0, 360.0],
         ),
         WindowMode::Water => (
-            "Pressure and Temperature Calculator (Soryntel Chemistry)",
+            crate::i18n::text("window.013"),
             [990.0, 630.0],
             [480.0, 360.0],
         ),
         WindowMode::Units => (
-            "Measure Units — Soryntel Chemistry",
+            crate::i18n::text("window.014"),
             [720.0, 660.0],
             [480.0, 360.0],
         ),
         WindowMode::ExcelAddIns => (
-            "HSC Excel Add-Ins — Soryntel Chemistry",
+            crate::i18n::text("window.015"),
             [1220.0, 760.0],
             [480.0, 360.0],
         ),
@@ -330,17 +336,17 @@ fn main() -> eframe::Result<()> {
             [820.0, 520.0],
         ),
         WindowMode::Lca => (
-            "HSC Sim LCA — Life Cycle Assessment (Soryntel Chemistry)",
+            crate::i18n::text("window.016"),
             [1360.0, 820.0],
             [860.0, 520.0],
         ),
         WindowMode::MassBalance => (
-            "HSC Mass Balance (Mas) — Data Reconciliation (Soryntel Chemistry)",
+            crate::i18n::text("window.017"),
             [1360.0, 820.0],
             [920.0, 560.0],
         ),
         WindowMode::Species => (
-            "Species & Databases (OwnDB / Maindb6) — Soryntel Chemistry",
+            crate::i18n::text("window.018"),
             [1220.0, 760.0],
             [640.0, 480.0],
         ),
@@ -618,7 +624,7 @@ impl eframe::App for SoryntelDesktopApp {
                 self.heat_loss_state.ui(ctx, area_count);
                 if let Some(q_w) = self.heat_loss_state.pending_export_w.take() {
                     let target_area = self.heat_loss_state.export_target_area;
-                    let _ = std::fs::write(
+                    let _ = crate::storage::write_atomic(
                         crate::ui_common::temp_file_path("soryntel_heat_loss_export.txt"),
                         format!("{target_area} {q_w}"),
                     );
@@ -703,7 +709,7 @@ impl eframe::App for SoryntelDesktopApp {
             }
             WindowMode::Species => {
                 if let Some(f) = self.species_state.ui(ctx, &mut self.db) {
-                    let _ = std::fs::write(
+                    let _ = crate::storage::write_atomic(
                         crate::ui_common::temp_file_path("soryntel_import_formula.txt"),
                         &f,
                     );
@@ -784,33 +790,33 @@ impl SoryntelDesktopApp {
             use launcher_ui::{ShowcaseCategory as Cat, TileAction as Act, TileSpec};
             let tiles: [TileSpec; 24] = [
                 // Row 1 (Fig. 1 top row)
-                TileSpec { code: "Aqu", label: "Aqueous\nSolutions", action: Act::Launch("aqua"), category: Cat::Sustainability, running: running_aqua },
-                TileSpec { code: "Bal", label: "Heat & Material\nBalance", action: Act::Launch("balance"), category: Cat::Products, running: running_balance },
-                TileSpec { code: "EpH", label: "Eh-pH\nDiagrams", action: Act::Launch("ehph"), category: Cat::Sustainability, running: running_ehph },
-                TileSpec { code: "Est", label: "H, S and Cp\nEstimates", action: Act::Launch("estimate"), category: Cat::ResearchDev, running: running_estimate },
-                TileSpec { code: "Mea", label: "Measure\nUnits", action: Act::Launch("units"), category: Cat::Services, running: running_units },
-                TileSpec { code: "Nav", label: "Diagram\nNavigator", action: Act::Launch("diagrams"), category: Cat::Products, running: running_diagrams },
+                TileSpec { code: "Aqu", label: crate::i18n::text("nav.029"), action: Act::Launch("aqua"), category: Cat::Sustainability, running: running_aqua },
+                TileSpec { code: "Bal", label: crate::i18n::text("nav.030"), action: Act::Launch("balance"), category: Cat::Products, running: running_balance },
+                TileSpec { code: "EpH", label: crate::i18n::text("nav.031"), action: Act::Launch("ehph"), category: Cat::Sustainability, running: running_ehph },
+                TileSpec { code: "Est", label: crate::i18n::text("nav.032"), action: Act::Launch("estimate"), category: Cat::ResearchDev, running: running_estimate },
+                TileSpec { code: "Mea", label: crate::i18n::text("nav.033"), action: Act::Launch("units"), category: Cat::Services, running: running_units },
+                TileSpec { code: "Nav", label: crate::i18n::text("nav.034"), action: Act::Launch("diagrams"), category: Cat::Products, running: running_diagrams },
                 // Row 2
-                TileSpec { code: "Ben", label: "Benson\nEstimation", action: Act::Launch("benson"), category: Cat::ResearchDev, running: running_benson },
-                TileSpec { code: "Con", label: "Species\nConverter", action: Act::Launch("species_converter"), category: Cat::Services, running: running_species_converter },
-                TileSpec { code: "Exe", label: "Exergy\nBalance", action: Act::Launch("exergy"), category: Cat::Sustainability, running: running_exergy },
-                TileSpec { code: "Gem", label: "Equilibrium\nCompositions", action: Act::Launch("equilibrium"), category: Cat::Products, running: running_equilibrium },
-                TileSpec { code: "Rea", label: "Reaction\nEquations", action: Act::Launch("reaction"), category: Cat::Products, running: running_reaction },
-                TileSpec { code: "Sim", label: "Flowsheet\nSimulation", action: Act::Launch("sim"), category: Cat::Products, running: running_sim },
+                TileSpec { code: "Ben", label: crate::i18n::text("nav.035"), action: Act::Launch("benson"), category: Cat::ResearchDev, running: running_benson },
+                TileSpec { code: "Con", label: crate::i18n::text("nav.036"), action: Act::Launch("species_converter"), category: Cat::Services, running: running_species_converter },
+                TileSpec { code: "Exe", label: crate::i18n::text("nav.037"), action: Act::Launch("exergy"), category: Cat::Sustainability, running: running_exergy },
+                TileSpec { code: "Gem", label: crate::i18n::text("nav.038"), action: Act::Launch("equilibrium"), category: Cat::Products, running: running_equilibrium },
+                TileSpec { code: "Rea", label: crate::i18n::text("nav.039"), action: Act::Launch("reaction"), category: Cat::Products, running: running_reaction },
+                TileSpec { code: "Sim", label: crate::i18n::text("nav.040"), action: Act::Launch("sim"), category: Cat::Products, running: running_sim },
                 // Row 3
-                TileSpec { code: "Dat", label: "Data\nProcessing", action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
-                TileSpec { code: "DB", label: "H, S and Cp\nDatabase", action: Act::Launch("species"), category: Cat::ResearchDev, running: running_browser },
-                TileSpec { code: "Geo", label: "Mineral\nDatabase", action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
-                TileSpec { code: "HTr", label: "Heat Loss\nCalculator", action: Act::Launch("heatloss"), category: Cat::Services, running: running_heat_loss },
-                TileSpec { code: "Tpp", label: "Stability\nDiagrams", action: Act::Launch("phase_stability"), category: Cat::ResearchDev, running: running_phase_stability },
-                TileSpec { code: "Wat", label: "Water\nCalculator", action: Act::Launch("water"), category: Cat::Sustainability, running: running_water },
+                TileSpec { code: "Dat", label: crate::i18n::text("nav.041"), action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
+                TileSpec { code: "DB", label: crate::i18n::text("window.019"), action: Act::Launch("species"), category: Cat::ResearchDev, running: running_browser },
+                TileSpec { code: "Geo", label: crate::i18n::text("nav.042"), action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
+                TileSpec { code: "HTr", label: crate::i18n::text("nav.043"), action: Act::Launch("heatloss"), category: Cat::Services, running: running_heat_loss },
+                TileSpec { code: "Tpp", label: crate::i18n::text("nav.044"), action: Act::Launch("phase_stability"), category: Cat::ResearchDev, running: running_phase_stability },
+                TileSpec { code: "Wat", label: crate::i18n::text("nav.045"), action: Act::Launch("water"), category: Cat::Sustainability, running: running_water },
                 // Row 4
-                TileSpec { code: "Dia", label: "H, S, Cp and G\nDiagrams", action: Act::Launch("diagrams"), category: Cat::ResearchDev, running: running_diagrams },
-                TileSpec { code: "Ele", label: "Periodic\nChart", action: Act::Launch("elements"), category: Cat::ResearchDev, running: running_elements },
-                TileSpec { code: "Mas", label: "Mass\nBalances", action: Act::Launch("mass_balance"), category: Cat::Products, running: running_mass_balance },
-                TileSpec { code: "Lca", label: "LCA\nEvaluation", action: Act::Launch("lca"), category: Cat::Sustainability, running: running_lca },
-                TileSpec { code: "?", label: "Help\nModule", action: Act::Help, category: Cat::None, running: false },
-                TileSpec { code: "SUB", label: "SUB\nMENU", action: Act::SubMenu, category: Cat::None, running: false },
+                TileSpec { code: "Dia", label: crate::i18n::text("nav.046"), action: Act::Launch("diagrams"), category: Cat::ResearchDev, running: running_diagrams },
+                TileSpec { code: "Ele", label: crate::i18n::text("nav.047"), action: Act::Launch("elements"), category: Cat::ResearchDev, running: running_elements },
+                TileSpec { code: "Mas", label: crate::i18n::text("nav.048"), action: Act::Launch("mass_balance"), category: Cat::Products, running: running_mass_balance },
+                TileSpec { code: "Lca", label: crate::i18n::text("nav.049"), action: Act::Launch("lca"), category: Cat::Sustainability, running: running_lca },
+                TileSpec { code: "?", label: crate::i18n::text("nav.050"), action: Act::Help, category: Cat::None, running: false },
+                TileSpec { code: "SUB", label: crate::i18n::text("window.020"), action: Act::SubMenu, category: Cat::None, running: false },
             ];
             match launcher_ui::render_hsc10_grid_canvas(
                 ctx,
@@ -869,7 +875,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "01",
                 code: "Rea",
-                title: "Reaction Equations",
+                title: crate::i18n::text("nav.051"),
                 desc: "Cálculos termodinámicos de especies y reacciones: Cp, H, S, G, K y potenciales electroquímicos.",
                 accent: egui::Color32::from_rgb(37, 99, 235),
                 mode_arg: "reaction",
@@ -879,7 +885,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "02",
                 code: "Bal",
-                title: "Heat & Material Balance",
+                title: crate::i18n::text("nav.052"),
                 desc: "Balances de masa, energía y exergía con flujos, áreas de proceso y hojas tipo Excel.",
                 accent: egui::Color32::from_rgb(13, 148, 136),
                 mode_arg: "balance",
@@ -889,7 +895,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "03",
                 code: "HTr",
-                title: "Heat Loss",
+                title: crate::i18n::text("nav.053"),
                 desc: "Transferencia de calor multicapa por conducción, convección y radiación con exportación a Balance.",
                 accent: egui::Color32::from_rgb(217, 119, 6),
                 mode_arg: "heatloss",
@@ -899,7 +905,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "04",
                 code: "Gem",
-                title: "Equilibrium (Gibbs)",
+                title: crate::i18n::text("nav.054"),
                 desc: "Minimización de energía libre de Gibbs multifase (GEM), barridos 1D/2D y gráficos 2D/3D.",
                 accent: egui::Color32::from_rgb(124, 58, 237),
                 mode_arg: "equilibrium",
@@ -909,7 +915,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "05",
                 code: "Exe",
-                title: "Exergy Balance",
+                title: crate::i18n::text("nav.055"),
                 desc: "Balances de exergía química (Szargut 1988), física, mezcla ideal y calor por Carnot.",
                 accent: egui::Color32::from_rgb(21, 128, 61),
                 mode_arg: "exergy",
@@ -919,7 +925,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "06",
                 code: "Est",
-                title: "HSC Estimate",
+                title: crate::i18n::text("window.021"),
                 desc: "Estimación de H, S, Cp, ΔG (Neumann-Kopp, Latimer, Benson), paridad vs Maindb6 y ajuste Kelley.",
                 accent: egui::Color32::from_rgb(14, 116, 144),
                 mode_arg: "estimate",
@@ -929,7 +935,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "07",
                 code: "EpH",
-                title: "Eh-pH Diagrams",
+                title: crate::i18n::text("nav.056"),
                 desc: "Diagramas de Pourbaix (STABCAL), límites del agua, Criss-Cobble, Davies y Combiner multi-dataset.",
                 accent: egui::Color32::from_rgb(124, 58, 237),
                 mode_arg: "ehph",
@@ -949,7 +955,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "09",
                 code: "Tpp",
-                title: "Phase Stability Diagrams",
+                title: crate::i18n::text("nav.057"),
                 desc: "Diagramas de predominancia T-p (Tpp) y p-p isotérmicos (Lpp) para sistemas ternarios y Table Values.",
                 accent: egui::Color32::from_rgb(79, 70, 229),
                 mode_arg: "phase_stability",
@@ -959,7 +965,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "10",
                 code: "Con",
-                title: "Species Converter",
+                title: crate::i18n::text("nav.058"),
                 desc: "Conversión mineralógica elementos ↔ especies (NNLS Métodos 1-3), Element Balance, Fix Balance y Charts.",
                 accent: egui::Color32::from_rgb(190, 24, 93),
                 mode_arg: "species_converter",
@@ -969,7 +975,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "11",
                 code: "Ben",
-                title: "Benson Estimation (HSC-BEN)",
+                title: crate::i18n::text("nav.059"),
                 desc: "Constructor 3D molecular interactivo y estimación orgánica por grupos de Benson (GAV) G/L/S con guardado DB.",
                 accent: egui::Color32::from_rgb(29, 78, 216),
                 mode_arg: "benson",
@@ -979,7 +985,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "12",
                 code: "Ele",
-                title: "Elements (Periodic Chart)",
+                title: crate::i18n::text("nav.060"),
                 desc: "Tabla Periódica interactiva (Z=1..103), esferas proporcionales por propiedad, Element4 editable y Maindb6.",
                 accent: egui::Color32::from_rgb(5, 150, 105),
                 mode_arg: "elements",
@@ -989,7 +995,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "13",
                 code: "Wat",
-                title: "Water / Steam Calculator (PTCalc)",
+                title: crate::i18n::text("nav.061"),
                 desc: "Tablas de vapor interactivas p-T (-270..2000 °C, 0.001..1000 bar), saturación, Mixture % y exergía Szargut.",
                 accent: egui::Color32::from_rgb(2, 132, 199),
                 mode_arg: "water",
@@ -999,7 +1005,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "14",
                 code: "Mea",
-                title: "Measure Units",
+                title: crate::i18n::text("window.022"),
                 desc: "Conversor bidireccional (90 magnitudes, 444 unidades + prefijos SI), CODATA, Tamices Mesh y Humedad.",
                 accent: egui::Color32::from_rgb(217, 119, 6),
                 mode_arg: "units",
@@ -1009,7 +1015,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "15",
                 code: "Dat",
-                title: "Excel Add-In Functions",
+                title: crate::i18n::text("window.023"),
                 desc: "83 funciones HSC6/HSC10 + Mineralogía, StreamEQ matricial, exportador .xlsx/.ods/ONLYOFFICE y puente HTTP.",
                 accent: egui::Color32::from_rgb(33, 115, 70),
                 mode_arg: "excel_addins",
@@ -1019,7 +1025,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "16",
                 code: "DB",
-                title: "Species & Databases (HSC 6)",
+                title: crate::i18n::text("window.024"),
                 desc: "Búsqueda estequiométrica y orgánica (OwnDB > Maindb6), Editor OwnDB, Fit Cp, Convert Cp y G(T) -> H,S,Cp.",
                 accent: egui::Color32::from_rgb(51, 65, 85),
                 mode_arg: "species",
@@ -1029,7 +1035,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "17",
                 code: "Aqu",
-                title: "Aqua (Aqueous Solutions)",
+                title: crate::i18n::text("window.025"),
                 desc: "Electrolitos Pitzer / Harvie / Davies, Active Parameter Sets, OwnDB editable, Density (59 sales) y Plot AC vs T.",
                 accent: egui::Color32::from_rgb(2, 132, 199),
                 mode_arg: "aqua",
@@ -1039,7 +1045,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "18",
                 code: "Sim",
-                title: "HSC Sim Common Tools (Flowsheet)",
+                title: crate::i18n::text("window.026"),
                 desc: "Editor de diagramas de flujo, Stream Tables, Scenario Editor (Monte Carlo), Control Loops, Tank, Tarjan y Reports.",
                 accent: egui::Color32::from_rgb(16, 108, 180),
                 mode_arg: "sim",
@@ -1049,7 +1055,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "19",
                 code: "Lca",
-                title: "Sim LCA (Life Cycle Assessment)",
+                title: crate::i18n::text("window.027"),
                 desc: "LCA Evaluation (GaBi EcoSpold v1.0, OpenLCA JSON-LD .zip, Exergy, *,?,#) + Beta IPC/LCIA (ecoinvent 3.8, ReCiPe).",
                 accent: egui::Color32::from_rgb(22, 163, 74),
                 mode_arg: "lca",
@@ -1059,7 +1065,7 @@ impl SoryntelDesktopApp {
             ModuleCardSpec {
                 num: "20",
                 code: "Mas",
-                title: "Mass Balance (Mas · Data Reconciliation)",
+                title: crate::i18n::text("window.028"),
                 desc: "Reconciliación EWTLS+WLS por flujos, agua/%sólidos y PSD (Sized/Assay), LS/MinMax/NNLS/CLS/LLS y Export Excel.",
                 accent: egui::Color32::from_rgb(234, 88, 12),
                 mode_arg: "mass_balance",
@@ -1154,9 +1160,9 @@ impl SoryntelDesktopApp {
                             !self.launcher_ui_state.cards_recent_only;
                     }
                     for (cat, lbl) in [
-                        (Cat::Products, "Products"),
-                        (Cat::Services, "Services"),
-                        (Cat::Sustainability, "Sustainability"),
+                        (Cat::Products, crate::i18n::text("nav.004")),
+                        (Cat::Services, crate::i18n::text("nav.005")),
+                        (Cat::Sustainability, crate::i18n::text("nav.006")),
                         (Cat::ResearchDev, "Research & Dev"),
                     ] {
                         let sel = self.launcher_ui_state.cards_category == cat;
@@ -1432,7 +1438,7 @@ impl SoryntelDesktopApp {
                                     ui.vertical(|ui| {
                                         ui.label(
                                             egui::RichText::new(
-                                                "16 · Species & Databases (HSC 6)  +  Geo · Mineral Database",
+                                                crate::i18n::text("window.029"),
                                             )
                                             .strong()
                                             .size(13.0)
@@ -1623,14 +1629,14 @@ mod tests {
         assert!(texts.iter().any(|t| t == "HERR. GEO"));
         assert!(texts
             .iter()
-            .any(|t| t.contains("Mass Balance (Mas · Data Reconciliation)")));
+            .any(|t| t.contains(crate::i18n::text("window.028"))));
         assert!(texts
             .iter()
-            .any(|t| t.contains("Sim LCA (Life Cycle Assessment)")));
+            .any(|t| t.contains(crate::i18n::text("window.027"))));
         assert!(texts
             .iter()
-            .any(|t| t.contains("HSC Sim Common Tools (Flowsheet)")));
-        assert!(texts.iter().any(|t| t.contains("Aqua (Aqueous Solutions)")));
+            .any(|t| t.contains(crate::i18n::text("window.026"))));
+        assert!(texts.iter().any(|t| t.contains(crate::i18n::text("window.025"))));
     }
 
     #[test]

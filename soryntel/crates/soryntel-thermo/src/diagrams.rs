@@ -7,12 +7,15 @@
 //! scaling, and solid vs. extrapolated curve segmentation.
 
 use serde::{Deserialize, Serialize};
-use soryntel_core::{CAL_TO_JOULE, T_REF_K};
+use soryntel_core::{CAL_TO_JOULE, R_JOULE, T_REF_K};
 use soryntel_solver::parse_term;
 
-use crate::{evaluate_species_si, sum_element_references, ChemicalSpecies, SpeciesRepository};
+use crate::{
+    balance::species_chemical_exergy_kj_mol, evaluate_species_si, sum_element_references,
+    ChemicalSpecies, SpeciesRepository,
+};
 
-/// Eight thermochemical diagram types supported by HSC6 §19.
+/// Nine thermochemical diagram types supported by HSC6 §19.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagramType {
     HTotal,
@@ -23,6 +26,7 @@ pub enum DiagramType {
     DeltaH,
     DeltaS,
     DeltaGEllingham,
+    ExExergy,
 }
 
 impl DiagramType {
@@ -35,6 +39,7 @@ impl DiagramType {
         DiagramType::DeltaH,
         DiagramType::DeltaS,
         DiagramType::DeltaGEllingham,
+        DiagramType::ExExergy,
     ];
 
     pub fn label(self) -> &'static str {
@@ -47,6 +52,7 @@ impl DiagramType {
             DiagramType::DeltaH => "Delta H (DH)",
             DiagramType::DeltaS => "Delta S (DS)",
             DiagramType::DeltaGEllingham => "Delta G (Ellingham)",
+            DiagramType::ExExergy => "Ex Exergy (total)",
         }
     }
 
@@ -91,6 +97,10 @@ impl DiagramEnergyUnit {
 pub struct DiagramSpeciesInput {
     pub formula: String,
     pub coeff: f64,
+    #[serde(default)]
+    pub row_index: Option<usize>,
+    #[serde(default)]
+    pub species_override: Option<ChemicalSpecies>,
 }
 
 /// Request for computing a thermochemical data diagram.
@@ -119,6 +129,8 @@ pub struct DiagramSeries {
     pub label: String,
     pub formula: String,
     pub coeff: f64,
+    #[serde(default)]
+    pub row_index: Option<usize>,
     pub t_min_db_k: f64,
     pub t_max_db_k: f64,
     pub points: Vec<DiagramPoint>,
@@ -162,32 +174,46 @@ pub fn calculate_diagram(
 
     let mut series = Vec::new();
     let mut warnings = Vec::new();
+    let need_ref = matches!(
+        req.diagram_type,
+        DiagramType::DeltaH | DiagramType::DeltaS | DiagramType::DeltaGEllingham
+    );
+    let need_ref_298 = matches!(
+        req.diagram_type,
+        DiagramType::HHeatContent | DiagramType::ExExergy
+    );
 
     for item in &req.species {
         let f_trim = item.formula.trim();
         if f_trim.is_empty() {
             continue;
         }
-        let Some(sp) = repo.get_species(f_trim) else {
+        let Some(sp) = item
+            .species_override
+            .clone()
+            .or_else(|| repo.get_species(f_trim))
+        else {
             warnings.push(format!("Species '{f_trim}' not found in database."));
             continue;
         };
         let term = parse_term(&sp.formula).map_err(|e| format!("{f_trim}: {e}"))?;
-        let t_min_db_k = sp
-            .intervals
-            .iter()
-            .map(|iv| iv.t_min)
-            .fold(f64::INFINITY, f64::min);
-        let t_max_db_k = sp
-            .intervals
-            .iter()
-            .map(|iv| iv.t_max)
-            .fold(0.0_f64, f64::max);
+        let (t_min_db_k, t_max_db_k) = species_db_temp_range(&sp);
 
-        // Reference H(298.15 K) for H Heat Content (latent).
-        let h_298_j = evaluate_species_si(&sp, T_REF_K, false, false)
-            .map(|(p, _)| p.h)
-            .unwrap_or(0.0);
+        // Reference H(298.15 K), S(298.15 K), and standard chemical exergy for H Heat Content / Exergy.
+        let pt_298 = if need_ref_298 {
+            evaluate_species_si(&sp, T_REF_K, false, false)
+                .map(|(p, _)| p)
+                .ok()
+        } else {
+            None
+        };
+        let h_298_j = pt_298.as_ref().map(|p| p.h).unwrap_or(0.0);
+        let s_298_j_k = pt_298.as_ref().map(|p| p.s).unwrap_or(0.0);
+        let ex_chem_j = if req.diagram_type == DiagramType::ExExergy {
+            species_chemical_exergy_kj_mol(repo, &sp) * 1000.0
+        } else {
+            0.0
+        };
 
         let scale_mass = if req.per_kg {
             // 1 kg = 1000 g / M (mol)
@@ -201,10 +227,6 @@ pub fn calculate_diagram(
             let Ok((pt, _)) = evaluate_species_si(&sp, tk, false, false) else {
                 continue;
             };
-            let need_ref = matches!(
-                req.diagram_type,
-                DiagramType::DeltaH | DiagramType::DeltaS | DiagramType::DeltaGEllingham
-            );
             let (h_ref, s_ref, g_ref) = if need_ref {
                 let (h, s, g, _) = sum_element_references(&term, tk, false, repo)
                     .unwrap_or((0.0, 0.0, 0.0, 0.0));
@@ -222,6 +244,9 @@ pub fn calculate_diagram(
                 DiagramType::DeltaH => pt.h - h_ref,
                 DiagramType::DeltaS => pt.s - s_ref,
                 DiagramType::DeltaGEllingham => pt.g - g_ref,
+                DiagramType::ExExergy => {
+                    ex_chem_j + (pt.h - h_298_j) - T_REF_K * (pt.s - s_298_j_k)
+                }
             };
 
             let y_converted = match (req.energy_unit, req.diagram_type.is_entropy_or_cp()) {
@@ -250,6 +275,7 @@ pub fn calculate_diagram(
             label,
             formula: sp.formula,
             coeff: item.coeff,
+            row_index: item.row_index,
             t_min_db_k,
             t_max_db_k,
             points,
@@ -265,6 +291,77 @@ pub fn calculate_diagram(
         series,
         warnings,
     })
+}
+
+/// Nomographic Ellingham scales (`log10 pO2`, `CO/CO2`, `H2/H2O`) at `(t_k, y_val)`
+/// implementing Ch. 19 Appendix 1 Equations (10)–(21) for `o_atoms_balanced` O atoms (`2.0` -> 1 mol O2(g)).
+#[derive(Debug, Clone, Copy)]
+pub struct EllinghamScales {
+    pub log10_po2: f64,
+    pub log10_co_co2: Option<f64>,
+    pub log10_h2_h2o: Option<f64>,
+}
+
+/// Converts a plot `(T_K, ΔG)` value in `unit` back to `log10(pO2)` and `CO/CO2`, `H2/H2O` ratios.
+pub fn ellingham_scales_at(
+    t_k: f64,
+    y_val: f64,
+    o_atoms_balanced: f64,
+    unit: DiagramEnergyUnit,
+    repo: &dyn SpeciesRepository,
+) -> EllinghamScales {
+    let dg_j = match unit {
+        DiagramEnergyUnit::KiloJoules => y_val * 1000.0,
+        DiagramEnergyUnit::KiloCalories => y_val * 1000.0 * CAL_TO_JOULE,
+    };
+    let n_o2 = (o_atoms_balanced * 0.5).max(1e-6);
+    let denom = n_o2 * R_JOULE * t_k.max(1.0) * std::f64::consts::LN_10;
+    let log10_po2 = dg_j / denom;
+
+    // 2 CO(g) + O2(g) = 2 CO2(g) -> scaled to n_o2 moles of O2(g): ΔG° = n_o2 * (2*g(CO2) - 2*g(CO) - g(O2))
+    let log10_co_co2 = (|| {
+        let co = repo.get_species("CO(g)")?;
+        let co2 = repo.get_species("CO2(g)")?;
+        let o2 = repo.get_species("O2(g)")?;
+        let (pt_co, _) = evaluate_species_si(&co, t_k.max(1.0), false, false).ok()?;
+        let (pt_co2, _) = evaluate_species_si(&co2, t_k.max(1.0), false, false).ok()?;
+        let (pt_o2, _) = evaluate_species_si(&o2, t_k.max(1.0), false, false).ok()?;
+        let dg_2co_j = n_o2 * (2.0 * pt_co2.g - 2.0 * pt_co.g - pt_o2.g);
+        Some((dg_2co_j - dg_j) / (2.0 * denom))
+    })();
+
+    // 2 H2(g) + O2(g) = 2 H2O(g) -> scaled to n_o2 moles of O2(g)
+    let log10_h2_h2o = (|| {
+        let h2 = repo.get_species("H2(g)")?;
+        let h2o = repo.get_species("H2O(g)")?;
+        let o2 = repo.get_species("O2(g)")?;
+        let (pt_h2, _) = evaluate_species_si(&h2, t_k.max(1.0), false, false).ok()?;
+        let (pt_h2o, _) = evaluate_species_si(&h2o, t_k.max(1.0), false, false).ok()?;
+        let (pt_o2, _) = evaluate_species_si(&o2, t_k.max(1.0), false, false).ok()?;
+        let dg_2h2_j = n_o2 * (2.0 * pt_h2o.g - 2.0 * pt_h2.g - pt_o2.g);
+        Some((dg_2h2_j - dg_j) / (2.0 * denom))
+    })();
+
+    EllinghamScales {
+        log10_po2,
+        log10_co_co2,
+        log10_h2_h2o,
+    }
+}
+
+/// Evaluates `ΔG°(T)` along a constant `pO2 = 10^log10_po2` line in `unit` (Eq. 11).
+pub fn ellingham_po2_isoline_val(
+    t_k: f64,
+    log10_po2: f64,
+    o_atoms_balanced: f64,
+    unit: DiagramEnergyUnit,
+) -> f64 {
+    let n_o2 = (o_atoms_balanced * 0.5).max(1e-6);
+    let dg_j = n_o2 * R_JOULE * t_k.max(1.0) * std::f64::consts::LN_10 * log10_po2;
+    match unit {
+        DiagramEnergyUnit::KiloJoules => dg_j / 1000.0,
+        DiagramEnergyUnit::KiloCalories => dg_j / (1000.0 * CAL_TO_JOULE),
+    }
 }
 
 /// Helper to look up `TMin` / `TMax` in Kelvin for a formula in `repo`.
@@ -345,6 +442,8 @@ mod tests {
             species: vec![DiagramSpeciesInput {
                 formula: "FeO".to_string(),
                 coeff: 1.0,
+                row_index: Some(0),
+                species_override: None,
             }],
             diagram_type: DiagramType::HHeatContent,
             t_min_k: 298.15,
@@ -360,6 +459,7 @@ mod tests {
         assert!(!pts[1].extrapolated);
         assert!(pts[2].extrapolated);
         assert!((pts[2].y_val - 50.0).abs() < 1e-4);
+        assert_eq!(res.series[0].row_index, Some(0));
     }
 
     #[test]
@@ -376,10 +476,14 @@ mod tests {
                 DiagramSpeciesInput {
                     formula: "MgO".to_string(),
                     coeff: 2.0,
+                    row_index: Some(0),
+                    species_override: None,
                 },
                 DiagramSpeciesInput {
                     formula: "FeO".to_string(),
                     coeff: 2.0,
+                    row_index: Some(1),
+                    species_override: None,
                 },
             ],
             diagram_type: DiagramType::DeltaGEllingham,
@@ -391,5 +495,41 @@ mod tests {
         };
         let res = calculate_diagram(&req, &repo).unwrap();
         assert!(res.series[0].points[0].y_val < res.series[1].points[0].y_val);
+    }
+
+    #[test]
+    fn ex_exergy_diagram_and_ellingham_fig6_scale_parity() {
+        let mut map = HashMap::new();
+        map.insert("Fe".to_string(), sp_const("Fe", 55.85, 0.0, 6.5, 25.0, 3000.0));
+        map.insert("CO(g)".to_string(), sp_const("CO(g)", 28.01, -26.42, 47.2, 29.1, 3000.0));
+        map.insert("CO2(g)".to_string(), sp_const("CO2(g)", 44.01, -94.05, 51.07, 37.1, 3000.0));
+        map.insert("O2(g)".to_string(), sp_const("O2(g)", 32.0, 0.0, 49.0, 30.0, 3000.0));
+        let repo = MockRepo(map);
+
+        // Ch. 19 line 17: Ex Exergy (total) increases cleanly above T0 = 298.15 K
+        let req = DiagramRequest {
+            species: vec![DiagramSpeciesInput {
+                formula: "Fe".to_string(),
+                coeff: 1.0,
+                row_index: Some(0),
+                species_override: None,
+            }],
+            diagram_type: DiagramType::ExExergy,
+            t_min_k: 298.15,
+            t_max_k: 1298.15,
+            step_k: 500.0,
+            energy_unit: DiagramEnergyUnit::KiloJoules,
+            per_kg: false,
+        };
+        let res = calculate_diagram(&req, &repo).unwrap();
+        assert_eq!(res.y_unit, "kJ/mol");
+        let pts = &res.series[0].points;
+        assert!(pts[2].y_val > pts[0].y_val + 10.0);
+
+        // Ch. 19 Fig. 6 check: 2 Fe + O2(g) = 2 FeO at 1000 °C -> ΔG° = -363.052 kJ => log10 pO2 = -14.896
+        let sc = ellingham_scales_at(1273.15, -363.052, 2.0, DiagramEnergyUnit::KiloJoules, &repo);
+        assert!((sc.log10_po2 - (-14.896)).abs() < 0.002);
+        let dg_back = ellingham_po2_isoline_val(1273.15, sc.log10_po2, 2.0, DiagramEnergyUnit::KiloJoules);
+        assert!((dg_back - (-363.052)).abs() < 1e-6);
     }
 }
