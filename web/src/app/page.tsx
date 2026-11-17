@@ -1,11 +1,12 @@
 import { ArrowRight, ArrowUpRight, Download } from "lucide-react";
+import { GitHubIcon } from "@/components/github-icon";
 import { Logo } from "@/components/logo";
 import { SiteHeader } from "@/components/site-header";
 import { HeroWindow } from "@/components/hero-window";
 import { DownloadButton } from "@/components/download-button";
 import { DemoPlayer } from "@/components/demo-player";
 import { Gallery } from "@/components/gallery";
-import { downloads, moduleGroups, REPO, VERSION } from "@/content/site";
+import { downloads, moduleGroups, RELEASES_REPO, SOURCE_REPO, VERSION } from "@/content/site";
 import { cn } from "@/lib/utils";
 
 const wrap = "mx-auto w-[min(100%-2rem,72rem)] md:w-[min(100%-4rem,72rem)]";
@@ -126,24 +127,25 @@ export default function Home() {
             <div>
               <h2 className={h2}>La confianza empieza por declarar los límites.</h2>
               <p className={lede}>
-                El repositorio documenta casos de referencia, pruebas automatizadas y el alcance de cada modelo. Validar casos
-                concretos no equivale a calibrar una planta ni a ser equivalente a una base de datos comercial.
+                Cada cambio en el código ejecuta 108 pruebas automatizadas con casos de referencia. Validar casos concretos no
+                equivale a calibrar una planta ni a ser equivalente a una base de datos comercial.
               </p>
               <a
-                href={`${REPO}/blob/main/docs/SCIENTIFIC_VALIDATION.md`}
+                href={`${SOURCE_REPO}/tree/main/soryntel`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-7 inline-flex items-center gap-1.5 font-medium underline decoration-border underline-offset-[6px] transition-colors hover:text-brand hover:decoration-brand"
               >
-                Leer la cobertura científica
+                <GitHubIcon />
+                Ver el código y sus pruebas
                 <ArrowUpRight className="size-4" aria-hidden="true" />
               </a>
             </div>
             <dl className="divide-y divide-border border-y border-border">
               {[
-                ["Casos de referencia", "Agua y vapor, equilibrio de Gibbs, equilibrio acuoso y conservación en balances minerales."],
+                ["Casos de referencia", "Agua y vapor (W1–W6), equilibrio por minimización de Gibbs, soluciones acuosas, estimación de Benson (B1–B8) y reconciliación de balances de masa."],
                 ["Procedencia visible", "Cada dato termodinámico muestra su fuente, como Barin o JANAF, junto al valor."],
-                ["Alcance explícito", "Los modelos aproximados y los datos sin verificar se señalan como tales."],
+                ["Alcance explícito", "Los resultados fuera del rango de datos experimentales se marcan como extrapolación."],
               ].map(([t, d]) => (
                 <div key={t} className="py-6">
                   <dt className="text-[17px] font-medium">{t}</dt>
@@ -202,7 +204,7 @@ export default function Home() {
             </div>
             <p className="mt-8 text-center text-sm text-[oklch(0.95_0.006_160/0.6)]">
               ¿Otra versión o el código fuente?{" "}
-              <a href={`${REPO}/releases`} className="underline underline-offset-4 hover:text-white" target="_blank" rel="noopener noreferrer">
+              <a href={`${RELEASES_REPO}/releases`} className="underline underline-offset-4 hover:text-white" target="_blank" rel="noopener noreferrer">
                 Todas las publicaciones
               </a>
             </p>
@@ -214,7 +216,8 @@ export default function Home() {
         <div className={cn(wrap, "flex flex-wrap items-center justify-between gap-6 border-t border-[oklch(1_0_0/0.08)] py-8")}>
           <Logo variant="white" className="h-8" />
           <span>Software científico de escritorio, escrito en Rust.</span>
-          <a href={REPO} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-white">
+          <a href={SOURCE_REPO} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white">
+            <GitHubIcon />
             Código fuente <ArrowUpRight className="size-3.5" aria-hidden="true" />
           </a>
         </div>

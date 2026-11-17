@@ -16,12 +16,12 @@
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-linux-x86_64.run",
-      "size": 9031760,
+      "size": 9077432,
       "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.run"
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-linux-x86_64.tar.gz",
-      "size": 9031432,
+      "size": 9077104,
       "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-linux-x86_64.tar.gz"
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "Soryntel-Chemistry-0.1.0-win64-setup.exe",
-      "size": 6421358,
+      "size": 6533536,
       "url": "https://github.com/jhulio435m/Soryntel-Chemistry/releases/download/v0.1.0/Soryntel-Chemistry-0.1.0-win64-setup.exe"
     }
   ]
