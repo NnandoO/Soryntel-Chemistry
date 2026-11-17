@@ -131,7 +131,7 @@ export default function Home() {
                 equivale a calibrar una planta ni a ser equivalente a una base de datos comercial.
               </p>
               <a
-                href={`${SOURCE_REPO}/tree/main/soryntel`}
+                href={`${RELEASES_REPO}/tree/main/soryntel`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-7 inline-flex items-center gap-1.5 font-medium underline decoration-border underline-offset-[6px] transition-colors hover:text-brand hover:decoration-brand"
