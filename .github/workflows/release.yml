@@ -179,7 +179,7 @@ jobs:
       - uses: actions/setup-node@v5
         if: github.ref_type == 'tag'
         with:
-          node-version: 22
+          node-version: 26
       - name: Verificar que la web puede enlazar cada descarga
         if: github.ref_type == 'tag'
         run: node web/scripts/sync-release.mjs --tag "${GITHUB_REF_NAME}" --check
