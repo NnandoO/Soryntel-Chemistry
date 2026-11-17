@@ -1,163 +1,197 @@
-name: Build, Package & Deploy to S3
+name: Publicar versión
 
+# Publicar: subir la versión en soryntel/Cargo.toml ([workspace.package]),
+# hacer commit y empujar la etiqueta correspondiente:
+#   git tag v0.2.0 && git push origin v0.2.0
+# Con workflow_dispatch se compilan los paquetes como artefactos sin publicar.
 on:
   push:
-    tags:
-      - 'v*'
-    branches:
-      - main
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  build-linux:
-    name: Build & Package (Linux)
+  version:
+    name: Versión
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    outputs:
+      version: ${{ steps.v.outputs.version }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-
-      - name: Install build dependencies
+      - id: v
+        name: Leer Cargo.toml y comprobar la etiqueta
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build g++ libeigen3-dev libsqlite3-dev python3 \
-            libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev \
-            libxi-dev libwayland-dev libxkbcommon-dev wayland-protocols \
-            xvfb xauth dpkg
+          version=$(awk '/^\[workspace.package\]/{f=1;next} /^\[/{f=0} f && /^version *=/{gsub(/[" ]/,"",$0); split($0,a,"="); print a[2]; exit}' soryntel/Cargo.toml)
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${version}" ]]; then
+            echo "::error::La etiqueta ${GITHUB_REF_NAME} no coincide con la versión ${version} de soryntel/Cargo.toml"
+            exit 1
+          fi
+          echo "Versión ${version}"
 
-      - name: Configure CMake (Release Linux)
-        run: >-
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMA_BUILD_GUI=ON
-          -DCMA_WITH_IPHREEQC=ON
-          -DCMA_WARNINGS_AS_ERRORS=ON
-
-      - name: Compile CMA Chemistry (Linux)
-        run: cmake --build build -j 2
-
-      - name: Run scientific and regression test suite
-        run: ctest --test-dir build --output-on-failure
-
-      - name: Desktop UI smoke test
-        run: timeout 30s xvfb-run -a ./build/cma_chemistry --smoke-test
-
-      - name: Package with CPack (.tar.gz and .deb)
-        run: |
-          cpack --config build/CPackConfig.cmake
-          mkdir -p dist
-          mv CMA_Chemistry-*-Linux.tar.gz dist/
-          mv CMA_Chemistry-*-Linux.deb dist/
-          # Crear copias "latest" para enlaces fijos de descarga
-          cp dist/CMA_Chemistry-*-Linux.tar.gz dist/cma-chemistry-latest-linux.tar.gz
-          cp dist/CMA_Chemistry-*-Linux.deb dist/cma-chemistry-latest-linux.deb
-          ls -lh dist/
-
-      - name: Upload Linux Artifacts to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: cma-chemistry-linux-packages
-          path: dist/*
-          retention-days: 14
-
-  build-windows:
-    name: Build & Package (Windows)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
+  linux:
+    name: Linux (.run y .tar.gz)
+    needs: version
+    # 22.04 (glibc 2.35) para que el binario funcione en distribuciones no tan recientes.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-
-      - name: Install build dependencies (MinGW cross-toolchain)
+      - name: Dependencias del sistema
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build g++-mingw-w64-x86-64 libeigen3-dev zip
-
-      - name: Configure CMake (Release Windows MinGW)
-        run: >-
-          cmake -S . -B build_win -G Ninja
-          -DCMAKE_TOOLCHAIN_FILE=Toolchain-mingw64.cmake
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMA_BUILD_GUI=ON
-          -DCMA_WITH_IPHREEQC=ON
-          -DCMA_WARNINGS_AS_ERRORS=ON
-
-      - name: Compile CMA Chemistry (Windows)
-        run: cmake --build build_win -j 2
-
-      - name: Package with CPack (.zip)
-        run: |
-          cpack --config build_win/CPackConfig.cmake
-          mkdir -p dist
-          mv CMA_Chemistry-*-win64.zip dist/
-          # Crear copia "latest" fija para enlace de descarga
-          cp dist/CMA_Chemistry-*-win64.zip dist/cma-chemistry-latest-windows.zip
-          ls -lh dist/
-
-      - name: Upload Windows Artifacts to GitHub
-        uses: actions/upload-artifact@v4
+          sudo apt-get install -y pkg-config libx11-dev libxkbcommon-dev libwayland-dev libgl1-mesa-dev
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          name: cma-chemistry-windows-packages
-          path: dist/*
-          retention-days: 14
+          workspaces: soryntel
+          key: release-linux
+      - name: Tests
+        working-directory: soryntel
+        run: cargo test --workspace --locked
+      - name: Compilar y empaquetar
+        run: soryntel/packaging/build-releases.sh linux
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-linux
+          path: soryntel/dist/*
+          if-no-files-found: error
+      - name: Binario para el paquete de Arch
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: linux-binary
+          path: soryntel/target/release/soryntel-desktop
+          if-no-files-found: error
 
-  deploy:
-    name: Deploy All Packages to AWS S3
-    needs: [build-linux, build-windows]
+  windows:
+    name: Windows (instalador y portable)
+    needs: version
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Toolchain MinGW y NSIS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 nsis zip
+      - run: |
+          rustup toolchain install stable --profile minimal && rustup default stable
+          rustup target add x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: soryntel
+          key: release-windows
+      - name: Compilar y empaquetar
+        run: soryntel/packaging/build-releases.sh windows
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-windows
+          path: soryntel/dist/*
+          if-no-files-found: error
+
+  arch:
+    name: Arch Linux (.pkg.tar.zst)
+    needs: linux
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-binary
+          path: soryntel/target/release
+      - name: Empaquetar con makepkg
+        run: |
+          chmod 755 soryntel/target/release/soryntel-desktop
+          useradd -m builder
+          chown -R builder: "$GITHUB_WORKSPACE"
+          # makepkg no se ejecuta como root.
+          su builder -c "cd '$GITHUB_WORKSPACE' && soryntel/packaging/build-releases.sh arch"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-arch
+          path: soryntel/dist/*.pkg.tar.zst
+          if-no-files-found: error
+
+  publish:
+    name: Publicar en GitHub Releases
+    needs: [version, linux, windows, arch]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: write
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      AWS_CLOUDFRONT_DIST_ID: ${{ secrets.AWS_CLOUDFRONT_DIST_ID }}
-
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      - name: Download Linux Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          name: cma-chemistry-linux-packages
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
           path: dist
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: cma-chemistry-windows-packages
-          path: dist
-
-      - name: Inspect Packages
-        run: ls -lh dist/
-
-      - name: Configure AWS Credentials
-        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy to AWS S3
-        if: env.AWS_ACCESS_KEY_ID != '' && env.AWS_S3_BUCKET != ''
+          merge-multiple: true
+      - name: Comprobar los archivos que ofrece la web
         run: |
-          echo "Subiendo paquetes a s3://${AWS_S3_BUCKET}/releases/ ..."
-          aws s3 cp dist/ s3://${AWS_S3_BUCKET}/releases/ --recursive --exclude "*" --include "*.tar.gz" --include "*.deb" --include "*.zip"
-          echo "Despliegue a S3 completado con éxito."
-
-      - name: Invalidate CloudFront Cache (Optional)
-        if: env.AWS_CLOUDFRONT_DIST_ID != '' && env.AWS_ACCESS_KEY_ID != ''
+          cd dist
+          expected=(
+            "Soryntel-Chemistry-${VERSION}-win64-setup.exe"
+            "Soryntel-Chemistry-${VERSION}-win64-portable.zip"
+            "Soryntel-Chemistry-${VERSION}-linux-x86_64.run"
+            "Soryntel-Chemistry-${VERSION}-linux-x86_64.tar.gz"
+            "soryntel-chemistry-${VERSION}-1-x86_64.pkg.tar.zst"
+          )
+          for f in "${expected[@]}"; do
+            [[ -s "$f" ]] || { echo "::error::Falta $f"; exit 1; }
+          done
+          sha256sum "${expected[@]}" > SHA256SUMS.txt
+          ls -lh
+      - name: Crear o actualizar la versión
+        if: github.ref_type == 'tag'
         run: |
-          echo "Invalidando caché de CloudFront para /releases/* ..."
-          aws cloudfront create-invalidation --distribution-id ${AWS_CLOUDFRONT_DIST_ID} --paths "/releases/*"
+          tag="${GITHUB_REF_NAME}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --title "Soryntel Chemistry ${VERSION}" --generate-notes --verify-tag
+          fi
+      - uses: actions/setup-node@v4
+        if: github.ref_type == 'tag'
+        with:
+          node-version: 22
+      - name: Verificar que la web puede enlazar cada descarga
+        if: github.ref_type == 'tag'
+        run: node web/scripts/sync-release.mjs --tag "${GITHUB_REF_NAME}" --check
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Actualizar la web con la nueva versión
+        if: github.ref_type == 'tag'
+        run: gh workflow run web.yml --ref "${{ github.event.repository.default_branch }}"
+      - name: Artefactos (ejecución manual)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: soryntel-chemistry-${{ env.VERSION }}
+          path: dist/*

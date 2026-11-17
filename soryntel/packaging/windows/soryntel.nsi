@@ -1,7 +1,10 @@
 !include "MUI2.nsh"
 
 !define APP_NAME "Soryntel Chemistry"
-!define APP_VERSION "0.1.0"
+; Pass the version from Cargo.toml: makensis -DAPP_VERSION=x.y.z (see packaging/build-releases.sh)
+!ifndef APP_VERSION
+  !error "APP_VERSION no definido: use makensis -DAPP_VERSION=x.y.z"
+!endif
 !define PUBLISHER "Soryntel Chemistry Team"
 !define EXE_NAME "soryntel-desktop.exe"
 
