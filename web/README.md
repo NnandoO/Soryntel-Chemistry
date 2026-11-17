@@ -18,21 +18,20 @@ npm run build   # genera out/, listo para cualquier hosting estático
 
 1. Subir `version` en `soryntel/Cargo.toml` (`[workspace.package]`) y hacer commit en `main`.
 2. `git tag v0.2.0 && git push origin v0.2.0`
-3. `.github/workflows/release.yml` compila Linux (Ubuntu 22.04), Windows (MinGW + NSIS) y Arch (contenedor), comprueba los cinco archivos que ofrece la web, crea la versión en GitHub Releases con `SHA256SUMS.txt` y lanza el despliegue de la web, que toma los nuevos enlaces y tamaños.
+3. `.github/workflows/release.yml` compila Linux (Ubuntu 22.04), Windows (MinGW + NSIS) y Arch (contenedor), comprueba los cinco archivos que ofrece la web, crea la versión en GitHub Releases con `SHA256SUMS.txt` y pide a Cloudflare reconstruir la web, que toma los nuevos enlaces y tamaños.
 
 La etiqueta debe coincidir con la versión de `Cargo.toml`; si no, el flujo se detiene.
 
 ## Despliegue en Cloudflare Pages
 
-`.github/workflows/web.yml` despliega `out/` en cada push a `main` que toque `web/`, en cada versión publicada y a mano. Los PR generan una vista previa.
+El proyecto `soryntel-chemistry` de Cloudflare Pages está conectado a `jhulio435m/Soryntel-Chemistry` y publica `chemistry.soryntel.com`:
 
-Configuración única:
+- Cada push a `main` que toque `web/` despliega producción; las demás ramas y los PR generan vistas previas.
+- Configuración de build: directorio raíz `web`, comando `node scripts/sync-release.mjs --soft && npm run build`, salida `out`, variables `NODE_VERSION=26` y `GITHUB_REPOSITORY=jhulio435m/Soryntel-Chemistry`.
+- Al publicar una versión, `release.yml` llama al Deploy Hook guardado en el secreto `CF_PAGES_DEPLOY_HOOK` para reconstruir la web con los nuevos enlaces y tamaños.
+- DNS de la zona `soryntel.com`: `CNAME chemistry → soryntel-chemistry.pages.dev` con proxy.
 
-1. En GitHub → Settings → Secrets and variables → Actions, crear `CLOUDFLARE_API_TOKEN` (token con permiso *Cloudflare Pages: Edit*) y `CLOUDFLARE_ACCOUNT_ID`. Opcional: variable `CF_PAGES_PROJECT` (por defecto `soryntel-chemistry`).
-2. El proyecto de Pages `soryntel-chemistry` ya existe y tiene vinculado `chemistry.soryntel.com`; si se recrea, el flujo lo crea de nuevo.
-3. DNS de la zona `soryntel.com`: registro `CNAME chemistry → soryntel-chemistry.pages.dev` con proxy activado.
-
-El dominio público se usa en los metadatos (`SITE_URL` en `src/content/site.ts`, sobrescribible con `NEXT_PUBLIC_SITE_URL`). Las cabeceras de caché y seguridad están en `public/_headers`.
+Las cabeceras de caché y seguridad están en `public/_headers`. El dominio público de los metadatos es `SITE_URL` en `src/content/site.ts` (sobrescribible con `NEXT_PUBLIC_SITE_URL`).
 
 ## Clips del programa (`public/media/`)
 
