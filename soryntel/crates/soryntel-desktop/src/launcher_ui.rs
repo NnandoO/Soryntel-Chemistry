@@ -371,8 +371,16 @@ pub fn render_hsc10_grid_canvas(
                     cmd = LauncherCommand::OpenModule("excel_addins");
                     ui_state.show_submenu = false;
                 }
+                if ui.button("Dat · Procesamiento de datos (Charts, FFNN, RNN, PSO)").clicked() {
+                    cmd = LauncherCommand::OpenModule("data_processing");
+                    ui_state.show_submenu = false;
+                }
+                if ui.button("Mat · Material Database (Cap. 90 — Composition, Properties, Cp)").clicked() {
+                    cmd = LauncherCommand::OpenModule("material_db");
+                    ui_state.show_submenu = false;
+                }
                 if ui.button(crate::i18n::text("nav.015")).clicked() {
-                    cmd = LauncherCommand::OpenModule("excel_addins");
+                    cmd = LauncherCommand::OpenModule("geo_liberation");
                     ui_state.show_submenu = false;
                 }
                 if ui.button(crate::i18n::text("nav.016")).clicked() {

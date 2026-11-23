@@ -9,6 +9,7 @@ mod addins_bridge;
 mod aqua_ui;
 mod balance_ui;
 mod benson_ui;
+mod data_processing_ui;
 mod diagrams_ui;
 mod ehph_ui;
 mod elements_ui;
@@ -17,10 +18,13 @@ mod estimate_ui;
 mod excel_addins_ui;
 mod excel_grid;
 mod exergy_ui;
+mod geo_liberation_ui;
+mod geo_mineralogy_ui;
 mod heat_loss_ui;
 mod launcher_ui;
 mod lca_ui;
 mod mass_balance_ui;
+mod material_db_ui;
 mod phase_stability_ui;
 mod reaction_actions;
 mod reaction_ui;
@@ -56,6 +60,9 @@ enum WindowMode {
     Sim,
     Lca,
     MassBalance,
+    DataProcessing,
+    MaterialDb,
+    GeoLiberation,
     Species,
 }
 
@@ -145,6 +152,9 @@ fn main() -> eframe::Result<()> {
                 "sim" | "flowsheet" => WindowMode::Sim,
                 "lca" | "sim_lca" => WindowMode::Lca,
                 "mass_balance" | "mas" => WindowMode::MassBalance,
+                "data_processing" | "data" | "dat" => WindowMode::DataProcessing,
+                "material_db" | "materials" | "mat" => WindowMode::MaterialDb,
+                "geo_liberation" | "geo" | "liberation" => WindowMode::GeoLiberation,
                 "species" | "databases" | "browser" => WindowMode::Species,
                 _ => WindowMode::Launcher,
             };
@@ -345,6 +355,21 @@ fn main() -> eframe::Result<()> {
             [1360.0, 820.0],
             [920.0, 560.0],
         ),
+        WindowMode::DataProcessing => (
+            "HSC Data — Data Processing",
+            [1280.0, 820.0],
+            [860.0, 560.0],
+        ),
+        WindowMode::MaterialDb => (
+            "HSC Material Database — Soryntel Chemistry",
+            [1340.0, 800.0],
+            [860.0, 540.0],
+        ),
+        WindowMode::GeoLiberation => (
+            "HSC Geo — Processing Mineral Liberation Data",
+            [1400.0, 840.0],
+            [920.0, 580.0],
+        ),
         WindowMode::Species => (
             crate::i18n::text("window.018"),
             [1220.0, 760.0],
@@ -427,6 +452,9 @@ struct ModuleRunningFlags {
     sim: bool,
     lca: bool,
     mass_balance: bool,
+    data_processing: bool,
+    material_db: bool,
+    geo_liberation: bool,
     browser: bool,
 }
 
@@ -447,11 +475,14 @@ impl ModuleRunningFlags {
             "elements" => self.elements,
             "water" => self.water,
             "units" => self.units,
-            "excel_addins" | "addins" | "geo" => self.excel_addins,
+            "excel_addins" | "addins" => self.excel_addins,
             "aqua" => self.aqua,
             "sim" | "flowsheet" => self.sim,
             "lca" | "sim_lca" => self.lca,
             "mass_balance" | "mas" => self.mass_balance,
+            "data_processing" | "data" | "dat" => self.data_processing,
+            "material_db" | "materials" | "mat" => self.material_db,
+            "geo_liberation" | "geo" | "liberation" => self.geo_liberation,
             "species" | "databases" | "browser" => self.browser,
             _ => false,
         }
@@ -481,6 +512,9 @@ struct SoryntelDesktopApp {
     child_sim: Option<std::process::Child>,
     child_lca: Option<std::process::Child>,
     child_mass_balance: Option<std::process::Child>,
+    child_data_processing: Option<std::process::Child>,
+    child_material_db: Option<std::process::Child>,
+    child_geo_liberation: Option<std::process::Child>,
     child_browser: Option<std::process::Child>,
     reaction_state: reaction_ui::ReactionModuleState,
     aqua_state: aqua_ui::AquaModuleState,
@@ -503,6 +537,9 @@ struct SoryntelDesktopApp {
     lca_state: lca_ui::LcaWindowState,
     mb_standalone_project: soryntel_thermo::sim::model::SimProject,
     mb_state: mass_balance_ui::MassBalanceWindowState,
+    data_processing_state: data_processing_ui::DataProcessingModuleState,
+    material_db_state: material_db_ui::MaterialDbModuleState,
+    geo_liberation_state: geo_liberation_ui::GeoLiberationModuleState,
     species_state: species_ui::SpeciesModuleState,
     launcher_ui_state: launcher_ui::LauncherUiState,
 }
@@ -528,6 +565,9 @@ impl SoryntelDesktopApp {
         let sim_state = sim_ui::SimModuleState::default();
         let (lca_standalone_project, lca_state) = lca_ui::LcaWindowState::with_preset_classic_zn();
         let (mb_standalone_project, mb_state) = mass_balance_ui::MassBalanceWindowState::with_preset_rougher();
+        let data_processing_state = data_processing_ui::DataProcessingModuleState::default();
+        let material_db_state = material_db_ui::MaterialDbModuleState::default();
+        let geo_liberation_state = geo_liberation_ui::GeoLiberationModuleState::default();
         let species_state = species_ui::SpeciesModuleState::new(&db);
         Self {
             db,
@@ -552,6 +592,9 @@ impl SoryntelDesktopApp {
             child_sim: None,
             child_lca: None,
             child_mass_balance: None,
+            child_data_processing: None,
+            child_material_db: None,
+            child_geo_liberation: None,
             child_browser: None,
             reaction_state,
             aqua_state,
@@ -574,6 +617,9 @@ impl SoryntelDesktopApp {
             lca_state,
             mb_standalone_project,
             mb_state,
+            data_processing_state,
+            material_db_state,
+            geo_liberation_state,
             species_state,
             launcher_ui_state: launcher_ui::LauncherUiState::default(),
         }
@@ -707,6 +753,18 @@ impl eframe::App for SoryntelDesktopApp {
                 );
                 return;
             }
+            WindowMode::DataProcessing => {
+                self.data_processing_state.ui(ctx);
+                return;
+            }
+            WindowMode::MaterialDb => {
+                self.material_db_state.ui(ctx, &self.db);
+                return;
+            }
+            WindowMode::GeoLiberation => {
+                self.geo_liberation_state.ui(ctx);
+                return;
+            }
             WindowMode::Species => {
                 if let Some(f) = self.species_state.ui(ctx, &mut self.db) {
                     let _ = crate::storage::write_atomic(
@@ -749,6 +807,9 @@ impl SoryntelDesktopApp {
         let running_sim = is_child_running(&mut self.child_sim);
         let running_lca = is_child_running(&mut self.child_lca);
         let running_mass_balance = is_child_running(&mut self.child_mass_balance);
+        let running_data_processing = is_child_running(&mut self.child_data_processing);
+        let running_material_db = is_child_running(&mut self.child_material_db);
+        let running_geo_liberation = is_child_running(&mut self.child_geo_liberation);
         let running_browser = is_child_running(&mut self.child_browser);
 
         let open_count = [
@@ -771,6 +832,9 @@ impl SoryntelDesktopApp {
             running_sim,
             running_lca,
             running_mass_balance,
+            running_data_processing,
+            running_material_db,
+            running_geo_liberation,
             running_browser,
         ]
         .into_iter()
@@ -804,9 +868,9 @@ impl SoryntelDesktopApp {
                 TileSpec { code: "Rea", label: crate::i18n::text("nav.039"), action: Act::Launch("reaction"), category: Cat::Products, running: running_reaction },
                 TileSpec { code: "Sim", label: crate::i18n::text("nav.040"), action: Act::Launch("sim"), category: Cat::Products, running: running_sim },
                 // Row 3
-                TileSpec { code: "Dat", label: crate::i18n::text("nav.041"), action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
+                TileSpec { code: "Dat", label: crate::i18n::text("nav.041"), action: Act::Launch("data_processing"), category: Cat::Services, running: running_data_processing },
                 TileSpec { code: "DB", label: crate::i18n::text("window.019"), action: Act::Launch("species"), category: Cat::ResearchDev, running: running_browser },
-                TileSpec { code: "Geo", label: crate::i18n::text("nav.042"), action: Act::Launch("excel_addins"), category: Cat::Services, running: running_excel_addins },
+                TileSpec { code: "Geo", label: crate::i18n::text("nav.042"), action: Act::Launch("geo_liberation"), category: Cat::Services, running: running_geo_liberation },
                 TileSpec { code: "HTr", label: crate::i18n::text("nav.043"), action: Act::Launch("heatloss"), category: Cat::Services, running: running_heat_loss },
                 TileSpec { code: "Tpp", label: crate::i18n::text("nav.044"), action: Act::Launch("phase_stability"), category: Cat::ResearchDev, running: running_phase_stability },
                 TileSpec { code: "Wat", label: crate::i18n::text("nav.045"), action: Act::Launch("water"), category: Cat::Sustainability, running: running_water },
@@ -852,6 +916,9 @@ impl SoryntelDesktopApp {
             sim: running_sim,
             lca: running_lca,
             mass_balance: running_mass_balance,
+            data_processing: running_data_processing,
+            material_db: running_material_db,
+            geo_liberation: running_geo_liberation,
             browser: running_browser,
         };
         self.show_cards_view(ctx, status_flags);
@@ -871,7 +938,7 @@ impl SoryntelDesktopApp {
             is_new: bool,
         }
 
-        let cards: [ModuleCardSpec; 21] = [
+        let cards: [ModuleCardSpec; 23] = [
             ModuleCardSpec {
                 num: "01",
                 code: "Rea",
@@ -1073,14 +1140,34 @@ impl SoryntelDesktopApp {
                 is_new: true,
             },
             ModuleCardSpec {
+                num: "21",
+                code: "Dat",
+                title: "Data Processing (HSC Data)",
+                desc: "Charts + Data Analytics, FFNN (Backprop + XML), RNN (Gelenbe) y PSO (Particle Swarm Optimization).",
+                accent: egui::Color32::from_rgb(37, 99, 235),
+                mode_arg: "data_processing",
+                category: Cat::Services,
+                is_new: true,
+            },
+            ModuleCardSpec {
+                num: "22",
+                code: "Mat",
+                title: "Material Database (Cap. 90)",
+                desc: "Mezclas recursivas [Material]+especies, desglose wt-% a elementos, Auto Calculate, Cp Data/Chart y User Properties.",
+                accent: egui::Color32::from_rgb(15, 118, 110),
+                mode_arg: "material_db",
+                category: Cat::ResearchDev,
+                is_new: true,
+            },
+            ModuleCardSpec {
                 num: "GEO",
                 code: "Geo",
-                title: "Mineral Database (HSC Geo)",
-                desc: "Catálogo de 3,812 minerales y funciones MineralCode/Name/Formula/Density integradas con Excel Add-Ins y Mas.",
+                title: "HSC Geo — Mineralogy, Petrology & Liberation (Cap. 84 & 85)",
+                desc: "Base de 3,812 minerales (Viewer, Properties, Catalogue, WSSQ), Petrological (Bruvann + 13 rutinas: SF/CIPW/CUMNAME/REE), Modal + Monte Carlo y Mineral Liberation (7 Graphs).",
                 accent: egui::Color32::from_rgb(101, 163, 13),
-                mode_arg: "excel_addins",
+                mode_arg: "geo_liberation",
                 category: Cat::Services,
-                is_new: false,
+                is_new: true,
             },
         ];
 
@@ -1475,6 +1562,27 @@ impl SoryntelDesktopApp {
                                             {
                                                 pending_action = Some(("species", flags.browser));
                                             }
+                                            let mat_lbl = if flags.material_db {
+                                                "Cerrar Material DB"
+                                            } else {
+                                                "Abrir Material DB ↗"
+                                            };
+                                            if ui
+                                                .add(
+                                                    egui::Button::new(
+                                                        egui::RichText::new(mat_lbl)
+                                                            .strong()
+                                                            .size(11.5)
+                                                            .color(egui::Color32::WHITE),
+                                                    )
+                                                    .fill(egui::Color32::from_rgb(15, 118, 110))
+                                                    .rounding(5.0),
+                                                )
+                                                .clicked()
+                                            {
+                                                pending_action =
+                                                    Some(("material_db", flags.material_db));
+                                            }
                                         },
                                     );
                                 });
@@ -1511,11 +1619,14 @@ impl SoryntelDesktopApp {
             "elements" => Some(&mut self.child_elements),
             "water" => Some(&mut self.child_water),
             "units" => Some(&mut self.child_units),
-            "excel_addins" | "addins" | "geo" => Some(&mut self.child_excel_addins),
+            "excel_addins" | "addins" => Some(&mut self.child_excel_addins),
             "aqua" => Some(&mut self.child_aqua),
             "sim" | "flowsheet" => Some(&mut self.child_sim),
             "lca" | "sim_lca" => Some(&mut self.child_lca),
             "mass_balance" | "mas" => Some(&mut self.child_mass_balance),
+            "data_processing" | "data" | "dat" => Some(&mut self.child_data_processing),
+            "material_db" | "materials" | "mat" => Some(&mut self.child_material_db),
+            "geo_liberation" | "geo" | "liberation" => Some(&mut self.child_geo_liberation),
             "species" | "databases" | "browser" => Some(&mut self.child_browser),
             _ => None,
         }
@@ -1549,6 +1660,9 @@ impl SoryntelDesktopApp {
             &mut self.child_sim,
             &mut self.child_lca,
             &mut self.child_mass_balance,
+            &mut self.child_data_processing,
+            &mut self.child_material_db,
+            &mut self.child_geo_liberation,
             &mut self.child_browser,
         ] {
             kill_child(slot);

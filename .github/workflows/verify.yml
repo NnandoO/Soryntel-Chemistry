@@ -39,6 +39,7 @@ jobs:
           python3 scripts/audit-repository.py
           python3 scripts/audit-architecture.py
           python3 scripts/audit-ui-texts.py
+          python3 scripts/validate-open-catalog.py
       - name: Tests
         run: cargo test --workspace --locked
       - name: Build desktop
